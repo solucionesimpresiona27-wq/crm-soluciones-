@@ -1,7 +1,7 @@
 import { ArrowLeft, Eye, EyeOff, Hammer, KeyRound, Lock, Mail, Palette, ShieldCheck, TrendingUp } from 'lucide-react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useState, type FormEvent } from 'react'
-import { Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { Navigate, useLocation } from 'react-router-dom'
 import { useSesion } from '@/app/sesion'
 import { Campo, GlassButton, GlassIconButton, GlassInput, GlassPanel, LightField } from '@/components/glass'
 import { BotonTema } from '@/components/shell/BotonTema'
@@ -23,7 +23,6 @@ const rolesDemo: Array<{ rol: Rol; icono: typeof ShieldCheck; detalle: string }>
 
 export default function LoginPage() {
   const { sesion, cargando, recargar } = useSesion()
-  const navegar = useNavigate()
   const ubicacion = useLocation()
   const reducir = useReducedMotion()
   const [modo, setModo] = useState<'entrar' | 'recuperar'>('entrar')
@@ -49,8 +48,9 @@ export default function LoginPage() {
         if (!email.trim() || !password) throw new Error('Escribe tu correo y contraseña')
         await api.sesion.iniciar(email, password)
       }
+      // Al cargar la sesión, el <Navigate> de arriba lleva a `destino`. No se navega aquí también:
+      // la sesión puede llegar antes por alCambiar y esta segunda navegación pisaría la del usuario.
       await recargar()
-      navegar(destino, { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo iniciar sesión')
     } finally {

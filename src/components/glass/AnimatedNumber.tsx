@@ -20,7 +20,16 @@ export function AnimatedNumber({ valor, formato = (n) => n.toLocaleString('es-MX
       mv.set(valor)
       return
     }
-    const control = animate(mv, valor, { type: 'spring', visualDuration: duracion, bounce: 0 })
+    // Umbral de reposo relativo: en cifras grandes el resorte no se queda "colgado" en el último peso
+    const restDelta = Math.max(0.01, Math.abs(valor) * 0.00005)
+    const control = animate(mv, valor, {
+      type: 'spring',
+      visualDuration: duracion,
+      bounce: 0,
+      restDelta,
+      restSpeed: restDelta * 10,
+      onComplete: () => mv.set(valor),
+    })
     return () => control.stop()
   }, [valor, reducir, duracion, mv])
 

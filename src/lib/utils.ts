@@ -1,5 +1,17 @@
 import { clsx, type ClassValue } from 'clsx'
-import { twMerge } from 'tailwind-merge'
+import { extendTailwindMerge } from 'tailwind-merge'
+
+// Escalas propias de tailwind.config.ts: sin esto, `text-hero` se toma por color (y se pierde
+// junto a `text-fg`) y `rounded-sheet` no reemplaza a otro `rounded-*`.
+const twMerge = extendTailwindMerge({
+  extend: {
+    theme: {
+      text: ['2xs', 'md', 'display', 'hero'],
+      radius: ['sheet', 'module', 'tile', 'control', 'chip'],
+      shadow: ['glass', 'glass-lg', 'lift'],
+    },
+  },
+})
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))

@@ -1,10 +1,10 @@
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 /** Esqueleto de carga con brillo de cristal. */
-export function Skeleton({ className }: { className?: string }) {
+export function Skeleton({ className, style }: { className?: string; style?: CSSProperties }) {
   return (
-    <div className={cn('relative overflow-hidden rounded-control bg-fg/[0.06]', className)} aria-hidden>
+    <div className={cn('relative overflow-hidden rounded-control bg-fg/[0.06]', className)} style={style} aria-hidden>
       <div className="absolute inset-0 animate-shimmer bg-gradient-to-r from-transparent via-white/40 to-transparent dark:via-white/[0.07]" />
     </div>
   )

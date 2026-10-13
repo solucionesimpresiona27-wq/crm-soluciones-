@@ -49,6 +49,8 @@ Estética Liquid Glass (Centro de Control de Apple) con la marca: azul `#22426B`
 - **Motion + transform de Tailwind**: Motion reemplaza `transform`. No combines clases `-translate-*` con animaciones `x/y/scale` en el mismo elemento; usa un contenedor para posicionar.
 - **Accesibilidad**: foco visible, `aria-label` en botones de solo ícono, contraste AA sobre cristal, áreas táctiles ≥ 44px.
 - **Responsive**: celular con barra inferior y hojas desde abajo (`GlassModal` lo hace solo); escritorio con menú lateral y cuadrículas.
+- **`cn()` y tamaños de letra**: un `text-<tamaño>` posterior elimina un `leading-*` anterior (los tamaños traen su interlineado). Pon `leading-*` **después** del tamaño, sobre todo con `.glass-text` y cifras grandes. Las escalas propias (`text-hero`, `rounded-sheet`, `shadow-glass`…) están registradas en `src/lib/utils.ts`; si agregas una al tema, regístrala ahí.
+- **Áreas táctiles**: la variante `pointer-coarse:` agranda controles solo en pantallas táctiles (p. ej. `h-9 pointer-coarse:h-11`).
 - Textos: verbos claros en botones ("Guardar cotización", no "Enviar"), errores que dicen qué pasó y cómo resolverlo, sin MAYÚSCULAS sostenidas.
 - Estados vacíos con `EstadoVacio`; carga con `Skeleton`; estados con `Pildora` y `ESTADO_COTIZACION` / `ESTADO_PEDIDO` de `@/lib/estados`.
 

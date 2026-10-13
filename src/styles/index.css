@@ -383,14 +383,15 @@
     border-spacing: 0;
   }
 
-  .tabla th {
+  /* :where() deja la especificidad en cero para que text-right, etc. ganen sin "!" */
+  :where(.tabla) th {
     @apply px-4 py-3 text-left text-xs font-semibold text-fg-subtle;
     position: sticky;
     top: 0;
     background: transparent;
   }
 
-  .tabla td {
+  :where(.tabla) td {
     @apply px-4 py-3.5 align-middle;
     border-top: 1px solid var(--divider);
   }

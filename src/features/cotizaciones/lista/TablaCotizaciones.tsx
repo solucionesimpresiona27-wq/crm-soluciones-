@@ -48,7 +48,7 @@ export function TablaCotizaciones({ filas, hoy, acciones, descripcion }: { filas
                 onClick={() => acciones.abrir(f)}
                 className="cursor-pointer"
               >
-                <td className="!pl-5">
+                <td className="whitespace-nowrap !pl-5">
                   <Link
                     to={destino.pathname}
                     state={destino.state}

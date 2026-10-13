@@ -1,5 +1,6 @@
 import type { Config } from 'tailwindcss'
 import animate from 'tailwindcss-animate'
+import plugin from 'tailwindcss/plugin'
 
 /**
  * Impresiona Glass Design System — tokens de Tailwind.
@@ -112,5 +113,11 @@ export default {
       },
     },
   },
-  plugins: [animate],
+  plugins: [
+    animate,
+    // Pantallas táctiles: agranda áreas de toque sin cambiar el diseño con ratón
+    plugin(({ addVariant }) => {
+      addVariant('pointer-coarse', '@media (pointer: coarse)')
+    }),
+  ],
 } satisfies Config

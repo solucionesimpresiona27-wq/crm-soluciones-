@@ -27,7 +27,8 @@ export function CapsuleMeter({ valor, icono, etiqueta, textoValor, tono = 'claro
       ? 'bg-gradient-to-t from-amber-400 to-amber-300'
       : tono === 'acento'
         ? 'bg-gradient-to-t from-navy-600 to-navy-400'
-        : 'bg-gradient-to-t from-white to-white/90 dark:from-white/90 dark:to-white/75'
+        : // En claro, el blanco se perdía sobre el cristal: se usa un azul muy tenue de la marca
+          'bg-gradient-to-t from-navy-200 to-navy-100 dark:from-white/90 dark:to-white/75'
 
   const Etiqueta = onClick ? motion.button : motion.div
 

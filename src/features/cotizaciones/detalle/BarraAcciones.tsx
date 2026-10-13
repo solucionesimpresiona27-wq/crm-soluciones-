@@ -91,7 +91,7 @@ export function BarraAcciones({
         : { id: 'convertir', etiqueta: 'Convertir en pedido', icono: <PackagePlus />, onClick: en.convertir, desactivado: cerrada },
     )
   }
-  if (permisos.gestionar) acciones.push({ id: 'mas', etiqueta: 'Más', icono: <Ellipsis />, menu: true })
+  if (permisos.gestionar) acciones.push({ id: 'mas', etiqueta: 'Más', nombre: 'Más acciones de la cotización', icono: <Ellipsis />, menu: true })
 
   const puedeEnviar = c.estado === 'borrador'
   const puedeAceptar = (c.estado === 'borrador' || c.estado === 'enviada') && !esPedido
@@ -100,7 +100,7 @@ export function BarraAcciones({
 
   return (
     <div
-      role="toolbar"
+      role="group"
       aria-label="Acciones de la cotización"
       className={cn('grid grid-cols-3 justify-items-center gap-y-4 sm:flex sm:flex-wrap sm:justify-start sm:gap-x-1 xl:justify-end', className)}
     >

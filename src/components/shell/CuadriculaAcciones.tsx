@@ -24,6 +24,7 @@ export function CuadriculaAcciones({ onAccion, className, tamano = 'lg' }: { onA
           return (
             <motion.div
               key={a.id}
+              className="flex w-full justify-center"
               initial={reducir ? false : { opacity: 0, scale: 0.7 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ ...resorte.agil, delay: reducir ? 0 : 0.12 + escalonado(i, 0.035) }}
@@ -33,7 +34,7 @@ export function CuadriculaAcciones({ onAccion, className, tamano = 'lg' }: { onA
                 mostrarEtiqueta
                 icono={<Icono />}
                 tamano={tamano}
-                activo={a.destacada}
+                destacado={a.destacada}
                 tono={a.tono}
                 onClick={() => {
                   if (a.destino === 'nuevo-cliente') {

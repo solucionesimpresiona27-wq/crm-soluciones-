@@ -1,6 +1,6 @@
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { Suspense, lazy, useEffect, useState } from 'react'
-import { Navigate, Outlet, useLocation } from 'react-router-dom'
+import { AnimatePresence, motion, useIsPresent, useReducedMotion } from 'motion/react'
+import { Suspense, lazy, useEffect, useRef, useState } from 'react'
+import { Navigate, useLocation, useOutlet } from 'react-router-dom'
 import { useSesion } from '@/app/sesion'
 import { LightField, Skeleton } from '@/components/glass'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
@@ -21,6 +21,18 @@ function CargandoPagina() {
       <Skeleton className="h-80 rounded-sheet md:col-span-2 xl:col-span-4" />
     </div>
   )
+}
+
+/**
+ * Mientras la página sale (AnimatePresence), conserva lo que mostraba en vez de
+ * pintar ya la ruta nueva; así la transición no parpadea con el contenido siguiente.
+ */
+function OutletEstable() {
+  const outlet = useOutlet()
+  const presente = useIsPresent()
+  const ultimo = useRef(outlet)
+  if (presente) ultimo.current = outlet
+  return ultimo.current
 }
 
 /** Estructura de la app: campo de luz, menú lateral, barra superior y contenido con transición. */
@@ -105,7 +117,7 @@ export function AppShell() {
               transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
             >
               <Suspense fallback={<CargandoPagina />}>
-                <Outlet />
+                <OutletEstable />
               </Suspense>
             </motion.main>
           </AnimatePresence>
