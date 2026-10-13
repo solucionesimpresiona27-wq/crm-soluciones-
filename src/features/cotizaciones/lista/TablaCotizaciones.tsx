@@ -44,7 +44,7 @@ export function TablaCotizaciones({ filas, hoy, acciones, descripcion }: { filas
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0, transition: { duration: 0.1 } }}
-                transition={{ layout: resorte.suave, opacity: { duration: 0.18 } }}
+                transition={{ layout: resorte.agil, opacity: { duration: 0.18 } }}
                 onClick={() => acciones.abrir(f)}
                 className="cursor-pointer"
               >

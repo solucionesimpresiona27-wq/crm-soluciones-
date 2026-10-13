@@ -128,10 +128,10 @@ export function HojaCotizacion({ c, config }: { c: CotizacionCompleta; config: C
                 #
               </th>
               <th scope="col">Concepto</th>
-              <th scope="col" className="!text-right">
+              <th scope="col" className="whitespace-nowrap !text-right">
                 Cantidad
               </th>
-              <th scope="col" className="!text-right">
+              <th scope="col" className="whitespace-nowrap !text-right">
                 Precio unitario
               </th>
               <th scope="col" className="!pr-0 !text-right">
@@ -211,11 +211,11 @@ export function HojaCotizacion({ c, config }: { c: CotizacionCompleta; config: C
 
       {/* Condiciones y notas */}
       {condiciones.length || c.notas ? (
-        <div className="mt-8 grid gap-6 border-t border-[var(--divider)] pt-6 lg:grid-cols-[1.5fr_1fr]">
+        <div className={cn('mt-8 grid gap-6 border-t border-[var(--divider)] pt-6', condiciones.length && c.notas && 'lg:grid-cols-[1.5fr_1fr]')}>
           {condiciones.length ? (
             <div>
               <Etiqueta>Condiciones</Etiqueta>
-              <ul className="flex list-disc flex-col gap-1 pl-4 text-sm leading-relaxed text-fg-muted marker:text-fg-subtle">
+              <ul className="flex max-w-[68ch] list-disc flex-col gap-1 pl-4 text-sm leading-relaxed text-fg-muted marker:text-fg-subtle">
                 {condiciones.map((l) => (
                   <li key={l}>{l}</li>
                 ))}

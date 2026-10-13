@@ -22,7 +22,7 @@ export function TarjetasCotizaciones({ filas, hoy, acciones, descripcion }: { fi
               initial={{ opacity: 0, scale: 0.97 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.97, transition: { duration: 0.12 } }}
-              transition={resorte.suave}
+              transition={resorte.agil}
             >
               <GlassSurface variante="fuerte" interactivo className="rounded-tile p-4">
                 <div className="flex min-h-11 items-center gap-2">

@@ -74,3 +74,8 @@ export function componer(d: Disponible): ModuloPanel[] {
           ]
   return m.filter((x): x is ModuloPanel => Boolean(x))
 }
+
+/** Clases de la celda. En celular y tableta los accesos miden solo lo necesario (la barra inferior ya tiene acciones). */
+export function claseCelda(m: ModuloPanel) {
+  return m.id === 'accesos' && m.tamano === '2x2' ? 'col-span-2 row-span-1 lg:row-span-2' : SPAN[m.tamano]
+}
