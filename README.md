@@ -4,6 +4,8 @@ CRM web de Soluciones Impresiona (Guadalajara): clientes, cotizaciones con calcu
 
 Diseño: **Impresiona Glass**, un sistema propio inspirado en el Liquid Glass del Centro de Control de Apple, con los colores del logo. Incluye modo claro y oscuro.
 
+**Vista previa del diseño** (datos ficticios, nada se guarda): [docs/VISTA_PREVIA.md](docs/VISTA_PREVIA.md).
+
 ## Puesta en marcha (producción)
 
 1. **Base de datos y usuarios**: [docs/GUIA_SUPABASE.md](docs/GUIA_SUPABASE.md). Usa el plan gratuito de Supabase y tarda unos 20 minutos.

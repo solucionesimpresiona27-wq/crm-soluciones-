@@ -12,7 +12,7 @@ Es una versión navegable del CRM para validar el diseño **antes** de aplicarlo
 
 ## Cómo abrirla
 
-1. Abre el enlace de la vista previa que te compartí.
+1. Abre el enlace de la vista previa: https://claude.ai/artifact/5CKChSyJDKX5BPUMRkVUPc (privado; solo lo ve la cuenta dueña y las personas con las que se comparta).
 2. Elige un rol en la pantalla de entrada (no pide contraseña) y toca **Entrar a la vista previa**:
    - **Administración:** ve todo, incluidos los costos y la utilidad.
    - **Ventas:** cotiza y cobra, sin ver costos.

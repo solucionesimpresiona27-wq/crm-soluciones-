@@ -8,7 +8,8 @@ CRM web para imprenta / publicidad en México. Se usa desde PC y celular, para u
 |---|---|
 | Base de datos completa (todas las fases), permisos por rol, bitácora, almacenamiento | ✅ Lista y probada (pruebas automáticas) |
 | Sistema de diseño **Impresiona Glass** (Liquid Glass) + estructura de la app | ✅ Listo |
-| Vista previa del diseño: inicio de sesión, panel de control y cotizaciones (con calculadora, PDF y WhatsApp) | 🔍 En revisión del cliente |
+| Vista previa del diseño: inicio de sesión, panel de control y cotizaciones (con calculadora, PDF y WhatsApp), más la vitrina del sistema de diseño | 🔍 En revisión del cliente ([docs/VISTA_PREVIA.md](docs/VISTA_PREVIA.md)) |
+| Pruebas automáticas: base de datos (21), unitarias (18) y de punta a punta contra la app real (17) | ✅ Pasan |
 | Demás pantallas (clientes, embudo, pedidos, producción, pagos, inventario, agenda, reportes, usuarios, configuración) | ⏳ Se construyen con el mismo diseño al aprobarlo |
 
 **Dirección visual definitiva (actualización del cliente):**
