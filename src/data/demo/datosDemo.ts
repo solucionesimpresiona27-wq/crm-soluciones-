@@ -125,7 +125,7 @@ export const clientesDemo: ClienteDemo[] = [
   { id: 'c8', nombre: 'Taller Mecánico Rueda', whatsapp: '3388889900', telefono: null, email: null, requiere_factura: false, rfc: null, razon_social: null, direccion: null, ciudad: 'Tonalá' },
 ]
 
-type P = Omit<ProductoCatalogo, 'categoria' | 'costos' | 'descripcion' | 'precio_minimo' | 'escalas'> & {
+export type ProductoBase = Omit<ProductoCatalogo, 'categoria' | 'costos' | 'descripcion' | 'precio_minimo' | 'escalas'> & {
   cat: string
   grupo: string
   costos?: ProductoCatalogo['costos']
@@ -133,7 +133,7 @@ type P = Omit<ProductoCatalogo, 'categoria' | 'costos' | 'descripcion' | 'precio
   precio_minimo?: number | null
 }
 
-const productosBase: P[] = [
+export const productosBase: ProductoBase[] = [
   { id: 'pr1', nombre: 'Lona impresa', cat: 'Lonas y gran formato', grupo: 'Impresión y publicidad', metodo_calculo: 'm2', unidad: 'm²', precio_venta: 180, precio_minimo: 150, costos: { costo_material: 62, costo_mano_obra: 12, costo_fijo: 0, desperdicio_pct: 8, ganancia_pct: 120 } },
   { id: 'pr2', nombre: 'Impresión de vinil', cat: 'Vinil', grupo: 'Impresión y publicidad', metodo_calculo: 'm2', unidad: 'm²', precio_venta: 260, precio_minimo: 180, costos: { costo_material: 95, costo_mano_obra: 18, costo_fijo: 0, desperdicio_pct: 10, ganancia_pct: 110 } },
   { id: 'pr3', nombre: 'Vinil microperforado', cat: 'Vinil', grupo: 'Impresión y publicidad', metodo_calculo: 'm2', unidad: 'm²', precio_venta: 340, costos: { costo_material: 130, costo_mano_obra: 22, costo_fijo: 0, desperdicio_pct: 10, ganancia_pct: 110 } },
