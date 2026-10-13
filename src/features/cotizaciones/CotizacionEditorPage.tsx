@@ -227,6 +227,8 @@ function Editor({
     const atajo = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && !e.altKey && e.key.toLowerCase() === 's') {
         e.preventDefault()
+        // Con una ventana abierta (p. ej. "Nuevo cliente") el atajo no guarda la cotización por debajo
+        if (document.querySelector('[role="dialog"]')) return
         void guardarRef.current()
       }
     }

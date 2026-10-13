@@ -366,16 +366,18 @@ export function Calculadora({
               Precio en la fila: <span className="num font-medium text-fg">{dinero(n(p.precio_unitario))}</span>
             </p>
           ) : null}
-          <GlassButton
-            variante={aplicado ? 'cristal' : 'luz'}
-            tamano="sm"
-            icono={aplicado ? <Check /> : <Wand2 />}
-            disabled={!aplicable || (aplicado && p.vinculado)}
-            onClick={() => set((x) => ({ ...x, precio_unitario: r.precioUnitario, vinculado: true }))}
-            className="h-10 px-4 pointer-coarse:h-11"
-          >
-            {aplicado && p.vinculado ? 'Precio aplicado' : 'Usar este precio'}
-          </GlassButton>
+          {!aplicado ? (
+            <GlassButton
+              variante="luz"
+              tamano="sm"
+              icono={<Wand2 />}
+              disabled={!aplicable}
+              onClick={() => set((x) => ({ ...x, precio_unitario: r.precioUnitario, vinculado: true }))}
+              className="h-10 px-4 pointer-coarse:h-11"
+            >
+              Usar este precio
+            </GlassButton>
+          ) : null}
         </div>
       </GlassSurface>
     </div>

@@ -6,12 +6,15 @@
  * Fuente: Helvetica integrada (WinAnsi). Por eso se evitan caracteres fuera de ese
  * juego, como el signo menos tipográfico (−): se usa el guion normal.
  */
-import { Document, Image, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
+import { Document, Font, Image, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
 import type { ReactNode } from 'react'
 import type { Configuracion, CotizacionCompleta, PartidaDoc } from '@/data/tipos'
 import { describirMedidas } from '@/lib/calculadora'
 import { cantidad, dinero, fechaLarga, telefono } from '@/lib/format'
 import { redondear } from '@/lib/utils'
+
+// Sin división de palabras: las reglas incluidas son del inglés y cortan mal el español ("comple-jidad")
+Font.registerHyphenationCallback((palabra) => [palabra])
 
 const AZUL = '#22426B'
 const AMARILLO = '#F9C206'
