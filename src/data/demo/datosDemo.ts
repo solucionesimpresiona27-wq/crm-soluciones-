@@ -249,6 +249,14 @@ const semillas: Semilla[] = [
       { producto: 'pr13', concepto: 'Contenido para redes sociales', descripcion: '12 publicaciones al mes', metodo: 'mensualidad', unidad: 'mes', cantidad: 3, pu: 3200, costo: 3600 },
     ],
   },
+  {
+    // Vence en 2 días: muestra el aviso de "vence pronto" en la lista y en el panel
+    cliente: 'c2', titulo: 'Lonas para preventa de membresías', diasAtras: 13, estado: 'enviada', vendedor: 'ventas',
+    partidas: [
+      { producto: 'pr1', concepto: 'Lona impresa 13 oz', descripcion: 'Con ojillos y bastilla perimetral', metodo: 'm2', unidad: 'pza', ancho: 3, alto: 1.5, cantidad: 2, pu: 810, costo: 720 },
+      { tipo: 'instalacion', concepto: 'Colocación en fachada', metodo: 'servicio', unidad: 'servicio', cantidad: 1, pu: 450, costo: 200 },
+    ],
+  },
 ]
 
 export function cotizacionesDemo(perfiles: Record<Rol, Perfil>): CotizacionCompleta[] {
