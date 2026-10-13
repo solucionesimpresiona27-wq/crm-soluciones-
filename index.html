@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="es-MX">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#E9EEF5" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#08111F" media="(prefers-color-scheme: dark)" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="description" content="CRM de Soluciones Impresiona: clientes, cotizaciones, pedidos y cobranza." />
+    <link rel="icon" type="image/png" href="./brand/favicon.png" />
+    <link rel="apple-touch-icon" href="./brand/apple-touch-icon.png" />
+    <title>Soluciones Impresiona · CRM</title>
+    <script>
+      // Aplica el tema guardado antes de pintar para evitar parpadeos.
+      ;(function () {
+        var tema = 'sistema'
+        try {
+          tema = localStorage.getItem('impresiona:tema') || 'sistema'
+        } catch (e) {}
+        var oscuro = tema === 'oscuro' || (tema === 'sistema' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+        document.documentElement.dataset.theme = oscuro ? 'dark' : 'light'
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

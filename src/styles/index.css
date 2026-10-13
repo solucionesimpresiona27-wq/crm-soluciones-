@@ -1,0 +1,517 @@
+/* =====================================================================
+   Impresiona Glass Design System
+   Material de cristal líquido inspirado en el Centro de Control,
+   con la luz y los colores de Soluciones Impresiona.
+   ===================================================================== */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---------------------------------------------------------------------
+   Tokens
+   --------------------------------------------------------------------- */
+@layer base {
+  :root {
+    color-scheme: light;
+
+    /* Texto */
+    --fg: 14 28 48;            /* navy-900 */
+    --fg-muted: 66 84 110;
+    --fg-subtle: 104 119 142;
+    --fg-inverse: 255 255 255;
+
+    /* Acción principal: azul de marca */
+    --accent: 34 66 107;       /* #22426B */
+    --accent-fg: 255 255 255;
+    --accent-soft: 217 227 240;
+
+    /* "Luz": el amarillo del foco para estados encendidos y avisos importantes */
+    --luz: 249 194 6;          /* #F9C206 */
+    --luz-fg: 14 28 48;
+    --luz-soft: 254 245 204;
+
+    --success: 22 133 92;
+    --success-soft: 214 242 230;
+    --warning: 179 116 0;
+    --warning-soft: 254 240 199;
+    --danger: 211 47 58;
+    --danger-soft: 253 226 228;
+    --line: 14 28 48;
+
+    /* Fondo y luces del campo de luz */
+    --page: #EAF0F7;
+    --page-deep: #D6E0EC;
+    --orb-azul: rgba(92, 140, 205, 0.62);
+    --orb-luz: rgba(252, 205, 40, 0.55);
+    --orb-plata: rgba(150, 178, 220, 0.7);
+    --orb-profundo: rgba(34, 66, 107, 0.42);
+
+    /* Cristal */
+    --glass-bg: rgba(255, 255, 255, 0.4);
+    --glass-bg-strong: rgba(255, 255, 255, 0.7);
+    --glass-bg-clear: rgba(255, 255, 255, 0.16);
+    --glass-bg-solid: #F5F8FC;
+    --glass-blur: 22px;
+    --glass-saturate: 175%;
+    --rim-hi: rgba(255, 255, 255, 0.98);
+    --rim-mid: rgba(255, 255, 255, 0.4);
+    --rim-lo: rgba(255, 255, 255, 0.14);
+    --sheen: rgba(255, 255, 255, 0.55);
+    --inner-hi: rgba(255, 255, 255, 0.85);
+    --inner-lo: rgba(14, 28, 48, 0.06);
+    --glass-shadow: 0 1px 1px rgba(14, 28, 48, 0.04), 0 10px 28px -14px rgba(14, 28, 48, 0.32);
+    --glass-shadow-lg: 0 2px 4px rgba(14, 28, 48, 0.05), 0 28px 60px -24px rgba(14, 28, 48, 0.42);
+    --glass-shadow-lift: 0 2px 4px rgba(14, 28, 48, 0.06), 0 18px 36px -14px rgba(14, 28, 48, 0.4);
+    --control-bg: rgba(255, 255, 255, 0.5);
+    --control-bg-hover: rgba(255, 255, 255, 0.72);
+    --field-bg: rgba(255, 255, 255, 0.62);
+    --divider: rgba(14, 28, 48, 0.08);
+    --row-hover: rgba(255, 255, 255, 0.55);
+    --focus-ring: 0 0 0 3px rgba(58, 97, 148, 0.35);
+
+    /* Movimiento (resortes aproximados para transiciones CSS) */
+    --ease-spring: linear(0, 0.0342, 0.1022, 0.2069, 0.3262, 0.4336, 0.5525, 0.6488, 0.7468, 0.8205, 0.8907, 0.9401, 0.979, 1.0121, 1.0322, 1.047, 1.054, 1.0568, 1.0558, 1.0519, 1.047, 1.0404, 1.0343, 1.0275, 1.0218, 1.016, 1.011, 1.0074, 1.0039, 1.0016, 0.9996, 0.9984, 0.9975, 0.997, 0.9968, 0.9968, 0.997, 0.9973, 0.9976, 0.998, 1);
+    --ease-spring-soft: linear(0, 0.0323, 0.0997, 0.198, 0.308, 0.4095, 0.5166, 0.6061, 0.6937, 0.7625, 0.8211, 0.8742, 0.913, 0.9465, 0.9697, 0.9885, 1.0007, 1.0096, 1.0151, 1.0177, 1.0186, 1.0183, 1.0171, 1.0155, 1.0135, 1.0116, 1.0096, 1.0079, 1.0062, 1.0048, 1.0036, 1.0026, 1.0018, 1.0012, 1.0007, 1.0003, 1.0001, 0.9999, 0.9998, 0.9997, 1);
+
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+
+    --fg: 240 244 250;
+    --fg-muted: 172 186 206;
+    --fg-subtle: 128 144 168;
+    --fg-inverse: 14 28 48;
+
+    --accent: 58 97 148;       /* navy-500: azul de marca legible sobre fondo oscuro */
+    --accent-fg: 255 255 255;
+    --accent-soft: 27 53 87;
+
+    --luz: 249 194 6;
+    --luz-fg: 14 28 48;
+    --luz-soft: 70 56 10;
+
+    --success: 64 196 140;
+    --success-soft: 16 58 44;
+    --warning: 251 200 74;
+    --warning-soft: 66 52 12;
+    --danger: 255 107 114;
+    --danger-soft: 72 22 28;
+    --line: 255 255 255;
+
+    --page: #081324;
+    --page-deep: #040A14;
+    --orb-azul: rgba(52, 100, 168, 0.78);
+    --orb-luz: rgba(249, 194, 6, 0.36);
+    --orb-plata: rgba(70, 112, 170, 0.6);
+    --orb-profundo: rgba(110, 150, 215, 0.28);
+
+    --glass-bg: rgba(30, 46, 72, 0.36);
+    --glass-bg-strong: rgba(16, 27, 45, 0.7);
+    --glass-bg-clear: rgba(255, 255, 255, 0.05);
+    --glass-bg-solid: #111D31;
+    --glass-saturate: 160%;
+    --rim-hi: rgba(255, 255, 255, 0.42);
+    --rim-mid: rgba(255, 255, 255, 0.12);
+    --rim-lo: rgba(255, 255, 255, 0.04);
+    --sheen: rgba(214, 228, 255, 0.16);
+    --inner-hi: rgba(255, 255, 255, 0.18);
+    --inner-lo: rgba(0, 0, 0, 0.25);
+    --glass-shadow: 0 1px 1px rgba(0, 0, 0, 0.2), 0 14px 32px -16px rgba(0, 0, 0, 0.7);
+    --glass-shadow-lg: 0 2px 6px rgba(0, 0, 0, 0.25), 0 32px 64px -24px rgba(0, 0, 0, 0.8);
+    --glass-shadow-lift: 0 2px 6px rgba(0, 0, 0, 0.25), 0 22px 40px -16px rgba(0, 0, 0, 0.75);
+    --control-bg: rgba(255, 255, 255, 0.08);
+    --control-bg-hover: rgba(255, 255, 255, 0.14);
+    --field-bg: rgba(6, 14, 26, 0.45);
+    --divider: rgba(255, 255, 255, 0.07);
+    --row-hover: rgba(255, 255, 255, 0.05);
+    --focus-ring: 0 0 0 3px rgba(135, 163, 201, 0.4);
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+    text-size-adjust: 100%;
+    background: var(--page);
+  }
+
+  body {
+    @apply font-sans text-base text-fg antialiased;
+    /* Transparente: el fondo vive en <html> para que el campo de luz (z-index negativo) quede visible */
+    background: transparent;
+    min-height: 100dvh;
+    font-feature-settings: 'ss01' on, 'cv11' on;
+    overflow-x: hidden;
+  }
+
+  /* Cifras alineadas en tablas y montos */
+  .num {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' on, 'lnum' on;
+  }
+
+  ::selection {
+    background: rgb(var(--luz) / 0.45);
+    color: rgb(var(--fg));
+  }
+
+  :focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+
+  input,
+  textarea,
+  select,
+  button {
+    font: inherit;
+  }
+
+  /* Barras de desplazamiento discretas */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--fg) / 0.18) transparent;
+  }
+}
+
+/* ---------------------------------------------------------------------
+   Material de cristal
+   Capas: tinte + desenfoque del fondo · borde iluminado (::before) ·
+   reflejo especular que sigue al puntero (::after) · sombra de profundidad.
+   El contenido queda por encima de las capas gracias a isolation.
+   --------------------------------------------------------------------- */
+@layer components {
+  .glass {
+    position: relative;
+    isolation: isolate;
+    background: var(--glass-bg);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    box-shadow:
+      var(--glass-shadow),
+      inset 0 1px 0 0 var(--inner-hi),
+      inset 0 -1px 0 0 var(--inner-lo);
+  }
+
+  /* Borde de luz: más brillante arriba a la izquierda, como el vidrio real */
+  .glass::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    padding: var(--rim-width, 1px);
+    background: linear-gradient(
+      var(--rim-angle, 160deg),
+      var(--rim-hi) 0%,
+      var(--rim-mid) 22%,
+      var(--rim-lo) 50%,
+      var(--rim-mid) 82%,
+      var(--rim-hi) 100%
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* Reflejo especular: se mueve con el puntero (variables --mx / --my) */
+  .glass::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background:
+      radial-gradient(
+        var(--sheen-size, 140% 90%) at var(--mx, 22%) var(--my, -10%),
+        var(--sheen) 0%,
+        transparent 46%
+      );
+    opacity: var(--sheen-opacity, 0.9);
+    transition: opacity 0.4s var(--ease-spring-soft);
+    pointer-events: none;
+  }
+
+  /* Variantes de opacidad */
+  .glass-strong {
+    background: var(--glass-bg-strong);
+  }
+
+  .glass-clear {
+    background: var(--glass-bg-clear);
+    --sheen-opacity: 0.6;
+  }
+
+  /* Cristal de borde grueso, para botones circulares tipo Centro de Control */
+  .glass-thick {
+    --rim-width: 1.5px;
+    box-shadow:
+      var(--glass-shadow),
+      inset 0 1.5px 0 0 var(--inner-hi),
+      inset 0 -8px 16px -10px rgba(255, 255, 255, 0.35),
+      inset 0 10px 18px -14px rgba(255, 255, 255, 0.5);
+  }
+
+  :root[data-theme='dark'] .glass-thick {
+    box-shadow:
+      var(--glass-shadow),
+      inset 0 1.5px 0 0 var(--inner-hi),
+      inset 0 -8px 16px -10px rgba(255, 255, 255, 0.1),
+      inset 0 10px 18px -14px rgba(255, 255, 255, 0.16);
+  }
+
+  /* Refracción tipo lente (solo navegadores con soporte de filtros SVG en backdrop-filter) */
+  .lens-ready .glass-lens {
+    -webkit-backdrop-filter: url(#impresiona-lente) blur(3px) saturate(var(--glass-saturate));
+    backdrop-filter: url(#impresiona-lente) blur(3px) saturate(var(--glass-saturate));
+  }
+
+  .lens-ready .glass-lens.glass-capsule-lens {
+    -webkit-backdrop-filter: url(#impresiona-lente-capsula) blur(3px) saturate(var(--glass-saturate));
+    backdrop-filter: url(#impresiona-lente-capsula) blur(3px) saturate(var(--glass-saturate));
+  }
+
+  /* Superficie interactiva: elevación y reflejo más intenso al pasar el cursor */
+  .glass-interactive {
+    transition:
+      box-shadow 0.45s var(--ease-spring-soft),
+      background-color 0.3s ease;
+  }
+
+  @media (hover: hover) {
+    .glass-interactive:hover {
+      --sheen-opacity: 1;
+      --rim-angle: 150deg;
+      box-shadow:
+        var(--glass-shadow-lift),
+        inset 0 1px 0 0 var(--inner-hi),
+        inset 0 -1px 0 0 var(--inner-lo);
+    }
+  }
+
+  /* Estados "encendido" de los controles */
+  .glass-on-accent {
+    background: rgb(var(--accent) / 0.92);
+    color: rgb(var(--accent-fg));
+    --sheen: rgba(255, 255, 255, 0.4);
+    --rim-hi: rgba(255, 255, 255, 0.7);
+    --rim-mid: rgba(255, 255, 255, 0.2);
+    --rim-lo: rgba(255, 255, 255, 0.08);
+  }
+
+  .glass-on-luz {
+    background: rgb(var(--luz) / 0.94);
+    color: rgb(var(--luz-fg));
+    --sheen: rgba(255, 255, 255, 0.65);
+    --rim-hi: rgba(255, 255, 255, 0.95);
+    --rim-mid: rgba(255, 246, 200, 0.5);
+    --rim-lo: rgba(255, 255, 255, 0.2);
+    box-shadow:
+      0 0 0 1px rgba(249, 194, 6, 0.25),
+      0 10px 30px -10px rgba(249, 194, 6, 0.65),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.8);
+  }
+
+  /* Texto de cristal: para cifras grandes, al estilo de los números de la pantalla de bloqueo */
+  .glass-text {
+    color: transparent;
+    background:
+      linear-gradient(175deg, rgb(var(--fg) / 0.95) 0%, rgb(var(--fg) / 0.78) 48%, rgb(var(--fg) / 0.92) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    filter: drop-shadow(0 1px 0 var(--inner-hi)) drop-shadow(0 6px 14px rgb(var(--fg) / 0.12));
+  }
+
+  :root[data-theme='dark'] .glass-text {
+    background: linear-gradient(175deg, #ffffff 0%, rgba(214, 226, 244, 0.86) 52%, #ffffff 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.25)) drop-shadow(0 8px 18px rgba(0, 0, 0, 0.45));
+  }
+
+  /* Divisor fino */
+  .hairline {
+    height: 1px;
+    background: var(--divider);
+  }
+
+  /* Campos de formulario sobre cristal */
+  .field {
+    @apply w-full rounded-control px-3.5 text-base text-fg placeholder:text-fg-subtle;
+    min-height: 2.75rem;
+    background: var(--field-bg);
+    box-shadow:
+      inset 0 0 0 1px rgb(var(--line) / 0.1),
+      inset 0 1px 2px rgba(14, 28, 48, 0.06);
+    transition:
+      box-shadow 0.25s ease,
+      background-color 0.25s ease;
+  }
+
+  .field:hover {
+    box-shadow:
+      inset 0 0 0 1px rgb(var(--line) / 0.18),
+      inset 0 1px 2px rgba(14, 28, 48, 0.06);
+  }
+
+  .field:focus,
+  .field:focus-visible {
+    outline: none;
+    box-shadow:
+      inset 0 0 0 1.5px rgb(var(--accent) / 0.7),
+      var(--focus-ring);
+  }
+
+  .field[aria-invalid='true'] {
+    box-shadow:
+      inset 0 0 0 1.5px rgb(var(--danger) / 0.75),
+      0 0 0 3px rgb(var(--danger) / 0.15);
+  }
+
+  .field:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  /* Tablas legibles sobre cristal */
+  .tabla {
+    @apply w-full border-separate text-sm;
+    border-spacing: 0;
+  }
+
+  .tabla th {
+    @apply px-4 py-3 text-left text-xs font-semibold text-fg-subtle;
+    position: sticky;
+    top: 0;
+    background: transparent;
+  }
+
+  .tabla td {
+    @apply px-4 py-3.5 align-middle;
+    border-top: 1px solid var(--divider);
+  }
+
+  .tabla tbody tr {
+    transition: background-color 0.2s ease;
+  }
+
+  .tabla tbody tr:hover td {
+    background: var(--row-hover);
+  }
+
+  .tabla tbody tr td:first-child {
+    border-top-left-radius: 0.875rem;
+    border-bottom-left-radius: 0.875rem;
+  }
+
+  .tabla tbody tr td:last-child {
+    border-top-right-radius: 0.875rem;
+    border-bottom-right-radius: 0.875rem;
+  }
+}
+
+/* ---------------------------------------------------------------------
+   Campo de luz: el fondo que el cristal refracta
+   --------------------------------------------------------------------- */
+@layer components {
+  .light-field {
+    position: fixed;
+    inset: 0;
+    z-index: -10;
+    overflow: hidden;
+    pointer-events: none;
+    background:
+      radial-gradient(120% 90% at 50% 0%, var(--page) 0%, var(--page-deep) 100%);
+  }
+
+  .light-field__orb {
+    position: absolute;
+    border-radius: 9999px;
+    will-change: transform;
+  }
+
+  /* Grano fino para que el material no se vea plano */
+  .light-field::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.05;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  :root[data-theme='dark'] .light-field::after {
+    opacity: 0.07;
+  }
+}
+
+/* ---------------------------------------------------------------------
+   Accesibilidad y rendimiento
+   --------------------------------------------------------------------- */
+
+/* Sin soporte de desenfoque: superficies sólidas y legibles */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass,
+  .glass-strong {
+    background: var(--glass-bg-solid);
+  }
+}
+
+/* Transparencia reducida (preferencia del sistema o del usuario) */
+@media (prefers-reduced-transparency: reduce) {
+  .glass,
+  .glass-strong,
+  .glass-clear {
+    background: var(--glass-bg-solid);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+:root[data-transparencia='reducida'] .glass,
+:root[data-transparencia='reducida'] .glass-strong,
+:root[data-transparencia='reducida'] .glass-clear {
+  background: var(--glass-bg-solid);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --glass-bg-strong: rgba(255, 255, 255, 0.95);
+    --fg-muted: 40 54 76;
+  }
+  :root[data-theme='dark'] {
+    --glass-bg: rgba(14, 24, 40, 0.88);
+    --glass-bg-strong: rgba(10, 18, 30, 0.95);
+    --fg-muted: 210 220 234;
+  }
+}
+
+@media print {
+  .light-field,
+  .no-print {
+    display: none !important;
+  }
+  .glass {
+    background: #fff !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+}

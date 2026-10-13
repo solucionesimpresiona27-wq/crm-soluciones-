@@ -126,7 +126,7 @@ suite('Flujos de negocio y permisos', () => {
   it('el costo estimado se calcula desde el catálogo y solo lo ve quien tiene ver_costos', async () => {
     const { data: vc } = await v.from('partida_costos').select('*')
     expect(vc).toEqual([])
-    const costos = ok(await a.from('partidas').select('concepto, partida_costos(costo_total)').eq('cotizacion_id', cotizacionId).order('orden')) as Array<{ partida_costos: { costo_total: number } | null }>
+    const costos = ok(await a.from('partidas').select('concepto, partida_costos(costo_total)').eq('cotizacion_id', cotizacionId).order('orden')) as unknown as Array<{ partida_costos: { costo_total: number } | null }>
     // (60 × 1.10 + 10) × (3 × 2 × 2 = 12 m²) = 76 × 12 = 912
     expect(Number(costos[0].partida_costos?.costo_total)).toBe(912)
   })
@@ -235,5 +235,64 @@ suite('Flujos de negocio y permisos', () => {
     const r2 = ok(await p.rpc('busqueda_global', { p_texto: 'PED-' })) as Record<string, unknown[]>
     expect(r2.pedidos.length).toBeGreaterThan(0)
     expect(r2.cotizaciones).toEqual([])
+  })
+})
+
+suite('Guardado atómico de cotizaciones', () => {
+  let v: SupabaseClient, a: SupabaseClient
+  let clienteId = ''
+
+  beforeAll(async () => {
+    const email = `ventas2-${sufijo}@prueba.local`
+    await crearUsuario(email, { rol: 'ventas', activo: true, nombre: 'Ventas Dos' })
+    v = await sesion(email)
+    a = await sesion('admin@prueba.local')
+    const c = ok(await v.from('clientes').insert({ nombre: 'Gimnasio Fuerza' }).select().single()) as { id: string }
+    clienteId = c.id
+  })
+
+  it('crea, edita y elimina conceptos en una sola llamada', async () => {
+    const r = ok(await v.rpc('guardar_cotizacion', {
+      p_datos: {
+        cliente_id: clienteId, titulo: 'Rotulación', aplica_iva: true,
+        partidas: [
+          { concepto: 'Vinil para cristal', metodo_calculo: 'm2', unidad: 'pza', ancho: 2, alto: 1.5, cantidad: 2, precio_unitario: 600, costos: { costo_material: 50 } },
+          { tipo: 'instalacion', concepto: 'Instalación', metodo_calculo: 'servicio', unidad: 'servicio', cantidad: 1, precio_unitario: 400 },
+        ],
+      },
+    })) as { id: string; folio: string }
+    expect(r.folio).toMatch(/^COT-/)
+    let q = ok(await v.from('cotizaciones').select('total, partidas(id, concepto, orden)').eq('id', r.id).single()) as { total: number; partidas: Array<{ id: string; concepto: string; orden: number }> }
+    expect(Number(q.total)).toBe(1856) // (1200 + 400) × 1.16
+    // Ventas no tiene ver_costos: no se guardaron costos manuales
+    const { data: costos } = await a.from('partida_costos').select('partida_id').in('partida_id', q.partidas.map((p) => p.id))
+    expect(costos).toEqual([])
+
+    const vinil = q.partidas.find((p) => p.orden === 1)!
+    ok(await v.rpc('guardar_cotizacion', {
+      p_datos: {
+        id: r.id, cliente_id: clienteId, titulo: 'Rotulación', aplica_iva: false,
+        partidas: [{ id: vinil.id, concepto: 'Vinil esmerilado', metodo_calculo: 'm2', unidad: 'pza', ancho: 2, alto: 1.5, cantidad: 3, precio_unitario: 600 }],
+      },
+    }))
+    q = ok(await v.from('cotizaciones').select('total, partidas(id, concepto, orden)').eq('id', r.id).single()) as typeof q
+    expect(q.partidas).toHaveLength(1)
+    expect(q.partidas[0].concepto).toBe('Vinil esmerilado')
+    expect(Number(q.total)).toBe(1800)
+  })
+
+  it('el administrador guarda costos manuales y no se puede editar una cotización convertida', async () => {
+    const r = ok(await a.rpc('guardar_cotizacion', {
+      p_datos: {
+        cliente_id: clienteId,
+        partidas: [{ concepto: 'Letrero', metodo_calculo: 'pieza', unidad: 'pza', cantidad: 2, precio_unitario: 1500, costos: { costo_material: 400, costo_mano_obra: 100, costo_fijo: 50 } }],
+      },
+    })) as { id: string }
+    const p = ok(await a.from('partidas').select('partida_costos(costo_total, calculo)').eq('cotizacion_id', r.id).single()) as { partida_costos: { costo_total: number; calculo: { origen: string } } }
+    expect(Number(p.partida_costos.costo_total)).toBe(1050)
+    expect(p.partida_costos.calculo.origen).toBe('manual')
+    ok(await a.rpc('convertir_cotizacion_a_pedido', { p_cotizacion: r.id }))
+    const { error } = await a.rpc('guardar_cotizacion', { p_datos: { id: r.id, cliente_id: clienteId, partidas: [] } })
+    expect(error?.message).toContain('ya se convirtió')
   })
 })
