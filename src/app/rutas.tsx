@@ -1,5 +1,5 @@
 import { lazy } from 'react'
-import { createBrowserRouter, createHashRouter, type RouteObject } from 'react-router-dom'
+import { createBrowserRouter, createHashRouter, createMemoryRouter, type RouteObject } from 'react-router-dom'
 import { AppShell } from '@/components/shell/AppShell'
 import LoginPage from '@/features/auth/LoginPage'
 import { DEMO } from '@/lib/supabase'
@@ -33,5 +33,12 @@ const rutas: RouteObject[] = [
   },
 ]
 
-/** La vista previa usa rutas con # para funcionar en cualquier alojamiento estático. */
-export const router = DEMO ? createHashRouter(rutas) : createBrowserRouter(rutas)
+/**
+ * App real: rutas normales. Vista previa: rutas con # para cualquier alojamiento estático,
+ * o en memoria (VITE_RUTAS=memoria) cuando se publica dentro de un visor que no permite cambiar la URL.
+ */
+export const router = !DEMO
+  ? createBrowserRouter(rutas)
+  : import.meta.env.VITE_RUTAS === 'memoria'
+    ? createMemoryRouter(rutas, { initialEntries: ['/login'] })
+    : createHashRouter(rutas)

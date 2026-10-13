@@ -296,3 +296,45 @@ suite('Guardado atómico de cotizaciones', () => {
     expect(error?.message).toContain('ya se convirtió')
   })
 })
+
+suite('Integridad de documentos', () => {
+  let v: SupabaseClient
+  let cotId = ''
+  let pedidoId = ''
+
+  beforeAll(async () => {
+    const email = `ventas3-${sufijo}@prueba.local`
+    await crearUsuario(email, { rol: 'ventas', activo: true, nombre: 'Ventas Tres' })
+    v = await sesion(email)
+    const c = ok(await v.from('clientes').insert({ nombre: 'Panadería Integridad' }).select().single()) as { id: string }
+    const r = ok(await v.rpc('guardar_cotizacion', {
+      p_datos: { cliente_id: c.id, partidas: [{ concepto: 'Volantes', metodo_calculo: 'millar', unidad: 'millar', cantidad: 1, precio_unitario: 500 }] },
+    })) as { id: string }
+    cotId = r.id
+    pedidoId = ok(await v.rpc('convertir_cotizacion_a_pedido', { p_cotizacion: cotId })) as string
+  })
+
+  it('no permite desligar ni editar a mano una cotización convertida', async () => {
+    const { error: desligar } = await v.from('cotizaciones').update({ pedido_id: null }).eq('id', cotId)
+    expect(desligar?.message).toContain('no se puede desligar')
+    const { error: partida } = await v.from('partidas').update({ precio_unitario: 1 }).eq('cotizacion_id', cotId)
+    expect(partida?.message).toContain('ya se convirtió')
+    const { error: nueva } = await v.from('partidas').insert({ cotizacion_id: cotId, concepto: 'Extra', cantidad: 1, precio_unitario: 1, tipo: 'concepto', metodo_calculo: 'pieza', unidad: 'pza' })
+    expect(nueva?.message).toContain('ya se convirtió')
+  })
+
+  it('los folios no se pueden cambiar', async () => {
+    const { error: e1 } = await v.from('cotizaciones').update({ folio: 'COT-9999' }).eq('id', cotId)
+    expect(e1?.message).toContain('folio')
+    const { error: e2 } = await v.from('pedidos').update({ folio: 'PED-9999' }).eq('id', pedidoId)
+    expect(e2?.message).toContain('folio')
+  })
+
+  it('el pedido conserva el vínculo con su cotización y sus conceptos siguen editables', async () => {
+    const { error } = await v.from('pedidos').update({ cotizacion_id: null }).eq('id', pedidoId)
+    expect(error).toBeTruthy()
+    ok(await v.from('partidas').update({ cantidad: 2 }).eq('pedido_id', pedidoId))
+    const p = ok(await v.from('pedidos').select('total').eq('id', pedidoId).single()) as { total: number }
+    expect(Number(p.total)).toBe(1160)
+  })
+})
