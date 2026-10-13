@@ -10,9 +10,17 @@ test('muestra un error claro con contraseña incorrecta', async ({ page }) => {
   await expect(page).toHaveURL(/\/login/)
 })
 
-test('sin sesión, cualquier página lleva al inicio de sesión', async ({ page }) => {
+test('sin sesión, cualquier página lleva al inicio de sesión y después regresa a ella', async ({ page }) => {
   await page.goto('/cotizaciones')
   await expect(page).toHaveURL(/\/login/)
+  await page.getByLabel('Correo').fill(USUARIOS.ventas.email)
+  await page.getByLabel('Contraseña', { exact: true }).fill(USUARIOS.ventas.password)
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click()
+  await expect(page).toHaveURL(/\/cotizaciones$/)
+  // Navegar enseguida no debe ser revertido por el inicio de sesión
+  await page.goto('/')
+  await page.getByRole('link', { name: 'Cotizaciones' }).first().click()
+  await expect(page).toHaveURL(/\/cotizaciones$/)
 })
 
 test('entra, conserva la sesión al recargar y cierra sesión', async ({ page }) => {
