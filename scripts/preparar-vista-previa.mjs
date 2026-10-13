@@ -11,7 +11,7 @@ const head = html.match(/<head>([\s\S]*?)<\/head>/)?.[1] ?? ''
 const body = html.match(/<body>([\s\S]*?)<\/body>/)?.[1] ?? ''
 
 // Conserva estilos, scripts y precargas; descarta metas de documento que pone el visor.
-const piezas = [...head.matchAll(/<(link|script)\b[\s\S]*?(?:<\/script>|>)/g)]
+const piezas = [...head.matchAll(/<script\b[^>]*>[\s\S]*?<\/script>|<link\b[^>]*>/g)]
   .map((m) => m[0])
   .filter((t) => !/rel="(icon|apple-touch-icon|manifest)"/.test(t))
 
@@ -27,6 +27,6 @@ const recorrer = (d) => {
   }
 }
 recorrer(dir)
-const publicar = archivos.filter((f) => !/^(index\.html|vista-previa\.html|\.htaccess|robots\.txt)$/.test(f))
+const publicar = archivos.filter((f) => !/^(index\.html|vista-previa\.html|archivos\.json|\.htaccess|robots\.txt)$/.test(f))
 writeFileSync(join(dir, 'archivos.json'), JSON.stringify(Object.fromEntries(publicar.map((f) => [f, join(dir, f)])), null, 2))
 console.log(`vista-previa.html listo; ${publicar.length} archivos de apoyo en archivos.json`)
