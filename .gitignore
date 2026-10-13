@@ -1,0 +1,25 @@
+# Dependencias y compilados
+node_modules/
+dist/
+dist-*/
+*.tsbuildinfo
+coverage/
+
+# Variables de entorno (nunca subir llaves)
+.env
+.env.*
+!.env.example
+
+# Supabase local
+supabase/.temp/
+supabase/.branches/
+supabase/.env
+
+# Pruebas
+test-results/
+playwright-report/
+blob-report/
+
+# Sistema
+.DS_Store
+*.log
