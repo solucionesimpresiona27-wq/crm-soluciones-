@@ -54,7 +54,7 @@ export function Subtitulo({ children, detalle, className }: { children: ReactNod
   return (
     <div className={cn('flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5', className)}>
       <h4 className="text-sm font-semibold text-fg">{children}</h4>
-      {detalle ? <p className="text-xs text-fg-subtle">{detalle}</p> : null}
+      {detalle ? <p className="text-xs text-fg-muted">{detalle}</p> : null}
     </div>
   )
 }

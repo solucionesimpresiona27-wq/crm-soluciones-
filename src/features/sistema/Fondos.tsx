@@ -6,7 +6,7 @@ import type { Fondo } from './contexto'
    Bordes duros (sol, montañas, reflejos) para que la refracción del cristal se note. */
 const cielo: CSSProperties = {
   background:
-    'linear-gradient(180deg, #14205A 0%, #33308F 22%, #7E3DA8 42%, #D94E86 58%, #FF8A4C 68%, #FFC46B 74%)',
+    'linear-gradient(180deg, #2A47B0 0%, #4C45C8 20%, #9447B8 40%, #E0598F 57%, #FF9050 67%, #FFC970 74%)',
 }
 
 const capa = (estilo: CSSProperties): CSSProperties => ({ position: 'absolute', ...estilo })

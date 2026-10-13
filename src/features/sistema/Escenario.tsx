@@ -88,7 +88,7 @@ export function Escenario({ children }: { children: ReactNode }) {
         <div className="relative px-3 pb-6 pt-3 sm:px-5 md:px-6 md:pb-8 md:pt-4">
           {/* Barra del fondo: flota sobre la vitrina al recorrerla (en celular se queda arriba) */}
           <div className="z-10 mb-6 md:sticky md:top-[5.75rem]">
-            <GlassSurface grueso className="flex items-center gap-3 rounded-full p-1.5 shadow-glass-lg">
+            <GlassSurface variante="fuerte" grueso className="flex items-center gap-3 rounded-full p-1.5 shadow-glass-lg">
               <SegmentedControl
                 etiqueta="Fondo de la vitrina"
                 segmentos={segmentos}
