@@ -23,6 +23,9 @@ export const PERMISOS = [
   'editar_catalogo',
   'exportar_datos',
   'eliminar_registros',
+  'gestionar_inventario',
+  'registrar_consumos',
+  'registrar_gastos',
 ] as const
 
 export type Permiso = (typeof PERMISOS)[number]

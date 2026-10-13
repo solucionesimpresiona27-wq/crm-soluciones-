@@ -5,7 +5,7 @@ const PORDEFECTO: Record<Rol, readonly Permiso[]> = {
   admin: PERMISOS,
   ventas: ['ver_precios', 'gestionar_clientes', 'gestionar_cotizaciones', 'gestionar_pedidos', 'actualizar_produccion', 'aprobar_disenos', 'registrar_pagos'],
   diseno: ['actualizar_produccion', 'aprobar_disenos'],
-  produccion: ['actualizar_produccion'],
+  produccion: ['actualizar_produccion', 'registrar_consumos'],
 }
 
 export function permisosDeRol(rol: Rol, personalizados: Partial<Record<Permiso, boolean>> = {}): Permisos {
@@ -35,4 +35,7 @@ export const DESCRIPCION_PERMISO: Record<Permiso, string> = {
   editar_catalogo: 'Editar catálogo y precios',
   exportar_datos: 'Exportar a Excel/CSV',
   eliminar_registros: 'Eliminar registros',
+  gestionar_inventario: 'Inventario: materiales, entradas, ajustes y proveedores',
+  registrar_consumos: 'Registrar consumos y mermas de material',
+  registrar_gastos: 'Registrar gastos, compras y maquila',
 }
