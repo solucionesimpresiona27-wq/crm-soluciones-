@@ -345,8 +345,12 @@ export function pedidosDemo(): Array<EntregaProxima & { total: number; pagado: n
     { id: 'demo-ped-b', folio: 'PED-0035', titulo: 'Banner para expo', estado: 'listo_entrega', prioridad: 'urgente', fecha_entrega: sumarDias(h, -1), cliente: 'Boutique Lirio', requiere_instalacion: false, total: 2088, pagado: 1044, responsable: 'ventas', vencido: true },
     { id: 'demo-ped-c', folio: 'PED-0040', titulo: 'Playeras para torneo', estado: 'en_diseno', prioridad: 'normal', fecha_entrega: sumarDias(h, 6), cliente: 'Gimnasio Titán', requiere_instalacion: false, total: 7540, pagado: 3770, responsable: 'diseno' },
     { id: 'demo-ped-d', folio: 'PED-0041', titulo: 'Letras volumétricas', estado: 'acabados', prioridad: 'alta', fecha_entrega: sumarDias(h, 2), cliente: 'Taller Mecánico Rueda', requiere_instalacion: true, total: 15660, pagado: 7830, responsable: 'produccion' },
-    { id: 'demo-ped-e', folio: 'PED-0036', titulo: 'Menú digital', estado: 'nuevo', prioridad: 'baja', fecha_entrega: sumarDias(h, 9), cliente: 'Taquería Los Compadres', requiere_instalacion: false, total: 3480, pagado: 0, responsable: null },
+    { id: 'demo-ped-e', folio: 'PED-0036', titulo: 'Menú digital', estado: 'nuevo', prioridad: 'baja', fecha_entrega: sumarDias(h, 9), cliente: 'Taquería Los Compadres', requiere_instalacion: false, total: 3480, pagado: 0, responsable: 'admin' },
     { id: 'demo-ped-f', folio: 'PED-0033', titulo: 'Rotulación de camioneta', estado: 'pausado', prioridad: 'normal', fecha_entrega: sumarDias(h, -4), cliente: 'Taller Mecánico Rueda', requiere_instalacion: true, total: 9860, pagado: 4930, responsable: 'produccion', vencido: true },
+    { id: 'demo-ped-g', folio: 'PED-0045', titulo: 'Volantes de temporada', estado: 'en_produccion', prioridad: 'normal', fecha_entrega: sumarDias(h, 4), cliente: 'Cafetería Barrio Alto', requiere_instalacion: false, total: 2900, pagado: 1450, responsable: 'produccion' },
+    { id: 'demo-ped-h', folio: 'PED-0046', titulo: 'Vinil para vitrina', estado: 'en_diseno', prioridad: 'alta', fecha_entrega: sumarDias(h, 5), cliente: 'Boutique Lirio', requiere_instalacion: true, total: 1856, pagado: 928, responsable: 'diseno' },
+    { id: 'demo-ped-i', folio: 'PED-0047', titulo: 'Lona de inauguración', estado: 'aprobado', prioridad: 'normal', fecha_entrega: sumarDias(h, 2), cliente: 'Gimnasio Titán', requiere_instalacion: true, total: 3480, pagado: 1740, responsable: 'produccion' },
+    { id: 'demo-ped-j', folio: 'PED-0048', titulo: 'Etiquetas para salsas', estado: 'en_produccion', prioridad: 'baja', fecha_entrega: sumarDias(h, 8), cliente: 'Taquería Los Compadres', requiere_instalacion: false, total: 1740, pagado: 870, responsable: 'produccion' },
   ]
 }
 

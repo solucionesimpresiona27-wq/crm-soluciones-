@@ -152,12 +152,16 @@ export const apiDemo: Api = {
         pedidos_activos: activos.length,
         pedidos_atrasados: activos.filter((p) => p.fecha_entrega < hoy).length,
         pedidos_pausados: activos.filter((p) => p.estado === 'pausado').length,
+        // Mismo orden y límite que dashboard_resumen() en la base de datos
         entregas_proximas: activos
           .filter((p) => p.fecha_entrega <= sumarDias(hoy, 7))
-          .sort((a, b) => a.fecha_entrega.localeCompare(b.fecha_entrega))
+          .sort((a, b) => a.fecha_entrega.localeCompare(b.fecha_entrega) || a.folio.localeCompare(b.folio))
+          .slice(0, 10)
           .map(({ total: _t, pagado: _p, responsable: _r, vencido: _v, ...e }) => e),
         mis_pendientes: activos
           .filter((p) => p.responsable === s.perfil.rol)
+          .sort((a, b) => a.fecha_entrega.localeCompare(b.fecha_entrega) || a.folio.localeCompare(b.folio))
+          .slice(0, 10)
           .map(({ total: _t, pagado: _p, responsable: _r, vencido: _v, ...e }) => e),
         disenos_pendientes: 2,
       }
