@@ -1,6 +1,6 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
 import { FilePlus2, FileSearch, Lock, Plus, RotateCcw, Search } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useSesion } from '@/app/sesion'
@@ -62,6 +62,7 @@ function ListaCotizaciones() {
   const [busqueda, setBusqueda] = useState(() => params.get('q') ?? '')
   const busquedaUrl = useDebounce(busqueda, 350)
   const [limite, setLimite] = useState(POR_PAGINA)
+  const idResultados = useId()
 
   const actualizar = (cambios: Record<string, string | null>) =>
     setParams(
@@ -153,6 +154,7 @@ function ListaCotizaciones() {
               segmentos={FILTROS.map((x) => ({ valor: x.valor, etiqueta: x.etiqueta, conteo: consulta.data ? conteos[x.valor] : undefined }))}
               valor={filtro}
               onCambio={(v) => actualizar({ estado: v === 'todas' ? null : v })}
+              idPanel={idResultados}
               className="w-full shrink-0 sm:w-auto"
             />
             <div className="flex min-w-[15rem] flex-1 items-center gap-2 lg:max-w-sm xl:ml-auto">
@@ -194,65 +196,68 @@ function ListaCotizaciones() {
           {consulta.data ? `${visibles.length} ${visibles.length === 1 ? 'cotización' : 'cotizaciones'}` : ''}
         </p>
 
-        {consulta.isPending ? (
-          <EsqueletoLista escritorio={escritorio} />
-        ) : consulta.isError ? (
-          <GlassPanel>
-            <EstadoVacio
-              icono={<FileSearch />}
-              titulo="No se pudieron cargar las cotizaciones"
-              descripcion={`${consulta.error.message}. Revisa tu conexión e inténtalo de nuevo.`}
-              accion={
-                <GlassButton icono={<RotateCcw />} onClick={() => void consulta.refetch()}>
-                  Reintentar
-                </GlassButton>
-              }
-            />
-          </GlassPanel>
-        ) : filas.length === 0 ? (
-          <GlassPanel>
-            <EstadoVacio
-              icono={<FilePlus2 />}
-              titulo="Todavía no hay cotizaciones"
-              descripcion="Arma la primera con la calculadora de precios y envíala al cliente por WhatsApp en PDF."
-              accion={nuevaCotizacion}
-            />
-          </GlassPanel>
-        ) : visibles.length === 0 ? (
-          <GlassPanel>
-            <EstadoVacio
-              icono={<FileSearch />}
-              titulo={texto ? `Nada coincide con “${busqueda.trim()}”` : porVencerActivo ? 'Ninguna vence pronto en este filtro' : `Sin cotizaciones ${nombreFiltro.toLowerCase()}`}
-              descripcion={
-                texto
-                  ? 'Prueba con el folio (COT-0012), el nombre del cliente o una palabra del título.'
-                  : 'Cambia el filtro para ver el resto de las cotizaciones.'
-              }
-              accion={
-                <div className="flex flex-wrap justify-center gap-2">
-                  <GlassButton variante="cristal" icono={<RotateCcw />} onClick={limpiar}>
-                    Ver todas
+        {/* Panel de resultados del filtro (aria-controls del selector) */}
+        <div id={idResultados} role="tabpanel" aria-label={descripcion} className="flex flex-col gap-4">
+          {consulta.isPending ? (
+            <EsqueletoLista escritorio={escritorio} />
+          ) : consulta.isError ? (
+            <GlassPanel>
+              <EstadoVacio
+                icono={<FileSearch />}
+                titulo="No se pudieron cargar las cotizaciones"
+                descripcion={`${consulta.error.message}. Revisa tu conexión e inténtalo de nuevo.`}
+                accion={
+                  <GlassButton icono={<RotateCcw />} onClick={() => void consulta.refetch()}>
+                    Reintentar
                   </GlassButton>
-                  {texto ? nuevaCotizacion : null}
-                </div>
-              }
-            />
-          </GlassPanel>
-        ) : escritorio ? (
-          <GlassPanel className="p-2">
-            <TablaCotizaciones filas={mostradas} hoy={hoy} acciones={acciones} descripcion={descripcion} />
-          </GlassPanel>
-        ) : (
-          <TarjetasCotizaciones filas={mostradas} hoy={hoy} acciones={acciones} descripcion={descripcion} />
-        )}
+                }
+              />
+            </GlassPanel>
+          ) : filas.length === 0 ? (
+            <GlassPanel>
+              <EstadoVacio
+                icono={<FilePlus2 />}
+                titulo="Todavía no hay cotizaciones"
+                descripcion="Arma la primera con la calculadora de precios y envíala al cliente por WhatsApp en PDF."
+                accion={nuevaCotizacion}
+              />
+            </GlassPanel>
+          ) : visibles.length === 0 ? (
+            <GlassPanel>
+              <EstadoVacio
+                icono={<FileSearch />}
+                titulo={texto ? `Nada coincide con “${busqueda.trim()}”` : porVencerActivo ? 'Ninguna vence pronto en este filtro' : `Sin cotizaciones ${nombreFiltro.toLowerCase()}`}
+                descripcion={
+                  texto
+                    ? 'Prueba con el folio (COT-0012), el nombre del cliente o una palabra del título.'
+                    : 'Cambia el filtro para ver el resto de las cotizaciones.'
+                }
+                accion={
+                  <div className="flex flex-wrap justify-center gap-2">
+                    <GlassButton variante="cristal" icono={<RotateCcw />} onClick={limpiar}>
+                      Ver todas
+                    </GlassButton>
+                    {texto ? nuevaCotizacion : null}
+                  </div>
+                }
+              />
+            </GlassPanel>
+          ) : escritorio ? (
+            <GlassPanel className="p-2">
+              <TablaCotizaciones filas={mostradas} hoy={hoy} acciones={acciones} descripcion={descripcion} />
+            </GlassPanel>
+          ) : (
+            <TarjetasCotizaciones filas={mostradas} hoy={hoy} acciones={acciones} descripcion={descripcion} />
+          )}
 
-        {visibles.length > limite ? (
-          <div className="flex justify-center">
-            <GlassButton variante="cristal" onClick={() => setLimite((l) => l + POR_PAGINA)}>
-              Mostrar {Math.min(POR_PAGINA, visibles.length - limite)} más
-            </GlassButton>
-          </div>
-        ) : null}
+          {visibles.length > limite ? (
+            <div className="flex justify-center">
+              <GlassButton variante="cristal" onClick={() => setLimite((l) => l + POR_PAGINA)}>
+                Mostrar {Math.min(POR_PAGINA, visibles.length - limite)} más
+              </GlassButton>
+            </div>
+          ) : null}
+        </div>
       </div>
     </Tooltip.Provider>
   )

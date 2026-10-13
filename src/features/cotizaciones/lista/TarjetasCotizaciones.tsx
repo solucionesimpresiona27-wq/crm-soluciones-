@@ -33,7 +33,7 @@ export function TarjetasCotizaciones({ filas, hoy, acciones, descripcion }: { fi
                       etiqueta={`Dar seguimiento a ${f.folio} por WhatsApp`}
                       icono={<MessageCircle />}
                       tamano="sm"
-                      className="relative z-10 -my-1 ml-auto size-11"
+                      className="relative z-10 -my-1 ml-auto"
                       onClick={() => acciones.seguimiento?.(f)}
                     />
                   ) : null}

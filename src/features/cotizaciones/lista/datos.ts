@@ -1,7 +1,7 @@
 import { differenceInCalendarDays, parseISO } from 'date-fns'
 import type { CotizacionLista } from '@/data/tipos'
 import { estadoVisibleCotizacion, type EstadoCotizacionVisible } from '@/lib/estados'
-import { sumarDias } from '@/lib/format'
+import { dinero, sumarDias } from '@/lib/format'
 import { normalizar } from '@/lib/utils'
 
 /** Días de anticipación con los que una cotización enviada se considera "por vencer". */
@@ -109,3 +109,9 @@ export function textoVigenciaCorto(dias: number) {
   if (dias === -1) return 'Ayer'
   return `Hace ${-dias} días`
 }
+
+/**
+ * Formato para AnimatedNumber con montos: en la cola del resorte (a 0.2 % del final)
+ * ya muestra la cifra exacta, para que los centavos no sigan cambiando a la vista.
+ */
+export const dineroAsentado = (valor: number) => (n: number) => dinero(Math.abs(valor - n) <= Math.abs(valor) * 0.002 ? valor : n)

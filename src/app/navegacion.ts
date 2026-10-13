@@ -35,7 +35,8 @@ export interface Modulo {
 export const MODULOS: Modulo[] = [
   { ruta: '/', titulo: 'Inicio', icono: LayoutDashboard, grupo: 'Principal', descripcion: 'Panel de control' },
   {
-    ruta: '/clientes', titulo: 'Clientes', icono: Users, grupo: 'Principal', pendiente: true,
+    // Producción solo ve el nombre del cliente dentro de su orden de trabajo (PLAN.md §3)
+    ruta: '/clientes', titulo: 'Clientes', icono: Users, grupo: 'Principal', permisos: ['gestionar_clientes', 'aprobar_disenos'], pendiente: true,
     descripcion: 'Clientes, contactos e historial completo',
     incluye: ['Ficha con datos de contacto y fiscales', 'Historial de cotizaciones, pedidos y pagos', 'Notas y seguimientos', 'Exportar a Excel'],
   },

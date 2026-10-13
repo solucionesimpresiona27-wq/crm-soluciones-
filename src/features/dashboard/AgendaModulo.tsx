@@ -2,7 +2,7 @@ import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { CalendarDays, CalendarX2, MessageCircle, Wrench } from 'lucide-react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useSesion } from '@/app/sesion'
 import { GlassIconButton, Pildora, SegmentedControl } from '@/components/glass'
@@ -33,8 +33,9 @@ function FichaFecha({ fecha, hoy }: { fecha: string; hoy: string }) {
       )}
       aria-hidden
     >
-      <span className="text-md font-semibold">{format(f, 'd')}</span>
-      <span className="mt-0.5 text-2xs font-medium opacity-80">{d === 0 ? 'hoy' : format(f, 'EEE', { locale: es }).replace('.', '')}</span>
+      {/* El día de la semana va arriba, como en un calendario: "mar 20" se lee martes, no marzo */}
+      <span className="text-2xs font-medium opacity-80">{d === 0 ? 'hoy' : format(f, 'EEE', { locale: es }).replace('.', '')}</span>
+      <span className="mt-0.5 text-md font-semibold">{format(f, 'd')}</span>
     </span>
   )
 }
@@ -107,6 +108,7 @@ export function AgendaModulo({ r }: { r: DashboardResumen }) {
   const seguimientos = r.seguimientos ?? []
   const conSeguimientos = seguimientos.length > 0
   const [vista, setVista] = useState<Vista>('entregas')
+  const idPanel = useId()
   const entregas = r.entregas_proximas
   const actual: Vista = conSeguimientos ? vista : 'entregas'
   const total = actual === 'entregas' ? entregas.length : seguimientos.length
@@ -133,6 +135,7 @@ export function AgendaModulo({ r }: { r: DashboardResumen }) {
           etiqueta="Ver en la agenda"
           valor={actual}
           onCambio={setVista}
+          idPanel={idPanel}
           className="mt-3 self-start"
           segmentos={[
             { valor: 'entregas', etiqueta: 'Entregas', conteo: entregas.length },
@@ -143,7 +146,11 @@ export function AgendaModulo({ r }: { r: DashboardResumen }) {
         <p className="mt-1 text-xs text-fg-subtle">Entregas e instalaciones de los próximos 7 días</p>
       )}
 
-      <div className="relative mt-4 min-h-0 flex-1" role={conSeguimientos ? 'tabpanel' : undefined}>
+      <div
+        id={idPanel}
+        className="relative mt-4 min-h-0 flex-1"
+        {...(conSeguimientos ? { role: 'tabpanel', 'aria-label': actual === 'entregas' ? 'Entregas' : 'Seguimientos' } : {})}
+      >
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.div
             key={actual}

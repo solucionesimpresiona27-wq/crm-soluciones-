@@ -71,11 +71,20 @@ export function PendientesModulo({ r, tamano }: { r: DashboardResumen; tamano: T
         Mis pendientes
       </TituloModulo>
       {lista.length ? (
-        <ul className={cn('mt-4 flex flex-col', angosto ? 'gap-4' : 'gap-3.5', tamano === '2x1' && 'mt-3')}>
-          {lista.slice(0, max).map((p) => (
-            <FilaPendiente key={p.id} p={p} hoy={r.hoy} angosto={angosto} />
-          ))}
-        </ul>
+        <>
+          <ul className={cn('mt-4 flex flex-col', angosto ? 'gap-4' : 'gap-3.5', tamano === '2x1' && 'mt-3')}>
+            {lista.slice(0, max).map((p) => (
+              <FilaPendiente key={p.id} p={p} hoy={r.hoy} angosto={angosto} />
+            ))}
+          </ul>
+          {/* En módulos altos con pocos pendientes, el cierre dice que no falta nada (y no queda un hueco mudo) */}
+          {tamano !== '2x1' && lista.length < max ? (
+            <p className="mt-auto flex items-center gap-2 pt-4 text-xs font-medium text-fg-muted">
+              <CircleCheck className="size-4 shrink-0 text-success" aria-hidden />
+              Es todo lo que tienes asignado.
+            </p>
+          ) : null}
+        </>
       ) : (
         <div className="flex flex-1 items-center gap-3 pt-3">
           <CircleCheck className="size-6 shrink-0 text-success" aria-hidden />

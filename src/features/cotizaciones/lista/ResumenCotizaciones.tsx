@@ -2,10 +2,10 @@ import { AlarmClock, CalendarCheck, Handshake, Wallet } from 'lucide-react'
 import { motion, useReducedMotion } from 'motion/react'
 import type { ReactNode } from 'react'
 import { AnimatedNumber, GlassSurface, GlassToggle, Skeleton } from '@/components/glass'
-import { dinero, porcentaje } from '@/lib/format'
+import { porcentaje } from '@/lib/format'
 import { resorte } from '@/lib/motion'
 import { cn } from '@/lib/utils'
-import { DIAS_AVISO, DIAS_TASA, type Resumen } from './datos'
+import { DIAS_AVISO, DIAS_TASA, dineroAsentado, type Resumen } from './datos'
 
 /** Cápsula informativa con pozo circular, misma anatomía que GlassToggle (Centro de Control). */
 function Capsula({ pozo, titulo, subtitulo, className }: { pozo: ReactNode; titulo: ReactNode; subtitulo: ReactNode; className?: string }) {
@@ -76,7 +76,7 @@ export function ResumenCotizaciones({
             <Wallet />
           </Pozo>
         }
-        titulo={<AnimatedNumber valor={abierto} formato={dinero} className="num text-md" />}
+        titulo={<AnimatedNumber valor={abierto} formato={dineroAsentado(abierto)} className="num text-md" />}
         subtitulo={abiertas === 1 ? 'Cotizado en 1 abierta' : `Cotizado en ${abiertas} abiertas`}
       />
 

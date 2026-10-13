@@ -13,7 +13,8 @@ export function AccesosModulo({ tamano }: { tamano: Tamano }) {
       <h3 className="sr-only">Accesos directos</h3>
       <CuadriculaAcciones
         tamano={movil || angosto ? 'md' : 'lg'}
-        className={cn('h-full w-full content-evenly', angosto && 'grid-cols-2')}
+        // En 2 columnas, si sobra un botón se centra abajo en vez de dejar un hueco
+        className={cn('h-full w-full content-evenly', angosto && 'grid-cols-2 [&>*:last-child:nth-child(odd)]:col-span-2')}
       />
     </Modulo>
   )

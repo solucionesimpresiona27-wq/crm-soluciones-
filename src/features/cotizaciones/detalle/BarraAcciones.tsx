@@ -4,6 +4,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useState, type ReactNode } from 'react'
 import { GlassIconButton } from '@/components/glass'
 import type { CotizacionCompleta, EstadoCotizacion } from '@/data/tipos'
+import type { EstadoCotizacionVisible } from '@/lib/estados'
 import { escalonado, resorte } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 
@@ -31,7 +32,8 @@ interface Accion {
   nombre?: string
   icono: ReactNode
   onClick?: () => void
-  activo?: boolean
+  /** Se ve encendido (no es interruptor) */
+  destacado?: boolean
   tono?: 'luz' | 'acento'
   desactivado?: boolean
   menu?: boolean
@@ -40,12 +42,15 @@ interface Accion {
 /** Botones circulares con etiqueta, como el Centro de Control. Entran una sola vez con un escalonado corto. */
 export function BarraAcciones({
   c,
+  visible,
   permisos,
   en,
   ocupado,
   className,
 }: {
   c: CotizacionCompleta
+  /** Estado visible (una abierta con la vigencia vencida se ve como "vencida") */
+  visible: EstadoCotizacionVisible
   permisos: PermisosDetalle
   en: ManejadoresDetalle
   ocupado: { whatsapp: boolean; pdf: boolean; duplicar: boolean; bloqueado: boolean }
@@ -64,8 +69,9 @@ export function BarraAcciones({
       etiqueta: 'Enviar por WhatsApp',
       icono: ocupado.whatsapp ? carga : <MessageCircle />,
       onClick: en.whatsapp,
-      // La luz marca lo pendiente: solo mientras la cotización sigue abierta.
-      activo: c.estado === 'borrador' || c.estado === 'enviada',
+      // La luz marca lo pendiente: solo mientras la cotización sigue abierta y vigente
+      // (una vencida se revisa antes de reenviarla).
+      destacado: visible === 'borrador' || visible === 'enviada',
       tono: 'luz',
       desactivado: ocupado.bloqueado,
     })
@@ -85,7 +91,7 @@ export function BarraAcciones({
             nombre: `Copiar el folio del pedido ${c.pedido_folio ?? ''}`.trim(),
             icono: <PackageCheck />,
             onClick: en.verPedido,
-            activo: true,
+            destacado: true,
             tono: 'acento',
           }
         : { id: 'convertir', etiqueta: 'Convertir en pedido', icono: <PackagePlus />, onClick: en.convertir, desactivado: cerrada },
@@ -108,16 +114,14 @@ export function BarraAcciones({
         const boton = (
           <GlassIconButton
             etiqueta={a.etiqueta}
-            aria-label={a.nombre ?? a.etiqueta}
-            aria-pressed={undefined}
+            {...(a.nombre ? { 'aria-label': a.nombre } : {})}
             mostrarEtiqueta
             icono={a.icono}
-            activo={a.activo}
+            destacado={a.destacado}
             tono={a.tono}
             tamano="md"
             disabled={a.desactivado}
             onClick={a.onClick}
-            className={cn(a.desactivado && 'pointer-events-none opacity-45')}
           />
         )
         return (

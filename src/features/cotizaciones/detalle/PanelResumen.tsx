@@ -7,7 +7,7 @@ import type { EstadoCotizacionVisible } from '@/lib/estados'
 import { cantidad, dinero, fecha, porcentaje } from '@/lib/format'
 import { resorte } from '@/lib/motion'
 import { cn, iniciales } from '@/lib/utils'
-import { DIAS_AVISO, textoVigencia } from '../lista/datos'
+import { DIAS_AVISO, dineroAsentado, textoVigencia } from '../lista/datos'
 import { anticipoDe, costosCotizacion, hitosCotizacion, type TonoHito } from './calculos'
 
 function Dato({ icono, etiqueta, children, sub }: { icono: ReactNode; etiqueta: string; children: ReactNode; sub?: ReactNode }) {
@@ -40,7 +40,7 @@ export function ModuloTotal({ c, visible, dias }: { c: CotizacionCompleta; visib
   return (
     <GlassPanel className="rounded-module p-5 sm:p-6">
       <p className="text-sm font-medium text-fg-muted">Total de la cotización</p>
-      <AnimatedNumber valor={c.total} formato={dinero} className="glass-text num mt-1 block text-[2.5rem] font-semibold leading-[1.1] tracking-tight" />
+      <AnimatedNumber valor={c.total} formato={dineroAsentado(c.total)} className="glass-text num mt-1 block text-[2.5rem] font-semibold leading-[1.1] tracking-tight" />
       <p className="mt-1 text-xs text-fg-subtle">{c.aplica_iva ? `IVA incluido (${cantidad(c.iva_pct)} %)` : 'Precios sin IVA'}</p>
 
       <dl className="mt-4 divide-y divide-[var(--divider)] border-t border-[var(--divider)]">
@@ -78,19 +78,37 @@ export function ModuloCostos({ c }: { c: CotizacionCompleta }) {
   const { base, costo, utilidad, margen, sinCosto } = costosCotizacion(c)
   const perdida = utilidad < 0
   const fraccionCosto = base > 0 ? Math.min(1, costo / base) : 1
+  // Sin ningún costo capturado, "utilidad = base" y "margen 100 %" engañarían: mejor decirlo claro.
+  const sinDatos = c.partidas.length > 0 && sinCosto === c.partidas.length
+
+  const titulo = (
+    <TituloModulo
+      extra={
+        <span className="inline-flex items-center gap-1 text-xs text-fg-subtle">
+          <Lock className="size-3" aria-hidden />
+          No sale en el PDF
+        </span>
+      }
+    >
+      Costos y utilidad
+    </TituloModulo>
+  )
+
+  if (sinDatos) {
+    return (
+      <GlassPanel className="rounded-module p-5 sm:p-6" aria-label="Costos y utilidad">
+        {titulo}
+        <p className="mt-3 flex items-start gap-2 text-sm text-fg-muted">
+          <Info className="mt-0.5 size-4 shrink-0 text-fg-subtle" aria-hidden />
+          Ninguna partida tiene costo capturado, así que no se puede estimar la utilidad de esta cotización.
+        </p>
+      </GlassPanel>
+    )
+  }
 
   return (
     <GlassPanel className="rounded-module p-5 sm:p-6" aria-label="Costos y utilidad">
-      <TituloModulo
-        extra={
-          <span className="inline-flex items-center gap-1 text-xs text-fg-subtle">
-            <Lock className="size-3" aria-hidden />
-            No sale en el PDF
-          </span>
-        }
-      >
-        Costos y utilidad
-      </TituloModulo>
+      {titulo}
 
       <div className="mt-4 flex items-end justify-between gap-3">
         <div>

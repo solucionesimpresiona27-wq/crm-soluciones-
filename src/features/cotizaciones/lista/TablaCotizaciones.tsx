@@ -21,13 +21,13 @@ export function TablaCotizaciones({ filas, hoy, acciones, descripcion }: { filas
       <caption className="sr-only">{descripcion}</caption>
       <thead>
         <tr>
-          <th scope="col" className="!pl-5">Folio</th>
+          <th scope="col" className="pl-5">Folio</th>
           <th scope="col">Cliente</th>
-          <th scope="col" className="hidden xl:table-cell">Título</th>
+          <th scope="col" className="hidden min-[1360px]:table-cell">Título</th>
           <th scope="col">Fecha</th>
           <th scope="col">Vencimiento</th>
           <th scope="col">Estado</th>
-          <th scope="col" className="!text-right">Total</th>
+          <th scope="col" className="text-right">Total</th>
           <th scope="col" className="w-[9.75rem]">
             <span className="sr-only">Acciones</span>
           </th>
@@ -48,7 +48,7 @@ export function TablaCotizaciones({ filas, hoy, acciones, descripcion }: { filas
                 onClick={() => acciones.abrir(f)}
                 className="cursor-pointer"
               >
-                <td className="whitespace-nowrap !pl-5">
+                <td className="whitespace-nowrap pl-5">
                   <Link
                     to={destino.pathname}
                     state={destino.state}
@@ -58,12 +58,20 @@ export function TablaCotizaciones({ filas, hoy, acciones, descripcion }: { filas
                     {f.folio}
                   </Link>
                 </td>
-                <td className="max-w-[15rem]">
-                  <span className="block truncate font-semibold text-fg">{f.cliente.nombre}</span>
-                  <span className="block truncate text-xs text-fg-muted xl:hidden">{f.titulo ?? 'Sin título'}</span>
+                {/* La columna flexible (w-full + max-w-0) absorbe el espacio y recorta con "…": la tabla nunca se desborda.
+                    Hasta 1360 px es el cliente (con el título abajo); desde ahí, el título en su propia columna. */}
+                <td className="w-full max-w-0 min-[1360px]:w-auto min-[1360px]:max-w-none">
+                  <span className="block truncate font-semibold text-fg min-[1360px]:max-w-[14rem]" title={f.cliente.nombre}>
+                    {f.cliente.nombre}
+                  </span>
+                  <span className="block truncate text-xs text-fg-muted min-[1360px]:hidden" title={f.titulo ?? undefined}>
+                    {f.titulo ?? 'Sin título'}
+                  </span>
                 </td>
-                <td className="hidden max-w-[17rem] xl:table-cell">
-                  <span className="block truncate text-fg-muted">{f.titulo ?? 'Sin título'}</span>
+                <td className="hidden w-full max-w-0 min-[1360px]:table-cell">
+                  <span className="block truncate text-fg-muted" title={f.titulo ?? undefined}>
+                    {f.titulo ?? 'Sin título'}
+                  </span>
                 </td>
                 <td className="whitespace-nowrap text-fg-muted">{fechaCorta(f.fecha, hoy)}</td>
                 <td>
@@ -73,7 +81,7 @@ export function TablaCotizaciones({ filas, hoy, acciones, descripcion }: { filas
                   <EstadoFila f={f} />
                 </td>
                 <td className="num whitespace-nowrap text-right text-base font-semibold text-fg">{dinero(f.total)}</td>
-                <td className="!py-2 !pr-3">
+                <td className="py-2 pr-3">
                   <div className="flex items-center justify-end gap-0.5">
                     {acciones.seguimiento && f.visible === 'enviada' ? (
                       <AccionFila etiqueta="Dar seguimiento por WhatsApp" icono={<MessageCircle />} onClick={() => acciones.seguimiento?.(f)} />

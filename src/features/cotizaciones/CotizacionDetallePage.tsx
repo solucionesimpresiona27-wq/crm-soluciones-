@@ -148,7 +148,7 @@ function Detalle({ id }: { id: string }) {
       {/* Encabezado + botones tipo Centro de Control */}
       <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
         <div className="flex min-w-0 items-start gap-3">
-          <GlassIconButton etiqueta="Volver a cotizaciones" icono={<ArrowLeft />} tamano="sm" className="mt-0.5 size-11 shrink-0" onClick={volver} />
+          <GlassIconButton etiqueta="Volver a cotizaciones" icono={<ArrowLeft />} tamano="sm" className="mt-0.5 shrink-0" onClick={volver} />
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <span className="num text-sm font-semibold text-fg-muted">{c.folio}</span>
@@ -165,6 +165,7 @@ function Detalle({ id }: { id: string }) {
         </div>
         <BarraAcciones
           c={c}
+          visible={visible}
           permisos={{ gestionar, convertir: puede('gestionar_pedidos') }}
           en={en}
           ocupado={{ whatsapp: enCurso === 'whatsapp', pdf: enCurso === 'pdf', duplicar: duplicar.isPending, bloqueado: ocupado }}

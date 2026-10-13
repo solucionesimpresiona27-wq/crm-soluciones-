@@ -63,10 +63,10 @@ function CifraCristal({ valor, contar, className }: { valor: number; contar: boo
   return (
     <p className={cn('flex items-start font-semibold leading-none', className)}>
       <span className="sr-only">{dinero(valor)}</span>
-      <span aria-hidden className="glass-text mr-[0.04em] mt-[0.12em] text-[0.46em] !leading-none">
+      <span aria-hidden className="glass-text mr-[0.04em] mt-[0.12em] text-[0.46em] leading-none">
         $
       </span>
-      <span aria-hidden className="glass-text pb-[0.06em] !leading-none">
+      <span aria-hidden className="glass-text pb-[0.06em] leading-none">
         {contar ? (
           // El resorte se asienta lento en cifras grandes: a 0.2% del final ya se muestra la cifra exacta
           <AnimatedNumber valor={valor} formato={(n) => entero(Math.abs(valor - n) <= Math.abs(valor) * 0.002 ? valor : n)} duracion={1.1} />
@@ -255,13 +255,13 @@ function DetalleVentas({ r }: { r: DashboardResumen }) {
             <thead>
               <tr>
                 <th scope="col">Mes</th>
-                <th scope="col" className="!text-right">
+                <th scope="col" className="text-right">
                   Vendido
                 </th>
-                <th scope="col" className="!text-right">
+                <th scope="col" className="text-right">
                   Cobrado
                 </th>
-                <th scope="col" className="hidden !text-right sm:table-cell">
+                <th scope="col" className="hidden text-right sm:table-cell">
                   Cobrado del total
                 </th>
               </tr>

@@ -230,9 +230,10 @@ function DetalleProduccion({ r }: { r: DashboardResumen }) {
                   ))}
                 </ul>
               ) : null}
-              {resto > 0 ? (
+              {/* Solo se listan los pedidos que trae el resumen (entregas próximas y pendientes propios) */}
+              {lista.length && resto > 0 ? (
                 <p className="mt-1.5 px-1 text-xs text-fg-subtle">
-                  {resto === 1 ? 'Y 1 pedido más, con entrega después de esta semana.' : `Y ${resto} pedidos más, con entrega después de esta semana.`}
+                  {resto === 1 ? 'Y 1 pedido más en esta etapa.' : `Y ${resto} pedidos más en esta etapa.`}
                 </p>
               ) : null}
             </section>

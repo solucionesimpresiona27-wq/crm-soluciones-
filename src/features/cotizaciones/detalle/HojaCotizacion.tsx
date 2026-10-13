@@ -124,17 +124,17 @@ export function HojaCotizacion({ c, config }: { c: CotizacionCompleta; config: C
           <caption className="sr-only">Conceptos de la cotización</caption>
           <thead>
             <tr>
-              <th scope="col" className="w-8 !pl-0 !pr-2">
+              <th scope="col" className="w-8 pl-0 pr-2">
                 #
               </th>
               <th scope="col">Concepto</th>
-              <th scope="col" className="whitespace-nowrap !text-right">
+              <th scope="col" className="whitespace-nowrap text-right">
                 Cantidad
               </th>
-              <th scope="col" className="whitespace-nowrap !text-right">
+              <th scope="col" className="whitespace-nowrap text-right">
                 Precio unitario
               </th>
-              <th scope="col" className="!pr-0 !text-right">
+              <th scope="col" className="pr-0 text-right">
                 Importe
               </th>
             </tr>
@@ -142,17 +142,17 @@ export function HojaCotizacion({ c, config }: { c: CotizacionCompleta; config: C
           <tbody>
             {c.partidas.map((p, i) => (
               <tr key={p.id}>
-                <td className="num !pl-0 !pr-2 !align-top text-fg-subtle">{i + 1}</td>
-                <td className="!align-top">
+                <td className="num pl-0 pr-2 align-top text-fg-subtle">{i + 1}</td>
+                <td className="align-top">
                   <p className="font-medium text-fg">{p.concepto}</p>
                   {p.descripcion ? <p className="mt-0.5 max-w-prose text-fg-muted">{p.descripcion}</p> : null}
                   <Medidas p={p} />
                 </td>
-                <td className="num whitespace-nowrap !align-top text-right text-fg">
+                <td className="num whitespace-nowrap align-top text-right text-fg">
                   {cantidad(p.cantidad)} <span className="text-fg-muted">{p.unidad}</span>
                 </td>
-                <td className="num whitespace-nowrap !align-top text-right text-fg">{dinero(p.precio_unitario)}</td>
-                <td className="num whitespace-nowrap !pr-0 !align-top text-right">
+                <td className="num whitespace-nowrap align-top text-right text-fg">{dinero(p.precio_unitario)}</td>
+                <td className="num whitespace-nowrap pr-0 align-top text-right">
                   <span className="font-semibold text-fg">{dinero(p.importe)}</span>
                   {p.descuento_pct > 0 ? <span className="block text-xs text-fg-muted">Desc. {cantidad(p.descuento_pct)} %</span> : null}
                 </td>
