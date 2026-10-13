@@ -32,15 +32,16 @@ const s = StyleSheet.create({
     fontFamily: 'Helvetica',
     fontSize: 9,
     color: TINTA,
-    lineHeight: 1.35,
   },
   franja: { position: 'absolute', top: 0, left: 0, right: 0, height: 6, backgroundColor: AZUL },
   franjaLuz: { position: 'absolute', top: 0, left: MARGEN, width: 84, height: 6, backgroundColor: AMARILLO },
   marcaAgua: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   marcaAguaTexto: {
+    width: 760,
+    textAlign: 'center',
     transform: 'rotate(-35deg)',
     fontFamily: 'Helvetica-Bold',
-    fontSize: 40,
+    fontSize: 34,
     color: AZUL,
     opacity: 0.07,
     letterSpacing: 2,
@@ -66,8 +67,9 @@ const s = StyleSheet.create({
   bloqueCliente: { flex: 1.45, paddingRight: 20 },
   bloqueAtiende: { flex: 1 },
   etiqueta: { fontSize: 7.5, color: TENUE, marginBottom: 3 },
-  clienteNombre: { fontSize: 12, fontFamily: 'Helvetica-Bold', color: TINTA },
-  texto: { color: GRIS },
+  clienteNombre: { fontSize: 12, fontFamily: 'Helvetica-Bold', color: TINTA, marginBottom: 2 },
+  // Con lineHeight siempre va fontSize explícito: react-pdf no calcula bien el interlineado heredado
+  texto: { fontSize: 9, color: GRIS, lineHeight: 1.4 },
   separacion: { marginTop: 8 },
 
   titulo: { marginTop: 18, fontSize: 12.5, fontFamily: 'Helvetica-Bold', color: TINTA },
@@ -89,7 +91,7 @@ const s = StyleSheet.create({
   colDesc: { width: 42, textAlign: 'right' },
   colImporte: { width: 80, textAlign: 'right' },
   concepto: { fontFamily: 'Helvetica-Bold', fontSize: 9.5, color: TINTA },
-  descripcion: { marginTop: 2, color: GRIS, fontSize: 8.5 },
+  descripcion: { marginTop: 2, color: GRIS, fontSize: 8.5, lineHeight: 1.35 },
   medidas: { marginTop: 2, color: TENUE, fontSize: 8 },
   unidad: { color: GRIS },
   importe: { fontFamily: 'Helvetica-Bold', color: TINTA },
@@ -130,14 +132,15 @@ const s = StyleSheet.create({
   caja: { borderWidth: 0.75, borderColor: LINEA, borderRadius: 5, padding: 10, backgroundColor: FONDO },
   cajaTitulo: { fontFamily: 'Helvetica-Bold', color: AZUL, fontSize: 8.5, marginBottom: 4 },
 
-  seccion: { marginTop: 20 },
+  seccion: { marginTop: 18 },
   seccionTitulo: { fontFamily: 'Helvetica-Bold', color: AZUL, fontSize: 10, marginBottom: 6 },
-  vineta: { flexDirection: 'row', marginBottom: 3 },
+  vineta: { flexDirection: 'row', marginBottom: 2.5 },
   vinetaPunto: { width: 4, height: 4, borderRadius: 1, backgroundColor: AMARILLO, marginTop: 3.5, marginRight: 7 },
-  vinetaTexto: { flex: 1, color: GRIS, fontSize: 8.5 },
+  vinetaTexto: { flex: 1, color: GRIS, fontSize: 8.5, lineHeight: 1.4 },
   vinetaFuerte: { fontFamily: 'Helvetica-Bold', color: TINTA },
 
-  cierre: { marginTop: 22, textAlign: 'center', color: AZUL, fontFamily: 'Helvetica-Bold', fontSize: 9.5 },
+  // Cierre en el margen inferior de la última página: nunca abre una hoja solo para él
+  cierre: { position: 'absolute', left: MARGEN, right: MARGEN, bottom: 52, textAlign: 'center', color: AZUL, fontFamily: 'Helvetica-Bold', fontSize: 9.5 },
 
   pie: {
     position: 'absolute',
@@ -151,8 +154,9 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
-  pieTexto: { flex: 1, fontSize: 7.5, color: TENUE, paddingRight: 16 },
-  piePagina: { fontSize: 7.5, color: TENUE },
+  pieTexto: { flex: 1, fontSize: 7.5, color: TENUE, paddingRight: 16, lineHeight: 1.4 },
+  // Ancho fijo: el texto con render() no se mide antes de acomodar la fila
+  piePagina: { width: 72, fontSize: 7.5, color: TENUE, textAlign: 'right' },
 })
 
 /** Helvetica integrada solo trae el juego WinAnsi: se sustituyen los caracteres que no tiene. */
@@ -228,9 +232,7 @@ export function DocumentoCotizacion({ c, config, logo, marcaAgua }: DatosPdf) {
   const pie = [
     config.whatsapp ? `WhatsApp ${telefono(config.whatsapp)}` : null,
     config.email,
-    config.instagram ? `IG ${config.instagram}` : null,
-    config.facebook ? `FB ${config.facebook}` : null,
-    config.tiktok ? `TikTok ${config.tiktok}` : null,
+    config.instagram ? `Instagram ${config.instagram}` : null,
   ]
     .filter(Boolean)
     .join('  |  ')
@@ -405,7 +407,13 @@ export function DocumentoCotizacion({ c, config, logo, marcaAgua }: DatosPdf) {
           </View>
         ) : null}
 
-        {config.notas_pie_cotizacion ? <Text style={s.cierre}>{limpio(config.notas_pie_cotizacion)}</Text> : null}
+        {config.notas_pie_cotizacion ? (
+          <Text
+            fixed
+            style={s.cierre}
+            render={({ pageNumber, totalPages }) => (pageNumber === totalPages ? limpio(config.notas_pie_cotizacion) : '')}
+          />
+        ) : null}
 
         {/* Pie en todas las páginas */}
         <View fixed style={s.pie}>

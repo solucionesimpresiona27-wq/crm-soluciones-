@@ -24,3 +24,5 @@ blob-report/
 .DS_Store
 *.log
 *.tmp.mjs
+*.tmp.ts
+*.tmp.tsx

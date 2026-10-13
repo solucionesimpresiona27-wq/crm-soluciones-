@@ -65,7 +65,9 @@ function BuscadorCliente({
                   setTexto(v)
                   setAbierto(true)
                 }}
-                onFocus={() => setAbierto(true)}
+                onKeyDown={(e) => {
+                  if (e.key === 'ArrowDown' && !abierto) setAbierto(true)
+                }}
                 onClick={() => setAbierto(true)}
                 placeholder="Nombre, WhatsApp o correo"
                 aria-invalid={error ? true : undefined}

@@ -177,9 +177,9 @@ export function Calculadora({
     .reduce<number | null>((max, e) => (max === null || e.desde > max ? e.desde : max), null)
 
   return (
-    <div id={id} className={cn(clasesBandeja, 'grid gap-5 p-3 sm:p-4')}>
+    <div id={id} className={cn(clasesBandeja, 'grid grid-cols-1 gap-5 p-3 sm:p-4')}>
       {/* Producto */}
-      <div className="grid gap-1.5">
+      <div className="grid grid-cols-1 gap-1.5">
         <label htmlFor={`${id}-producto`} className="text-sm font-medium text-fg-muted">
           Producto del catálogo
         </label>
@@ -195,14 +195,14 @@ export function Calculadora({
       </div>
 
       {/* Método */}
-      <div className="grid gap-2.5">
+      <div className="grid grid-cols-1 gap-2.5">
         <Subtitulo>Cómo se cobra</Subtitulo>
         <SelectorMetodo valor={p.metodo_calculo} onCambio={(m) => set((x) => cambiarMetodo(x, m))} />
       </div>
 
       {/* Medidas */}
       {info.medidas ? (
-        <div className="grid gap-2">
+        <div className="grid grid-cols-1 gap-2">
           <Subtitulo>Medidas de cada {unidadVenta === 'pza' ? 'pieza' : unidadVenta}</Subtitulo>
           <div className="flex flex-wrap items-end gap-x-3 gap-y-2">
             {info.medidas === 'area' ? (
@@ -233,7 +233,7 @@ export function Calculadora({
       ) : null}
 
       {/* Precio */}
-      <div className="grid gap-3">
+      <div className="grid grid-cols-1 gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <Subtitulo>Precio</Subtitulo>
           {modos.length > 1 ? (
@@ -278,7 +278,7 @@ export function Calculadora({
         ) : null}
 
         {puedeCostos ? (
-          <div className="grid gap-2.5 pt-1">
+          <div className="grid grid-cols-1 gap-2.5 pt-1">
             <p className="flex items-center gap-1.5 text-xs font-medium text-fg-subtle">
               <Lock className="size-3.5" aria-hidden />
               Costos internos: no aparecen en la cotización
@@ -317,7 +317,7 @@ export function Calculadora({
       </div>
 
       {/* Resultado */}
-      <GlassSurface variante="fuerte" className="grid gap-3 rounded-tile p-4" aria-live="polite">
+      <GlassSurface variante="fuerte" className="grid grid-cols-1 gap-3 rounded-tile p-4" aria-live="polite">
         <dl className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
           <Dato etiqueta="Se cobran" valor={`${cantidad(r.unidadesCobro)} ${info.unidadCobro}`} />
           {info.medidas ? <Dato etiqueta={`Precio por ${info.unidadCobro}`} valor={dinero(r.precioUnidadCobro ?? 0)} /> : null}
@@ -340,7 +340,7 @@ export function Calculadora({
         </dl>
 
         {sinPrecio || r.aplicoMinimo || faltaMedida || n(p.cantidad) <= 0 || (puedeCostos && r.utilidad < 0 && r.importe > 0) ? (
-          <div className="grid gap-1.5">
+          <div className="grid grid-cols-1 gap-1.5">
             {sinPrecio ? <Aviso tono="aviso">Este producto aún no tiene precio en el catálogo; captura el precio a mano.</Aviso> : null}
             {faltaMedida ? (
               <Aviso tono="info">{info.medidas === 'area' ? 'Captura el ancho y el alto para calcular.' : 'Captura el largo para calcular.'}</Aviso>

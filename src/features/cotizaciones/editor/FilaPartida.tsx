@@ -68,7 +68,7 @@ export const FilaPartida = memo(function FilaPartida({
           {numero}
         </span>
 
-        <div className="grid min-w-0 flex-1 gap-3">
+        <div className="grid min-w-0 flex-1 grid-cols-1 gap-3">
           <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
             <Campo
               etiqueta={
@@ -128,7 +128,7 @@ export const FilaPartida = memo(function FilaPartida({
           </Campo>
 
           <div className="grid grid-cols-6 gap-3 sm:grid-cols-[6.5rem_6rem_minmax(8.5rem,1fr)_6rem]">
-            <Campo etiqueta={info.cantidad} error={errores?.cantidad} className="col-span-3 sm:col-span-1">
+            <Campo etiqueta={info.cantidad} error={errores?.cantidad ? 'Mayor a 0' : undefined} className="col-span-3 sm:col-span-1">
               {(id, a) => (
                 <CampoNumero id={id} {...a} valor={p.cantidad} onValor={(v) => set((x) => ({ ...x, cantidad: v }))} placeholder="0" />
               )}
