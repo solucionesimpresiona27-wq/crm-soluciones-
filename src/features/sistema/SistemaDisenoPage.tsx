@@ -1,6 +1,8 @@
-import { Activity, AppWindow, Layers, Loader, Palette, RectangleHorizontal, SlidersHorizontal, TextCursorInput, ToggleRight } from 'lucide-react'
+import { Activity, AppWindow, Layers, Loader, Lock, Palette, RectangleHorizontal, SlidersHorizontal, TextCursorInput, ToggleRight } from 'lucide-react'
 import { useState } from 'react'
-import { Pildora } from '@/components/glass'
+import { useNavigate } from 'react-router-dom'
+import { EstadoVacio, GlassButton, GlassPanel, Pildora } from '@/components/glass'
+import { useModulosVisibles } from '@/components/shell/usarModulos'
 import { MuestrarioCampos } from './Campos'
 import { MuestrarioCapsulas } from './Capsulas'
 import { MuestrarioCarga } from './Carga'
@@ -19,6 +21,26 @@ import { MuestrarioVentanas } from './Ventanas'
  */
 export default function SistemaDisenoPage() {
   const [lente] = useState(() => document.documentElement.classList.contains('lens-ready'))
+  const navegar = useNavigate()
+  // Misma regla que el menú: en la app real, solo administración
+  const permitida = useModulosVisibles().some((m) => m.ruta === '/sistema-diseno')
+
+  if (!permitida) {
+    return (
+      <GlassPanel className="mx-auto mt-2 max-w-xl">
+        <EstadoVacio
+          icono={<Lock />}
+          titulo="La vitrina del diseño es solo para administración"
+          descripcion="Pide a un administrador que la revise contigo, o vuelve al inicio."
+          accion={
+            <GlassButton variante="primario" onClick={() => navegar('/')}>
+              Ir al inicio
+            </GlassButton>
+          }
+        />
+      </GlassPanel>
+    )
+  }
 
   return (
     <div className="pb-4">
@@ -62,7 +84,7 @@ export default function SistemaDisenoPage() {
               id="selector"
               icono={<ToggleRight />}
               titulo="Selector y estados"
-              descripcion="El indicador se desliza entre opciones; las píldoras dicen el estado de un vistazo."
+              descripcion="Opciones que se deslizan y estados de un vistazo."
               className="h-full"
             >
               <MuestrarioSelector />
@@ -92,7 +114,7 @@ export default function SistemaDisenoPage() {
                 id="ventanas"
                 icono={<AppWindow />}
                 titulo="Ventanas"
-                descripcion="En escritorio aparecen al centro o de lado; en celular suben como hoja desde abajo."
+                descripcion="Al centro o de lado; en celular suben como hoja."
               >
                 <MuestrarioVentanas />
               </Seccion>

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { GlassPanel, Pildora, SegmentedControl, type TonoPildora } from '@/components/glass'
+import { useEsMovil } from '@/hooks/useMediaQuery'
 import { ESTADO_COTIZACION, ESTADO_PEDIDO } from '@/lib/estados'
 import { Subtitulo } from './piezas'
 
@@ -19,6 +20,7 @@ type Periodo = 'dia' | 'semana' | 'mes'
 export function MuestrarioSelector() {
   const [filtro, setFiltro] = useState<Filtro>('enviadas')
   const [periodo, setPeriodo] = useState<Periodo>('semana')
+  const movil = useEsMovil()
 
   return (
     <GlassPanel className="flex h-full flex-col gap-5 p-4 sm:p-5">
@@ -26,6 +28,7 @@ export function MuestrarioSelector() {
         <Subtitulo detalle="Flechas del teclado para moverte">Selector segmentado</Subtitulo>
         <SegmentedControl<Filtro>
           etiqueta="Filtrar cotizaciones de ejemplo"
+          tamano={movil ? 'sm' : 'md'}
           valor={filtro}
           onCambio={setFiltro}
           segmentos={[

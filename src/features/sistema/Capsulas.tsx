@@ -51,7 +51,8 @@ export function MuestrarioCapsulas() {
                   {v.texto}
                 </GlassButton>
               </div>
-              <div>
+              {/* En celular el tamaño grande se omite para que cada variante quepa en una fila */}
+              <div className="hidden sm:block">
                 <GlassButton variante={v.variante} tamano="lg" icono={v.icono}>
                   {v.texto}
                 </GlassButton>

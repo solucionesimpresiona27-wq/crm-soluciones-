@@ -215,7 +215,7 @@ export function MuestrarioCirculares() {
           {TAMANOS.map(({ t, px }) => (
             <Muestra key={t} titulo={t} detalle={`${px} px`}>
               <GlassIconButton
-                etiqueta={`Foco tamaño ${t}`}
+                etiqueta={`Muestra de tamaño ${t}`}
                 icono={<LightbulbOff />}
                 iconoActivo={<Lightbulb />}
                 activo={Boolean(encendidos[t])}

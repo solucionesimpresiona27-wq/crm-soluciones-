@@ -136,8 +136,8 @@ const SOMBRAS = [
 
 const ESCALA = [
   { nombre: 'Hero', px: 80, clase: 'text-hero', muestra: '$8,420', num: true },
-  { nombre: 'Display', px: 56, clase: 'text-display', muestra: 'Cotizaciones', num: false },
-  { nombre: '3xl', px: 40, clase: 'text-3xl', muestra: 'Buenas tardes, Ana', num: false },
+  { nombre: 'Display', px: 56, clase: 'text-display', muestra: 'Pedidos', num: false },
+  { nombre: '3xl', px: 40, clase: 'text-3xl', muestra: 'Hola, Ana', num: false },
   { nombre: '2xl', px: 30, clase: 'text-2xl', muestra: 'Ventas de octubre', num: false },
   { nombre: 'xl', px: 24, clase: 'text-xl', muestra: 'Taller Mecánico Rueda', num: false },
   { nombre: 'lg', px: 20, clase: 'text-lg', muestra: 'Rotulación de camioneta', num: false },
@@ -162,12 +162,12 @@ export function MuestrarioTokens() {
       {/* Color de marca */}
       <div className="flex flex-col gap-4">
         <Subtitulo detalle="Del logo: el azul del texto y la luz del foco">Color de marca</Subtitulo>
-        <ul className="grid grid-cols-6 gap-2 sm:grid-cols-11">
+        <ul className="grid grid-cols-4 gap-2 sm:grid-cols-11">
           {NAVY.map(([g, c]) => (
             <Tono key={g} grado={g} clase={c} ancla={g === '600' ? 'Azul 600' : undefined} />
           ))}
         </ul>
-        <ul className="grid grid-cols-6 gap-2 sm:grid-cols-11">
+        <ul className="grid grid-cols-4 gap-2 sm:grid-cols-11">
           {AMBAR.map(([g, c]) => (
             // El 100 del ámbar queda bajo el 100 del azul
             <Tono key={g} grado={g} clase={c} ancla={g === '400' ? 'Luz 400' : undefined} className={g === '100' ? 'sm:col-start-2' : undefined} />
@@ -180,7 +180,7 @@ export function MuestrarioTokens() {
       {/* Semánticos */}
       <div className="flex flex-col gap-4">
         <Subtitulo detalle="Cambian con el modo claro u oscuro; el valor es el de ahora">Colores con significado</Subtitulo>
-        <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-5 lg:grid-cols-3 2xl:grid-cols-6">
           <div className="flex flex-col gap-2">
             <div>
               <p className="text-sm font-semibold text-fg">Texto</p>

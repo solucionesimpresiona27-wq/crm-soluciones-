@@ -41,7 +41,7 @@ export function MuestrarioSuperficies() {
           lente={e.lente}
           whileTap={e.interactivo && !reducir ? { scale: 0.98 } : undefined}
           transition={resorte.presion}
-          className="flex min-h-36 flex-col justify-end gap-1 rounded-module p-5 sm:min-h-44"
+          className="flex min-h-28 flex-col justify-end gap-1 rounded-module p-5 sm:min-h-44"
         >
           <div className="flex flex-wrap items-center gap-2">
             <h4 className="text-lg font-semibold tracking-tight text-fg">{e.nombre}</h4>
