@@ -106,4 +106,48 @@ if (!count) {
   ok(await ventas.from('oportunidades').insert({ cliente_id: c('Gimnasio'), titulo: 'Uniformes', etapa: 'interesado', valor_estimado: 6000, proxima_accion: 'Enviar muestras', proxima_accion_fecha: new Date().toISOString().slice(0, 10) }))
 }
 
+// Fases 2 y 3: proveedores, inventario, gastos y tareas de prueba (una sola vez)
+const { count: materiales } = await sistema
+  .from('materiales')
+  .select('*', { count: 'exact', head: true })
+  .eq('nombre', 'Vinil blanco brillante (prueba)')
+if (!materiales) {
+  const produccion = await sesion(USUARIOS.produccion)
+  const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
+  const perfiles = ok(await admin.from('perfiles').select('id, email'))
+  const idDe = (rol) => perfiles.find((p) => p.email === USUARIOS[rol].email)?.id
+
+  const provs = ok(await admin.from('proveedores').insert([
+    { nombre: 'Distribuidora de Vinil (prueba)', categoria: 'Vinil y lonas', whatsapp: '3344445566' },
+    { nombre: 'Maquila Láser GDL (prueba)', categoria: 'Maquila', whatsapp: '3355556677' },
+  ], { defaultToNull: false }).select('id, nombre'))
+  const prov = (n) => provs.find((p) => p.nombre.startsWith(n)).id
+
+  const mats = ok(await admin.from('materiales').insert([
+    { nombre: 'Vinil blanco brillante (prueba)', categoria: 'Vinil', unidad: 'm2', existencia: 45, stock_minimo: 20, proveedor_id: prov('Distribuidora'), ubicacion: 'Rack 1' },
+    { nombre: 'Lona front 13 oz (prueba)', categoria: 'Lonas', unidad: 'm2', existencia: 12, stock_minimo: 30, proveedor_id: prov('Distribuidora'), ubicacion: 'Rack 2' },
+    { nombre: 'Tinta ecosolvente cian (prueba)', categoria: 'Tintas', unidad: 'litro', existencia: 1.5, stock_minimo: 2, ubicacion: 'Gabinete' },
+    { nombre: 'Papel couché 300 g (prueba)', categoria: 'Papel', unidad: 'hoja', existencia: 800, stock_minimo: 200, ubicacion: 'Anaquel A' },
+  ], { defaultToNull: false }).select('id, nombre'))
+  const mat = (n) => mats.find((m) => m.nombre.startsWith(n)).id
+  ok(await admin.from('material_costos').insert([
+    { material_id: mat('Vinil'), costo_unitario: 38 },
+    { material_id: mat('Lona'), costo_unitario: 42 },
+    { material_id: mat('Tinta'), costo_unitario: 650 },
+  ]))
+
+  const { data: pedido } = await admin.from('pedidos').select('id').order('created_at').limit(1).maybeSingle()
+  ok(await produccion.from('movimientos_inventario').insert({ material_id: mat('Vinil'), tipo: 'consumo', cantidad: 6, pedido_id: pedido?.id ?? null, notas: 'Vinil para recepción' }))
+  ok(await admin.from('gastos').insert([
+    { concepto: 'Corte láser de letras (maquila)', categoria: 'maquila', proveedor_id: prov('Maquila'), pedido_id: pedido?.id ?? null, monto: 350, metodo_pago: 'efectivo' },
+    { concepto: 'Gasolina para instalación', categoria: 'transporte', monto: 280, metodo_pago: 'tarjeta' },
+  ], { defaultToNull: false }))
+
+  ok(await ventas.from('tareas').insert([
+    { titulo: 'Llamar a Gimnasio Titán por los uniformes', tipo: 'llamada', fecha: hoy, hora: '11:00', responsable_id: idDe('ventas'), prioridad: 'alta' },
+    { titulo: 'Instalar vinil en Clínica Dental Sonríe', tipo: 'instalacion', fecha: hoy, hora: '16:00', responsable_id: idDe('produccion'), pedido_id: pedido?.id ?? null },
+    { titulo: 'Preparar arte de las tazas', tipo: 'tarea', fecha: hoy, responsable_id: idDe('diseno') },
+  ], { defaultToNull: false }))
+}
+
 console.log('Datos de prueba listos. Usuarios:', Object.entries(USUARIOS).map(([r, u]) => `${r}: ${u.email} / ${u.password}`).join(' · '))

@@ -420,3 +420,7 @@ enabled = true
 # La función valida el token del usuario por dentro (compatible con las nuevas llaves de firma de Supabase).
 [functions.admin-usuarios]
 verify_jwt = false
+
+# Portal del cliente: sin sesión; valida el token del enlace por dentro y solo firma diseños de ese pedido.
+[functions.portal-cliente]
+verify_jwt = false

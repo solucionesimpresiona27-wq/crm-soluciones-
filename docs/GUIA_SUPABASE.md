@@ -22,6 +22,26 @@ Tiempo estimado: 20 minutos. Los nombres de los menús de Supabase pueden cambia
 3. Presiona **Run**. Debe terminar con *Success. No rows returned*.
    - Hazlo **una sola vez** en un proyecto nuevo.
    - Crea las tablas y las reglas de seguridad por rol. También carga las plantillas de WhatsApp, los datos de la empresa y el catálogo inicial (sin precios). Además crea los espacios de archivos.
+   - Ya incluye todo lo de las fases 2 y 3 (tareas y agenda, listas de precios, proveedores, inventario, gastos, corte de caja, reportes, comisiones y portal del cliente). En un proyecto nuevo **no** hace falta el archivo de actualización.
+
+### ¿Ya tenías el CRM instalado? Actualízalo a las fases 2 y 3
+
+Usa este camino **solo** si ya habías ejecutado una versión anterior de `instalar.sql` en tu proyecto (tu base ya tiene clientes, cotizaciones o pedidos). Tus datos se conservan.
+
+1. (Recomendado) Haz un respaldo antes: descarga el último respaldo semanal de GitHub (sección 7) o, en el plan Pro, revisa **Database → Backups**.
+2. **SQL Editor → New query**.
+3. Abre [`supabase/actualizar-fases-2-y-3.sql`](../supabase/actualizar-fases-2-y-3.sql), copia **todo** su contenido, pégalo y presiona **Run**.
+   - Debe terminar con *Success. No rows returned*.
+   - Se aplica completo o nada: si algo falla, la base queda exactamente como estaba.
+   - Si aparece *"Esta actualización ya se aplicó antes"*, no tienes que hacer nada más.
+   - Si aparece *"Esta base no tiene el CRM instalado"*, estás en un proyecto nuevo: usa `instalar.sql` (paso anterior).
+4. Despliega la función del portal del cliente (sección 5b).
+
+| Tu situación | Qué ejecutar |
+|---|---|
+| Proyecto nuevo, sin el CRM | Solo `supabase/instalar.sql` |
+| Ya tenías el CRM (instalado antes del 14 de octubre de 2026) | Solo `supabase/actualizar-fases-2-y-3.sql` |
+| Instalaste con la CLI de Supabase (`supabase db push`), no con el editor SQL | `supabase db push` otra vez: aplica solo las migraciones nuevas de `supabase/migrations` |
 
 ## 3. Seguridad de acceso (usuarios)
 
@@ -51,6 +71,23 @@ Permite que el administrador cree usuarios, cambie contraseñas y active o desac
 5. (Recomendado) **Edge Functions → Secrets**: agrega `CRM_ORIGEN_PERMITIDO` = `https://crm.solucionesimpresiona.com`.
 
 Si prefieres no usar la función: crea a cada persona en **Authentication → Users → Add user**. Su perfil queda **inactivo**; después actívalo y asígnale un rol desde el CRM.
+
+## 5b. Función del portal del cliente
+
+El portal es el enlace privado que le mandas al cliente (por WhatsApp) para que vea su cotización o pedido y apruebe la cotización o los diseños sin tener cuenta. Esta función le muestra al cliente las imágenes y PDF de los diseños de **su** pedido con enlaces temporales (10 minutos). La llave secreta se queda en el servidor.
+
+1. **Edge Functions → Deploy a new function → Via Editor**.
+2. Nombre: `portal-cliente` (exactamente así).
+3. Borra el código de ejemplo y pega todo el contenido de [`supabase/functions/portal-cliente/index.ts`](../supabase/functions/portal-cliente/index.ts). Presiona **Deploy**.
+4. En la configuración de la función, **desactiva "Verify JWT"**: el cliente no inicia sesión; la función valida por dentro el token secreto del enlace.
+5. El secreto `CRM_ORIGEN_PERMITIDO` de la sección 5 también aplica a esta función (si ya lo agregaste, no hagas nada).
+
+Sin esta función el portal funciona igual (el cliente ve y aprueba), pero no puede ver las imágenes de los diseños guardados en el CRM; solo los que se compartieron como enlace (por ejemplo, de Drive).
+
+Seguridad del portal:
+- Cada enlace lleva un token aleatorio imposible de adivinar y vence a los 30 días (configurable de 1 a 180). Desde el CRM puedes **revocarlo** en cualquier momento.
+- El cliente solo ve lo de ese documento: conceptos, totales, condiciones y avance. Nunca ve costos, notas internas ni información de otros clientes. El RFC y la razón social de tu empresa solo aparecen si activas "Mostrar datos fiscales" en la configuración.
+- Cada aprobación queda registrada con el nombre que escribió el cliente, la fecha y su conexión, y aparece en el historial del cliente y del pedido.
 
 ## 6. Datos para conectar el CRM
 

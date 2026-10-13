@@ -44,7 +44,14 @@ npm run dev
 | `npm test` | Pruebas unitarias y, si hay variables de Supabase local, de base de datos |
 | `npm run test:db` | Pruebas de permisos y flujos contra Supabase local |
 | `npm run build` / `npm run build:demo` | Compilar la app real o la vista previa |
-| `npm run db:instalador` | Regenerar `supabase/instalar.sql` a partir de las migraciones |
+| `npm run db:instalador` | Regenerar `supabase/instalar.sql` (instalación nueva) y `supabase/actualizar-fases-2-y-3.sql` (actualización de una base existente) a partir de las migraciones |
 | `npm run db:types` | Regenerar los tipos de TypeScript de la base de datos |
+
+Funciones de servidor (`supabase/functions`): `admin-usuarios` (alta de usuarios) y `portal-cliente` (archivos del portal del cliente). Para probar `portal-cliente` en local sin el runtime de Edge, ejecútala con Deno y corre sus pruebas:
+
+```bash
+SUPABASE_URL=http://127.0.0.1:54321 SUPABASE_SERVICE_ROLE_KEY=... deno run --allow-net --allow-env --allow-read supabase/functions/portal-cliente/index.ts
+PORTAL_FN_URL=http://127.0.0.1:8000/ SUPABASE_URL=... SUPABASE_ANON_KEY=... SUPABASE_SERVICE_ROLE_KEY=... npx vitest run tests/db
+```
 
 Convenciones de código y del sistema de diseño: [CLAUDE.md](CLAUDE.md). Plan funcional y fases: [PLAN.md](PLAN.md).

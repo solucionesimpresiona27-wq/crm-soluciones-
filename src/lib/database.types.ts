@@ -117,14 +117,14 @@ isOneToOne: false
                   ]
                 },"clientes": {
                   Row: {
-                    "activo": boolean,"busqueda": string | null,"ciudad": string | null,"codigo_postal_fiscal": string | null,"created_at": string,"created_by": string | null,"dias_credito": number,"direccion": string | null,"email": string | null,"email_facturacion": string | null,"etiquetas": (string)[],"id": string,"nombre": string,"notas": string | null,"origen": string | null,"razon_social": string | null,"regimen_fiscal": string | null,"requiere_factura": boolean,"rfc": string | null,"telefono": string | null,"tipo": string,"ultima_compra_at": string | null,"updated_at": string,"uso_cfdi": string | null,"vendedor_id": string | null,"whatsapp": string | null
+                    "activo": boolean,"busqueda": string | null,"ciudad": string | null,"codigo_postal_fiscal": string | null,"created_at": string,"created_by": string | null,"dias_credito": number,"direccion": string | null,"email": string | null,"email_facturacion": string | null,"etiquetas": (string)[],"id": string,"lista_precio": Database["public"]['Enums']["lista_precio"],"nombre": string,"notas": string | null,"origen": string | null,"razon_social": string | null,"regimen_fiscal": string | null,"requiere_factura": boolean,"rfc": string | null,"telefono": string | null,"tipo": string,"ultima_compra_at": string | null,"updated_at": string,"uso_cfdi": string | null,"vendedor_id": string | null,"whatsapp": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "activo"?: boolean,"busqueda"?: never,"ciudad"?: string | null,"codigo_postal_fiscal"?: string | null,"created_at"?: string,"created_by"?: string | null,"dias_credito"?: number,"direccion"?: string | null,"email"?: string | null,"email_facturacion"?: string | null,"etiquetas"?: (string)[],"id"?: string,"nombre": string,"notas"?: string | null,"origen"?: string | null,"razon_social"?: string | null,"regimen_fiscal"?: string | null,"requiere_factura"?: boolean,"rfc"?: string | null,"telefono"?: string | null,"tipo"?: string,"ultima_compra_at"?: string | null,"updated_at"?: string,"uso_cfdi"?: string | null,"vendedor_id"?: string | null,"whatsapp"?: string | null
+                    "activo"?: boolean,"busqueda"?: never,"ciudad"?: string | null,"codigo_postal_fiscal"?: string | null,"created_at"?: string,"created_by"?: string | null,"dias_credito"?: number,"direccion"?: string | null,"email"?: string | null,"email_facturacion"?: string | null,"etiquetas"?: (string)[],"id"?: string,"lista_precio"?: Database["public"]['Enums']["lista_precio"],"nombre": string,"notas"?: string | null,"origen"?: string | null,"razon_social"?: string | null,"regimen_fiscal"?: string | null,"requiere_factura"?: boolean,"rfc"?: string | null,"telefono"?: string | null,"tipo"?: string,"ultima_compra_at"?: string | null,"updated_at"?: string,"uso_cfdi"?: string | null,"vendedor_id"?: string | null,"whatsapp"?: string | null
                   }
                   Update: {
-                    "activo"?: boolean,"busqueda"?: never,"ciudad"?: string | null,"codigo_postal_fiscal"?: string | null,"created_at"?: string,"created_by"?: string | null,"dias_credito"?: number,"direccion"?: string | null,"email"?: string | null,"email_facturacion"?: string | null,"etiquetas"?: (string)[],"id"?: string,"nombre"?: string,"notas"?: string | null,"origen"?: string | null,"razon_social"?: string | null,"regimen_fiscal"?: string | null,"requiere_factura"?: boolean,"rfc"?: string | null,"telefono"?: string | null,"tipo"?: string,"ultima_compra_at"?: string | null,"updated_at"?: string,"uso_cfdi"?: string | null,"vendedor_id"?: string | null,"whatsapp"?: string | null
+                    "activo"?: boolean,"busqueda"?: never,"ciudad"?: string | null,"codigo_postal_fiscal"?: string | null,"created_at"?: string,"created_by"?: string | null,"dias_credito"?: number,"direccion"?: string | null,"email"?: string | null,"email_facturacion"?: string | null,"etiquetas"?: (string)[],"id"?: string,"lista_precio"?: Database["public"]['Enums']["lista_precio"],"nombre"?: string,"notas"?: string | null,"origen"?: string | null,"razon_social"?: string | null,"regimen_fiscal"?: string | null,"requiere_factura"?: boolean,"rfc"?: string | null,"telefono"?: string | null,"tipo"?: string,"ultima_compra_at"?: string | null,"updated_at"?: string,"uso_cfdi"?: string | null,"vendedor_id"?: string | null,"whatsapp"?: string | null
                   }
                   Relationships: [
                     {
@@ -172,6 +172,26 @@ isOneToOne: false
       columns: ["cliente_id"]
 isOneToOne: false
       referencedRelation: "clientes"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"cortes_caja": {
+                  Row: {
+                    "cerrado_por": string | null,"created_at": string,"diferencia": number,"efectivo_contado": number,"efectivo_inicial": number,"esperado": number,"fecha": string,"id": string,"notas": string | null,"resumen": NonNullable<Json>
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "cerrado_por"?: string | null,"created_at"?: string,"diferencia": number,"efectivo_contado": number,"efectivo_inicial"?: number,"esperado": number,"fecha": string,"id"?: string,"notas"?: string | null,"resumen"?: NonNullable<Json>
+                  }
+                  Update: {
+                    "cerrado_por"?: string | null,"created_at"?: string,"diferencia"?: number,"efectivo_contado"?: number,"efectivo_inicial"?: number,"esperado"?: number,"fecha"?: string,"id"?: string,"notas"?: string | null,"resumen"?: NonNullable<Json>
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "cortes_caja_cerrado_por_fkey"
+      columns: ["cerrado_por"]
+isOneToOne: false
+      referencedRelation: "perfiles"
       referencedColumns: ["id"]
     }
                   ]
@@ -244,6 +264,140 @@ isOneToOne: false
                   }
                   Relationships: [
                     
+                  ]
+                },"gastos": {
+                  Row: {
+                    "cancelado": boolean,"cancelado_at": string | null,"cancelado_por": string | null,"categoria": Database["public"]['Enums']["categoria_gasto"],"comprobante_path": string | null,"concepto": string,"created_at": string,"fecha": string,"id": string,"metodo_pago": Database["public"]['Enums']["metodo_pago"],"monto": number,"motivo_cancelacion": string | null,"notas": string | null,"pedido_id": string | null,"proveedor_id": string | null,"referencia": string | null,"updated_at": string,"usuario_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "cancelado"?: boolean,"cancelado_at"?: string | null,"cancelado_por"?: string | null,"categoria"?: Database["public"]['Enums']["categoria_gasto"],"comprobante_path"?: string | null,"concepto": string,"created_at"?: string,"fecha"?: string,"id"?: string,"metodo_pago"?: Database["public"]['Enums']["metodo_pago"],"monto": number,"motivo_cancelacion"?: string | null,"notas"?: string | null,"pedido_id"?: string | null,"proveedor_id"?: string | null,"referencia"?: string | null,"updated_at"?: string,"usuario_id"?: string | null
+                  }
+                  Update: {
+                    "cancelado"?: boolean,"cancelado_at"?: string | null,"cancelado_por"?: string | null,"categoria"?: Database["public"]['Enums']["categoria_gasto"],"comprobante_path"?: string | null,"concepto"?: string,"created_at"?: string,"fecha"?: string,"id"?: string,"metodo_pago"?: Database["public"]['Enums']["metodo_pago"],"monto"?: number,"motivo_cancelacion"?: string | null,"notas"?: string | null,"pedido_id"?: string | null,"proveedor_id"?: string | null,"referencia"?: string | null,"updated_at"?: string,"usuario_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "gastos_cancelado_por_fkey"
+      columns: ["cancelado_por"]
+isOneToOne: false
+      referencedRelation: "perfiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "gastos_pedido_id_fkey"
+      columns: ["pedido_id"]
+isOneToOne: false
+      referencedRelation: "ordenes_trabajo"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "gastos_pedido_id_fkey"
+      columns: ["pedido_id"]
+isOneToOne: false
+      referencedRelation: "pedidos"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "gastos_proveedor_id_fkey"
+      columns: ["proveedor_id"]
+isOneToOne: false
+      referencedRelation: "proveedores"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "gastos_usuario_id_fkey"
+      columns: ["usuario_id"]
+isOneToOne: false
+      referencedRelation: "perfiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"material_costos": {
+                  Row: {
+                    "costo_unitario": number,"material_id": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "costo_unitario"?: number,"material_id": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "costo_unitario"?: number,"material_id"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "material_costos_material_id_fkey"
+      columns: ["material_id"]
+isOneToOne: true
+      referencedRelation: "materiales"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"materiales": {
+                  Row: {
+                    "activo": boolean,"bajo_minimo": boolean | null,"busqueda": string | null,"categoria": string | null,"created_at": string,"created_by": string | null,"existencia": number,"id": string,"nombre": string,"notas": string | null,"proveedor_id": string | null,"stock_minimo": number,"ubicacion": string | null,"unidad": Database["public"]['Enums']["unidad_material"],"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "activo"?: boolean,"bajo_minimo"?: never,"busqueda"?: never,"categoria"?: string | null,"created_at"?: string,"created_by"?: string | null,"existencia"?: number,"id"?: string,"nombre": string,"notas"?: string | null,"proveedor_id"?: string | null,"stock_minimo"?: number,"ubicacion"?: string | null,"unidad"?: Database["public"]['Enums']["unidad_material"],"updated_at"?: string
+                  }
+                  Update: {
+                    "activo"?: boolean,"bajo_minimo"?: never,"busqueda"?: never,"categoria"?: string | null,"created_at"?: string,"created_by"?: string | null,"existencia"?: number,"id"?: string,"nombre"?: string,"notas"?: string | null,"proveedor_id"?: string | null,"stock_minimo"?: number,"ubicacion"?: string | null,"unidad"?: Database["public"]['Enums']["unidad_material"],"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "materiales_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "perfiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "materiales_proveedor_id_fkey"
+      columns: ["proveedor_id"]
+isOneToOne: false
+      referencedRelation: "proveedores"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"movimientos_inventario": {
+                  Row: {
+                    "cantidad": number,"created_at": string,"existencia_resultante": number,"fecha": string,"id": string,"material_id": string,"notas": string | null,"pedido_id": string | null,"proveedor_id": string | null,"referencia": string | null,"tipo": Database["public"]['Enums']["tipo_movimiento"],"usuario_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "cantidad": number,"created_at"?: string,"existencia_resultante"?: number,"fecha"?: string,"id"?: string,"material_id": string,"notas"?: string | null,"pedido_id"?: string | null,"proveedor_id"?: string | null,"referencia"?: string | null,"tipo": Database["public"]['Enums']["tipo_movimiento"],"usuario_id"?: string | null
+                  }
+                  Update: {
+                    "cantidad"?: number,"created_at"?: string,"existencia_resultante"?: number,"fecha"?: string,"id"?: string,"material_id"?: string,"notas"?: string | null,"pedido_id"?: string | null,"proveedor_id"?: string | null,"referencia"?: string | null,"tipo"?: Database["public"]['Enums']["tipo_movimiento"],"usuario_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "movimientos_inventario_material_id_fkey"
+      columns: ["material_id"]
+isOneToOne: false
+      referencedRelation: "materiales"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "movimientos_inventario_pedido_id_fkey"
+      columns: ["pedido_id"]
+isOneToOne: false
+      referencedRelation: "ordenes_trabajo"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "movimientos_inventario_pedido_id_fkey"
+      columns: ["pedido_id"]
+isOneToOne: false
+      referencedRelation: "pedidos"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "movimientos_inventario_proveedor_id_fkey"
+      columns: ["proveedor_id"]
+isOneToOne: false
+      referencedRelation: "proveedores"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "movimientos_inventario_usuario_id_fkey"
+      columns: ["usuario_id"]
+isOneToOne: false
+      referencedRelation: "perfiles"
+      referencedColumns: ["id"]
+    }
                   ]
                 },"oportunidades": {
                   Row: {
@@ -501,6 +655,94 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"portal_enlaces": {
+                  Row: {
+                    "cotizacion_id": string | null,"created_at": string,"created_by": string | null,"expira_at": string,"id": string,"pedido_id": string | null,"revocado": boolean,"revocado_at": string | null,"revocado_por": string | null,"tipo": string,"token": string,"ultimo_acceso_at": string | null,"vistas": number,"portal_pedido_de_enlace": string | null
+                  }
+                  ComputedFields: "portal_pedido_de_enlace"
+                  Insert: {
+                    "cotizacion_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"expira_at"?: string,"id"?: string,"pedido_id"?: string | null,"revocado"?: boolean,"revocado_at"?: string | null,"revocado_por"?: string | null,"tipo": string,"token"?: string,"ultimo_acceso_at"?: string | null,"vistas"?: number
+                  }
+                  Update: {
+                    "cotizacion_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"expira_at"?: string,"id"?: string,"pedido_id"?: string | null,"revocado"?: boolean,"revocado_at"?: string | null,"revocado_por"?: string | null,"tipo"?: string,"token"?: string,"ultimo_acceso_at"?: string | null,"vistas"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "portal_enlaces_cotizacion_id_fkey"
+      columns: ["cotizacion_id"]
+isOneToOne: false
+      referencedRelation: "cotizaciones"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "portal_enlaces_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "perfiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "portal_enlaces_pedido_id_fkey"
+      columns: ["pedido_id"]
+isOneToOne: false
+      referencedRelation: "ordenes_trabajo"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "portal_enlaces_pedido_id_fkey"
+      columns: ["pedido_id"]
+isOneToOne: false
+      referencedRelation: "pedidos"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "portal_enlaces_revocado_por_fkey"
+      columns: ["revocado_por"]
+isOneToOne: false
+      referencedRelation: "perfiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"portal_respuestas": {
+                  Row: {
+                    "accion": string,"archivo_id": string | null,"comentario": string | null,"cotizacion_id": string | null,"created_at": string,"enlace_id": string,"id": number,"ip": string | null,"nombre": string,"pedido_id": string | null,"user_agent": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "accion": string,"archivo_id"?: string | null,"comentario"?: string | null,"cotizacion_id"?: string | null,"created_at"?: string,"enlace_id": string,"id"?: never,"ip"?: string | null,"nombre": string,"pedido_id"?: string | null,"user_agent"?: string | null
+                  }
+                  Update: {
+                    "accion"?: string,"archivo_id"?: string | null,"comentario"?: string | null,"cotizacion_id"?: string | null,"created_at"?: string,"enlace_id"?: string,"id"?: never,"ip"?: string | null,"nombre"?: string,"pedido_id"?: string | null,"user_agent"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "portal_respuestas_archivo_id_fkey"
+      columns: ["archivo_id"]
+isOneToOne: false
+      referencedRelation: "archivos"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "portal_respuestas_cotizacion_id_fkey"
+      columns: ["cotizacion_id"]
+isOneToOne: false
+      referencedRelation: "cotizaciones"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "portal_respuestas_enlace_id_fkey"
+      columns: ["enlace_id"]
+isOneToOne: false
+      referencedRelation: "portal_enlaces"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "portal_respuestas_pedido_id_fkey"
+      columns: ["pedido_id"]
+isOneToOne: false
+      referencedRelation: "ordenes_trabajo"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "portal_respuestas_pedido_id_fkey"
+      columns: ["pedido_id"]
+isOneToOne: false
+      referencedRelation: "pedidos"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"producto_costos": {
                   Row: {
                     "costo_fijo": number,"costo_mano_obra": number,"costo_material": number,"desperdicio_pct": number,"ganancia_pct": number,"notas": string | null,"producto_id": string,"proveedor": string | null,"updated_at": string
@@ -517,6 +759,26 @@ isOneToOne: false
       foreignKeyName: "producto_costos_producto_id_fkey"
       columns: ["producto_id"]
 isOneToOne: true
+      referencedRelation: "productos"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"producto_precios": {
+                  Row: {
+                    "created_at": string,"escalas": NonNullable<Json>,"lista": Database["public"]['Enums']["lista_precio"],"precio": number,"precio_minimo": number | null,"producto_id": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"escalas"?: NonNullable<Json>,"lista": Database["public"]['Enums']["lista_precio"],"precio": number,"precio_minimo"?: number | null,"producto_id": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"escalas"?: NonNullable<Json>,"lista"?: Database["public"]['Enums']["lista_precio"],"precio"?: number,"precio_minimo"?: number | null,"producto_id"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "producto_precios_producto_id_fkey"
+      columns: ["producto_id"]
+isOneToOne: false
       referencedRelation: "productos"
       referencedColumns: ["id"]
     }
@@ -542,6 +804,88 @@ isOneToOne: false
     },{
       foreignKeyName: "productos_created_by_fkey"
       columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "perfiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"proveedores": {
+                  Row: {
+                    "activo": boolean,"busqueda": string | null,"categoria": string | null,"contacto": string | null,"created_at": string,"created_by": string | null,"email": string | null,"id": string,"nombre": string,"notas": string | null,"rfc": string | null,"telefono": string | null,"updated_at": string,"whatsapp": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "activo"?: boolean,"busqueda"?: never,"categoria"?: string | null,"contacto"?: string | null,"created_at"?: string,"created_by"?: string | null,"email"?: string | null,"id"?: string,"nombre": string,"notas"?: string | null,"rfc"?: string | null,"telefono"?: string | null,"updated_at"?: string,"whatsapp"?: string | null
+                  }
+                  Update: {
+                    "activo"?: boolean,"busqueda"?: never,"categoria"?: string | null,"contacto"?: string | null,"created_at"?: string,"created_by"?: string | null,"email"?: string | null,"id"?: string,"nombre"?: string,"notas"?: string | null,"rfc"?: string | null,"telefono"?: string | null,"updated_at"?: string,"whatsapp"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "proveedores_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "perfiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"tareas": {
+                  Row: {
+                    "cliente_id": string | null,"completada": boolean,"completada_at": string | null,"completada_por": string | null,"cotizacion_id": string | null,"created_at": string,"created_by": string | null,"descripcion": string | null,"fecha": string,"hora": string | null,"id": string,"oportunidad_id": string | null,"pedido_id": string | null,"prioridad": Database["public"]['Enums']["prioridad"],"responsable_id": string | null,"tipo": Database["public"]['Enums']["tipo_tarea"],"titulo": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "cliente_id"?: string | null,"completada"?: boolean,"completada_at"?: string | null,"completada_por"?: string | null,"cotizacion_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"descripcion"?: string | null,"fecha"?: string,"hora"?: string | null,"id"?: string,"oportunidad_id"?: string | null,"pedido_id"?: string | null,"prioridad"?: Database["public"]['Enums']["prioridad"],"responsable_id"?: string | null,"tipo"?: Database["public"]['Enums']["tipo_tarea"],"titulo": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "cliente_id"?: string | null,"completada"?: boolean,"completada_at"?: string | null,"completada_por"?: string | null,"cotizacion_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"descripcion"?: string | null,"fecha"?: string,"hora"?: string | null,"id"?: string,"oportunidad_id"?: string | null,"pedido_id"?: string | null,"prioridad"?: Database["public"]['Enums']["prioridad"],"responsable_id"?: string | null,"tipo"?: Database["public"]['Enums']["tipo_tarea"],"titulo"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "tareas_cliente_id_fkey"
+      columns: ["cliente_id"]
+isOneToOne: false
+      referencedRelation: "clientes"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "tareas_completada_por_fkey"
+      columns: ["completada_por"]
+isOneToOne: false
+      referencedRelation: "perfiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "tareas_cotizacion_id_fkey"
+      columns: ["cotizacion_id"]
+isOneToOne: false
+      referencedRelation: "cotizaciones"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "tareas_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "perfiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "tareas_oportunidad_id_fkey"
+      columns: ["oportunidad_id"]
+isOneToOne: false
+      referencedRelation: "oportunidades"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "tareas_pedido_id_fkey"
+      columns: ["pedido_id"]
+isOneToOne: false
+      referencedRelation: "ordenes_trabajo"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "tareas_pedido_id_fkey"
+      columns: ["pedido_id"]
+isOneToOne: false
+      referencedRelation: "pedidos"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "tareas_responsable_id_fkey"
+      columns: ["responsable_id"]
 isOneToOne: false
       referencedRelation: "perfiles"
       referencedColumns: ["id"]
@@ -632,8 +976,16 @@ isOneToOne: false
             "actualizar_notas_partida":
 { Args: { "p_notas": string,"p_partida": string }; Returns: undefined
                            },
+"agenda":
+{ Args: { "p_desde": string,"p_hasta": string }; Returns: {
+              "cliente": string,"cliente_id": string,"completada": boolean,"cotizacion_id": string,"detalle": string,"estado": string,"fecha": string,"folio": string,"hora": string,"id": string,"oportunidad_id": string,"origen": string,"pedido_id": string,"prioridad": Database["public"]['Enums']["prioridad"],"responsable_id": string,"tipo": string,"titulo": string
+            }[]
+                           },
 "agregar_nota_pedido":
 { Args: { "p_mensaje": string,"p_pedido": string }; Returns: number
+                           },
+"ajustar_existencia":
+{ Args: { "p_existencia": number,"p_material": string,"p_notas"?: string }; Returns: Json
                            },
 "busqueda_global":
 { Args: { "p_texto": string }; Returns: Json
@@ -641,20 +993,61 @@ isOneToOne: false
 "cambiar_estado_pedido":
 { Args: { "p_estado": Database["public"]['Enums']["estado_pedido"],"p_motivo"?: string,"p_pedido": string }; Returns: undefined
                            },
+"cantidad_texto":
+{ Args: { "p": number }; Returns: string
+                           },
+"cerrar_caja":
+{ Args: { "p_efectivo_contado": number,"p_efectivo_inicial": number,"p_fecha": string,"p_notas"?: string }; Returns: Json
+                           },
+"clientes_inactivos":
+{ Args: { "p_dias"?: number }; Returns: {
+              "cliente_id": string,"dias_sin_compra": number,"email": string,"etiquetas": (string)[],"nombre": string,"pedidos": number,"telefono": string,"total_comprado": number,"ultima_compra": string,"vendedor": string,"vendedor_id": string,"whatsapp": string
+            }[]
+                           },
+"comisiones":
+{ Args: { "p_desde": string,"p_hasta": string }; Returns: {
+              "base_comision": number,"cobrado": number,"comision": number,"comision_pct": number,"nombre": string,"pagos": number,"pedidos": number,"vendedor_id": string
+            }[]
+                           },
+"comisiones_detalle":
+{ Args: { "p_desde": string,"p_hasta": string,"p_vendedor"?: string }; Returns: {
+              "base_comision": number,"cliente": string,"cobrado": number,"comision": number,"comision_pct": number,"folio": string,"pagos": number,"pedido_id": string,"vendedor": string,"vendedor_id": string
+            }[]
+                           },
 "convertir_cotizacion_a_pedido":
 { Args: { "p_cotizacion": string,"p_fecha_entrega"?: string,"p_responsable"?: string,"p_titulo"?: string }; Returns: string
                            },
 "copiar_partidas":
 { Args: { "p_destino_cotizacion": string,"p_destino_pedido": string,"p_origen_cotizacion": string,"p_origen_pedido": string }; Returns: undefined
                            },
+"corte_caja_calcular":
+{ Args: { "p_detalle_gastos": boolean,"p_efectivo_inicial": number,"p_fecha": string }; Returns: Json
+                           },
+"corte_caja_resumen":
+{ Args: { "p_efectivo_inicial"?: number,"p_fecha"?: string }; Returns: Json
+                           },
+"crear_enlace_portal":
+{ Args: { "p_dias"?: number,"p_id": string,"p_nuevo"?: boolean,"p_tipo": string }; Returns: Json
+                           },
+"cuentas_por_cobrar":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "cliente": string,"cliente_id": string,"creado": string,"dias_transcurridos": number,"dias_vencido": number,"estado": Database["public"]['Enums']["estado_pedido"],"estado_pago": Database["public"]['Enums']["estado_pago"],"fecha_entrega": string,"fecha_limite": string,"folio": string,"pagado": number,"pedido_id": string,"saldo": number,"titulo": string,"total": number,"vencido": boolean,"vendedor": string,"vendedor_id": string,"whatsapp": string
+            }[]
+                           },
 "dashboard_resumen":
 { Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"delta_inventario":
+{ Args: { "p_cantidad": number,"p_tipo": Database["public"]['Enums']["tipo_movimiento"] }; Returns: number
                            },
 "duplicar_cotizacion":
 { Args: { "p_cotizacion": string }; Returns: string
                            },
 "es_admin":
 { Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"generar_token_portal":
+{ Args: Record<PropertyKey, never>; Returns: string
                            },
 "guardar_cotizacion":
 { Args: { "p_datos": Json }; Returns: Json
@@ -671,11 +1064,85 @@ isOneToOne: false
 "permiso_por_defecto":
 { Args: { "p_permiso": string,"p_rol": Database["public"]['Enums']["rol_usuario"] }; Returns: boolean
                            },
+"portal_aprobar_cotizacion":
+{ Args: { "p_comentario"?: string,"p_nombre": string,"p_token": string }; Returns: Json
+                           },
+"portal_archivos_firmables":
+{ Args: { "p_archivo_id"?: string,"p_token": string }; Returns: {
+              "id": string,"mime": string,"nombre": string,"path": string,"version": number
+            }[]
+                           },
+"portal_enlace_vigente":
+{ Args: { "p_token": string }; Returns: {
+              "cotizacion_id": string | null,
+"created_at": string,
+"created_by": string | null,
+"expira_at": string,
+"id": string,
+"pedido_id": string | null,
+"revocado": boolean,
+"revocado_at": string | null,
+"revocado_por": string | null,
+"tipo": string,
+"token": string,
+"ultimo_acceso_at": string | null,
+"vistas": number
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "portal_enlaces"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"portal_obtener":
+{ Args: { "p_token": string }; Returns: Json
+                           },
+"portal_origen_solicitud":
+{ Args: Record<PropertyKey, never>; Returns: (string)[]
+                           },
+"portal_partidas":
+{ Args: { "p_cotizacion": string,"p_pedido": string }; Returns: Json
+                           },
+"portal_pedido_de_enlace":
+{ Args: { "e": Omit<Database["public"]['Tables']["portal_enlaces"]['Row'], Database["public"]['Tables']["portal_enlaces"]['ComputedFields']> }; Returns: string
+                           },
+"portal_responder_diseno":
+{ Args: { "p_aprobado": boolean,"p_archivo_id": string,"p_comentario"?: string,"p_nombre": string,"p_token": string }; Returns: Json
+                           },
+"portal_texto_cliente":
+{ Args: { "p_comentario": string,"p_nombre": string }; Returns: (string)[]
+                           },
+"reabrir_caja":
+{ Args: { "p_fecha": string,"p_motivo": string }; Returns: undefined
+                           },
 "registrar_acceso":
 { Args: Record<PropertyKey, never>; Returns: undefined
                            },
+"reporte_clientes":
+{ Args: { "p_desde": string,"p_hasta": string,"p_limite"?: number }; Returns: {
+              "cliente_id": string,"cobrado": number,"nombre": string,"pedidos": number,"saldo": number,"ticket_promedio": number,"ultima_compra": string,"vendido": number,"whatsapp": string
+            }[]
+                           },
+"reporte_productos":
+{ Args: { "p_desde": string,"p_hasta": string,"p_limite"?: number }; Returns: {
+              "cantidad": number,"categoria": string,"importe": number,"pedidos": number,"producto": string,"producto_id": string,"tipo": string,"unidad": string,"unidades": number
+            }[]
+                           },
+"reporte_vendedores":
+{ Args: { "p_desde": string,"p_hasta": string }; Returns: {
+              "aceptadas": number,"cobrado": number,"cotizaciones": number,"cotizado": number,"nombre": string,"pedidos": number,"rechazadas": number,"tasa_cierre": number,"ticket_promedio": number,"vendedor_id": string,"vendido": number
+            }[]
+                           },
+"reporte_ventas":
+{ Args: { "p_agrupar"?: string,"p_desde": string,"p_hasta": string }; Returns: {
+              "cobrado": number,"cotizaciones": number,"cotizado": number,"pedidos": number,"periodo": string,"vendido": number
+            }[]
+                           },
 "resumen_cliente":
 { Args: { "p_cliente": string }; Returns: Json
+                           },
+"revocar_enlace_portal":
+{ Args: { "p_enlace": string }; Returns: undefined
                            },
 "tiene_permiso":
 { Args: { "p_permiso": string }; Returns: boolean
@@ -685,10 +1152,18 @@ isOneToOne: false
                            },
 "usuario_activo":
 { Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"utilidad_pedidos":
+{ Args: { "p_desde": string,"p_hasta": string }; Returns: {
+              "cliente": string,"cliente_id": string,"consumo_material": number,"consumos_sin_costo": number,"costo_estimado": number,"costo_real": number,"estado": Database["public"]['Enums']["estado_pedido"],"estado_pago": Database["public"]['Enums']["estado_pago"],"fecha": string,"folio": string,"gastos": number,"margen_estimado_pct": number,"margen_real_pct": number,"pedido_id": string,"titulo": string,"utilidad_estimada": number,"utilidad_real": number,"vendedor_id": string,"venta": number
+            }[]
+                           },
+"validar_rango_reporte":
+{ Args: { "p_desde": string,"p_hasta": string,"p_max_dias"?: number }; Returns: undefined
                            }
           }
           Enums: {
-            "estado_archivo": "no_aplica"|"pendiente"|"aprobado"|"cambios"|"rechazado","estado_cotizacion": "borrador"|"enviada"|"aceptada"|"rechazada"|"cancelada","estado_pago": "pendiente"|"anticipo"|"parcial"|"liquidado"|"reembolsado","estado_pedido": "nuevo"|"en_diseno"|"esperando_aprobacion"|"aprobado"|"en_produccion"|"acabados"|"listo_entrega"|"en_instalacion"|"entregado"|"finalizado"|"pausado"|"cancelado","etapa_comercial": "prospecto_nuevo"|"contactado"|"interesado"|"cotizacion_enviada"|"en_seguimiento"|"ganado"|"perdido","metodo_calculo": "pieza"|"m2"|"metro_lineal"|"millar"|"hora"|"servicio"|"proyecto"|"mensualidad","metodo_pago": "transferencia"|"efectivo"|"deposito"|"tarjeta","prioridad": "baja"|"normal"|"alta"|"urgente","rol_usuario": "admin"|"ventas"|"diseno"|"produccion","tipo_pago": "anticipo"|"abono"|"liquidacion"|"devolucion","tipo_partida": "concepto"|"instalacion"|"transporte"|"diseno"|"extra"
+            "categoria_gasto": "material"|"maquila"|"servicios"|"renta"|"nomina"|"transporte"|"publicidad"|"impuestos"|"otros","estado_archivo": "no_aplica"|"pendiente"|"aprobado"|"cambios"|"rechazado","estado_cotizacion": "borrador"|"enviada"|"aceptada"|"rechazada"|"cancelada","estado_pago": "pendiente"|"anticipo"|"parcial"|"liquidado"|"reembolsado","estado_pedido": "nuevo"|"en_diseno"|"esperando_aprobacion"|"aprobado"|"en_produccion"|"acabados"|"listo_entrega"|"en_instalacion"|"entregado"|"finalizado"|"pausado"|"cancelado","etapa_comercial": "prospecto_nuevo"|"contactado"|"interesado"|"cotizacion_enviada"|"en_seguimiento"|"ganado"|"perdido","lista_precio": "publico"|"mayoreo"|"agencia","metodo_calculo": "pieza"|"m2"|"metro_lineal"|"millar"|"hora"|"servicio"|"proyecto"|"mensualidad","metodo_pago": "transferencia"|"efectivo"|"deposito"|"tarjeta","prioridad": "baja"|"normal"|"alta"|"urgente","rol_usuario": "admin"|"ventas"|"diseno"|"produccion","tipo_movimiento": "entrada"|"consumo"|"ajuste"|"merma","tipo_pago": "anticipo"|"abono"|"liquidacion"|"devolucion","tipo_partida": "concepto"|"instalacion"|"transporte"|"diseno"|"extra","tipo_tarea": "tarea"|"llamada"|"seguimiento"|"entrega"|"instalacion"|"recordatorio","unidad_material": "m2"|"metro"|"hoja"|"pieza"|"litro"|"rollo"|"kg"|"millar"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -804,7 +1279,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "estado_archivo": ["no_aplica", "pendiente", "aprobado", "cambios", "rechazado"],"estado_cotizacion": ["borrador", "enviada", "aceptada", "rechazada", "cancelada"],"estado_pago": ["pendiente", "anticipo", "parcial", "liquidado", "reembolsado"],"estado_pedido": ["nuevo", "en_diseno", "esperando_aprobacion", "aprobado", "en_produccion", "acabados", "listo_entrega", "en_instalacion", "entregado", "finalizado", "pausado", "cancelado"],"etapa_comercial": ["prospecto_nuevo", "contactado", "interesado", "cotizacion_enviada", "en_seguimiento", "ganado", "perdido"],"metodo_calculo": ["pieza", "m2", "metro_lineal", "millar", "hora", "servicio", "proyecto", "mensualidad"],"metodo_pago": ["transferencia", "efectivo", "deposito", "tarjeta"],"prioridad": ["baja", "normal", "alta", "urgente"],"rol_usuario": ["admin", "ventas", "diseno", "produccion"],"tipo_pago": ["anticipo", "abono", "liquidacion", "devolucion"],"tipo_partida": ["concepto", "instalacion", "transporte", "diseno", "extra"]
+            "categoria_gasto": ["material", "maquila", "servicios", "renta", "nomina", "transporte", "publicidad", "impuestos", "otros"],"estado_archivo": ["no_aplica", "pendiente", "aprobado", "cambios", "rechazado"],"estado_cotizacion": ["borrador", "enviada", "aceptada", "rechazada", "cancelada"],"estado_pago": ["pendiente", "anticipo", "parcial", "liquidado", "reembolsado"],"estado_pedido": ["nuevo", "en_diseno", "esperando_aprobacion", "aprobado", "en_produccion", "acabados", "listo_entrega", "en_instalacion", "entregado", "finalizado", "pausado", "cancelado"],"etapa_comercial": ["prospecto_nuevo", "contactado", "interesado", "cotizacion_enviada", "en_seguimiento", "ganado", "perdido"],"lista_precio": ["publico", "mayoreo", "agencia"],"metodo_calculo": ["pieza", "m2", "metro_lineal", "millar", "hora", "servicio", "proyecto", "mensualidad"],"metodo_pago": ["transferencia", "efectivo", "deposito", "tarjeta"],"prioridad": ["baja", "normal", "alta", "urgente"],"rol_usuario": ["admin", "ventas", "diseno", "produccion"],"tipo_movimiento": ["entrada", "consumo", "ajuste", "merma"],"tipo_pago": ["anticipo", "abono", "liquidacion", "devolucion"],"tipo_partida": ["concepto", "instalacion", "transporte", "diseno", "extra"],"tipo_tarea": ["tarea", "llamada", "seguimiento", "entrega", "instalacion", "recordatorio"],"unidad_material": ["m2", "metro", "hoja", "pieza", "litro", "rollo", "kg", "millar"]
           }
         }
 } as const
