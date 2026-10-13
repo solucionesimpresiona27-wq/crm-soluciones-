@@ -69,6 +69,7 @@
     --divider: rgba(14, 28, 48, 0.08);
     --row-hover: rgba(255, 255, 255, 0.55);
     --focus-ring: 0 0 0 3px rgba(58, 97, 148, 0.35);
+    --focus-outline: 34 66 107;
 
     /* Movimiento (resortes aproximados para transiciones CSS) */
     --ease-spring: linear(0, 0.0342, 0.1022, 0.2069, 0.3262, 0.4336, 0.5525, 0.6488, 0.7468, 0.8205, 0.8907, 0.9401, 0.979, 1.0121, 1.0322, 1.047, 1.054, 1.0568, 1.0558, 1.0519, 1.047, 1.0404, 1.0343, 1.0275, 1.0218, 1.016, 1.011, 1.0074, 1.0039, 1.0016, 0.9996, 0.9984, 0.9975, 0.997, 0.9968, 0.9968, 0.997, 0.9973, 0.9976, 0.998, 1);
@@ -128,6 +129,7 @@
     --divider: rgba(255, 255, 255, 0.07);
     --row-hover: rgba(255, 255, 255, 0.05);
     --focus-ring: 0 0 0 3px rgba(135, 163, 201, 0.4);
+    --focus-outline: 135 163 201;
   }
 
   html {
@@ -270,9 +272,17 @@
     backdrop-filter: url(#impresiona-lente) blur(3px) saturate(var(--glass-saturate));
   }
 
+  /* La cápsula lleva texto: más desenfoque que los botones circulares para que se lea sobre fondos cargados */
   .lens-ready .glass-lens.glass-capsule-lens {
-    -webkit-backdrop-filter: url(#impresiona-lente-capsula) blur(3px) saturate(var(--glass-saturate));
-    backdrop-filter: url(#impresiona-lente-capsula) blur(3px) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: url(#impresiona-lente-capsula) blur(8px) saturate(var(--glass-saturate));
+    backdrop-filter: url(#impresiona-lente-capsula) blur(8px) saturate(var(--glass-saturate));
+  }
+
+  /* Foco con teclado: la sombra del material pisaba el anillo de :focus-visible. Un contorno sí se ve
+     (y gana a outline-none por especificidad). */
+  .glass:focus-visible {
+    outline: 2px solid rgb(var(--focus-outline));
+    outline-offset: 3px;
   }
 
   /* Superficie interactiva: elevación y reflejo más intenso al pasar el cursor */
@@ -466,19 +476,38 @@
 @media (prefers-reduced-transparency: reduce) {
   .glass,
   .glass-strong,
-  .glass-clear {
+  .glass-clear,
+  .lens-ready .glass-lens {
     background: var(--glass-bg-solid);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
+  }
+
+  /* Los controles encendidos conservan su color (si no, quedaba texto blanco sobre fondo claro) */
+  .glass.glass-on-accent {
+    background: rgb(var(--accent));
+  }
+
+  .glass.glass-on-luz {
+    background: rgb(var(--luz));
   }
 }
 
 :root[data-transparencia='reducida'] .glass,
 :root[data-transparencia='reducida'] .glass-strong,
-:root[data-transparencia='reducida'] .glass-clear {
+:root[data-transparencia='reducida'] .glass-clear,
+:root[data-transparencia='reducida'].lens-ready .glass-lens {
   background: var(--glass-bg-solid);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
+}
+
+:root[data-transparencia='reducida'] .glass.glass-on-accent {
+  background: rgb(var(--accent));
+}
+
+:root[data-transparencia='reducida'] .glass.glass-on-luz {
+  background: rgb(var(--luz));
 }
 
 @media (prefers-reduced-motion: reduce) {
