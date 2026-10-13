@@ -2,6 +2,22 @@
 
 CRM web para imprenta / publicidad en México. Se usa desde PC y celular, para un equipo de 2 a 5 personas con roles distintos.
 
+## 0. Estado actual (octubre 2026)
+
+| Pieza | Estado |
+|---|---|
+| Base de datos completa (todas las fases), permisos por rol, bitácora, almacenamiento | ✅ Lista y probada (pruebas automáticas) |
+| Sistema de diseño **Impresiona Glass** (Liquid Glass) + estructura de la app | ✅ Listo |
+| Vista previa del diseño: inicio de sesión, panel de control y cotizaciones (con calculadora, PDF y WhatsApp) | 🔍 En revisión del cliente |
+| Demás pantallas (clientes, embudo, pedidos, producción, pagos, inventario, agenda, reportes, usuarios, configuración) | ⏳ Se construyen con el mismo diseño al aprobarlo |
+
+**Dirección visual definitiva (actualización del cliente):**
+- Estética Liquid Glass inspirada en el Centro de Control de Apple: cristal translúcido con bordes de luz, reflejos, refracción, profundidad y animaciones con resorte.
+- Botones circulares y cápsulas interactivas, y widgets modulares.
+- Colores reales del logo: azul `#22426B` y amarillo `#F9C206`.
+- Modo claro y oscuro. Experiencia nativa en celular.
+- Tecnologías gratuitas: Motion for React, Tailwind, Radix y Lucide.
+
 ## 1. Resumen de lo acordado
 
 | Tema | Decisión |
@@ -13,8 +29,8 @@ CRM web para imprenta / publicidad en México. Se usa desde PC y celular, para u
 | País | México: pesos MXN, IVA 16 %, datos fiscales con RFC |
 | Facturación | Se factura por fuera; el CRM solo marca "facturado" y guarda el folio CFDI |
 | Datos actuales | WhatsApp / libreta, así que se empieza de cero |
-| Hosting | En tu Hostinger si se puede (casi seguro que sí, ver sección 5); si no, gratis en Vercel |
-| Imagen | Con tu logo y colores, tanto en el CRM como en el PDF de las cotizaciones |
+| Hosting | Hostinger, subdominio `crm.solucionesimpresiona.com` (archivos estáticos: compatible con cualquier plan) |
+| Imagen | Logo y colores reales en el CRM y en el PDF; diseño Liquid Glass |
 | Entrega | Por fases |
 
 ## 2. Módulos por fase

@@ -1,0 +1,57 @@
+name: Publicar en Hostinger
+
+# Compila el CRM y lo sube por FTP a la carpeta del subdominio en Hostinger.
+# Secretos necesarios (GitHub → Settings → Secrets and variables → Actions):
+#   VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY  (llave pública "publishable")
+#   FTP_SERVIDOR, FTP_USUARIO, FTP_CONTRASENA   (cuenta FTP de Hostinger)
+# Sin los secretos de FTP solo genera el archivo "crm-publicar" para subirlo a mano.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: despliegue
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    env:
+      FTP_SERVIDOR: ${{ secrets.FTP_SERVIDOR }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Revisar configuración
+        run: |
+          if [ -z "${{ secrets.VITE_SUPABASE_URL }}" ] || [ -z "${{ secrets.VITE_SUPABASE_ANON_KEY }}" ]; then
+            echo "::error::Faltan los secretos VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY (ver docs/GUIA_HOSTINGER.md)"
+            exit 1
+          fi
+      - name: Compilar
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      - name: Guardar archivos compilados
+        uses: actions/upload-artifact@v4
+        with:
+          name: crm-publicar
+          path: dist/
+          include-hidden-files: true
+          retention-days: 30
+      - name: Subir a Hostinger por FTP
+        if: ${{ env.FTP_SERVIDOR != '' }}
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVIDOR }}
+          username: ${{ secrets.FTP_USUARIO }}
+          password: ${{ secrets.FTP_CONTRASENA }}
+          protocol: ftps
+          local-dir: ./dist/
+          server-dir: ./

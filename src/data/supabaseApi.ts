@@ -289,3 +289,5 @@ export const apiSupabase: Api = {
     },
   },
 }
+
+export default apiSupabase

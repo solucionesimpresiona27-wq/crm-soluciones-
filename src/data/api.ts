@@ -1,6 +1,4 @@
-import { DEMO } from '@/lib/supabase'
-import { apiDemo } from './demo/apiDemo'
-import { apiSupabase } from './supabaseApi'
+import implementacion from '@/data/implementacion'
 import type {
   BorradorCotizacion,
   ClienteBreve,
@@ -55,4 +53,5 @@ export interface Api {
   }
 }
 
-export const api: Api = DEMO ? apiDemo : apiSupabase
+/** Real (Supabase) o vista previa (en memoria), según VITE_DEMO al compilar. Ver vite.config.ts. */
+export const api: Api = implementacion

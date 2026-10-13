@@ -7,11 +7,10 @@ import { Campo, GlassButton, GlassIconButton, GlassInput, GlassPanel, LightField
 import { BotonTema } from '@/components/shell/BotonTema'
 import { Marca } from '@/components/shell/Marca'
 import { api } from '@/data/api'
-import { AVISO_DEMO } from '@/data/demo/datosDemo'
 import type { Rol } from '@/data/tipos'
 import { NOMBRE_ROL } from '@/lib/permisos'
 import { resorte } from '@/lib/motion'
-import { DEMO } from '@/lib/supabase'
+import { AVISO_DEMO, DEMO } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 import { BulboCristal } from './BulboCristal'
 

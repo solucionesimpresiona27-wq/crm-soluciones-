@@ -388,3 +388,5 @@ export const apiDemo: Api = {
     },
   },
 }
+
+export default apiDemo

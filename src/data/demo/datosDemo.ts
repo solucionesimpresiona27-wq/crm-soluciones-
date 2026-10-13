@@ -7,7 +7,7 @@ import { calcularTotales, importePartida } from '@/lib/calculadora'
 import { sumarDias } from '@/lib/format'
 import type { Configuracion, CotizacionCompleta, EntregaProxima, Perfil, Plantilla, ProductoCatalogo, Rol } from '../tipos'
 
-export const AVISO_DEMO = 'Vista previa con datos ficticios'
+export { AVISO_DEMO } from '@/lib/supabase'
 
 const hoy = () => {
   const d = new Date()

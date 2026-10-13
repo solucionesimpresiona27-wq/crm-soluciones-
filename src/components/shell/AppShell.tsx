@@ -1,15 +1,15 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, lazy, useEffect, useState } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useSesion } from '@/app/sesion'
 import { LightField, Skeleton } from '@/components/glass'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { AvisoDemo } from './AvisoDemo'
 import { NavegacionMovil } from './NavegacionMovil'
-import { PaletaComandos } from './PaletaComandos'
 import { ANCHO_SIDEBAR, Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
 
+const PaletaComandos = lazy(() => import('./PaletaComandos').then((m) => ({ default: m.PaletaComandos })))
 const CLAVE = 'impresiona:menu-contraido'
 
 function CargandoPagina() {
@@ -39,6 +39,10 @@ export function AppShell() {
   })
   const contraido = preferencia ?? tablet
   const [buscar, setBuscar] = useState(false)
+  const [paletaUsada, setPaletaUsada] = useState(false)
+  useEffect(() => {
+    if (buscar) setPaletaUsada(true)
+  }, [buscar])
 
   useEffect(() => {
     const atajo = (e: KeyboardEvent) => {
@@ -108,7 +112,11 @@ export function AppShell() {
         </div>
       </div>
       <NavegacionMovil />
-      <PaletaComandos abierto={buscar} onCambio={setBuscar} />
+      {paletaUsada ? (
+        <Suspense fallback={null}>
+          <PaletaComandos abierto={buscar} onCambio={setBuscar} />
+        </Suspense>
+      ) : null}
     </div>
   )
 }

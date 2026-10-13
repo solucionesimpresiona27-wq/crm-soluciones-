@@ -18,7 +18,7 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "baseUrl": ".",
-    "paths": { "@/*": ["./src/*"] },
+    "paths": { "@/data/implementacion": ["./src/data/supabaseApi.ts"], "@/*": ["./src/*"] },
     "types": ["vite/client"]
   },
   "include": ["src"]

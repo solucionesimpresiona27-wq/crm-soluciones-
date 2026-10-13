@@ -3,6 +3,7 @@ import type { Database } from './database.types'
 
 /** Vista previa con datos ficticios: no se conecta a Supabase ni escribe datos reales. */
 export const DEMO = import.meta.env.VITE_DEMO === 'true'
+export const AVISO_DEMO = 'Vista previa con datos ficticios'
 
 let cliente: SupabaseClient<Database> | null = null
 

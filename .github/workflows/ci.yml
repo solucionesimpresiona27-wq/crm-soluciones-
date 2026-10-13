@@ -1,0 +1,55 @@
+name: Verificación
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app:
+    name: Tipos, pruebas y compilación
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npx vitest run src
+      - name: Compilar app
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: https://ejemplo.supabase.co
+          VITE_SUPABASE_ANON_KEY: llave-de-ejemplo
+      - name: Compilar vista previa
+        run: npm run build:demo
+      - name: El instalador SQL está al día
+        run: |
+          npm run db:instalador
+          git diff --exit-code supabase/instalar.sql
+
+  base-de-datos:
+    name: Pruebas de la base de datos
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.120.0
+      - name: Iniciar Supabase local
+        run: supabase start -x studio,imgproxy,vector,logflare,supavisor,postgres-meta,edge-runtime,mailpit
+      - name: Pruebas de permisos y flujos
+        run: |
+          eval "$(supabase status -o env | grep -E '^(API_URL|ANON_KEY|SERVICE_ROLE_KEY)=')"
+          SUPABASE_URL=$API_URL SUPABASE_ANON_KEY=$ANON_KEY SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY npx vitest run tests/db

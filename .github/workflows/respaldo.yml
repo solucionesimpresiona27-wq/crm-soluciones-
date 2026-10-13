@@ -1,0 +1,42 @@
+name: Respaldo semanal de la base de datos
+
+# Respaldo gratuito: cada domingo descarga una copia de la base de datos y la guarda
+# 90 días como archivo de GitHub. Necesita el secreto SUPABASE_DB_URL con la cadena
+# de conexión "Session pooler" (Supabase → Connect). Ver docs/GUIA_SUPABASE.md.
+
+on:
+  schedule:
+    - cron: '17 9 * * 0'
+  workflow_dispatch:
+
+jobs:
+  respaldo:
+    runs-on: ubuntu-latest
+    env:
+      DB: ${{ secrets.SUPABASE_DB_URL }}
+    steps:
+      - name: Revisar configuración
+        run: |
+          if [ -z "$DB" ]; then
+            echo "::warning::Sin SUPABASE_DB_URL no se puede respaldar (ver docs/GUIA_SUPABASE.md)"
+            exit 0
+          fi
+      - name: Instalar cliente de PostgreSQL 17
+        if: ${{ env.DB != '' }}
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client-17
+      - name: Descargar respaldo
+        if: ${{ env.DB != '' }}
+        run: |
+          fecha=$(date +%Y-%m-%d)
+          /usr/lib/postgresql/17/bin/pg_dump "$DB" --schema=public --schema=auth --no-owner --no-privileges -Fc -f "respaldo-$fecha.dump"
+          ls -lh respaldo-*.dump
+      - uses: actions/upload-artifact@v4
+        if: ${{ env.DB != '' }}
+        with:
+          name: respaldo-base-de-datos
+          path: respaldo-*.dump
+          retention-days: 90
