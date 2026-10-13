@@ -1,6 +1,7 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from 'motion/react'
+import { useEffect, useRef } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { GRUPOS } from '@/app/navegacion'
 import { useSesion } from '@/app/sesion'
@@ -20,6 +21,12 @@ export function Sidebar({ contraido, onAlternar }: { contraido: boolean; onAlter
   const actual = moduloDeRuta(pathname)
   const { sesion } = useSesion()
   const reducir = useReducedMotion()
+  const nav = useRef<HTMLElement>(null)
+
+  // En pantallas bajas el menú se desplaza: mantén visible el módulo activo
+  useEffect(() => {
+    nav.current?.querySelector('[aria-current="page"]')?.scrollIntoView({ block: 'nearest' })
+  }, [pathname])
 
   return (
     <Tooltip.Provider delayDuration={250}>
@@ -45,13 +52,13 @@ export function Sidebar({ contraido, onAlternar }: { contraido: boolean; onAlter
           </AnimatePresence>
         </div>
 
-        <nav className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-3 pb-3">
+        <nav ref={nav} className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-3 pb-3">
           <LayoutGroup id="sidebar">
             {GRUPOS.map((grupo) => {
               const items = modulos.filter((m) => m.grupo === grupo)
               if (!items.length) return null
               return (
-                <div key={grupo} className="mt-3 first:mt-0">
+                <div key={grupo} className="mt-3 first:mt-0 [@media(max-height:940px)]:mt-2 [@media(max-height:940px)]:first:mt-0">
                   <p
                     className={cn(
                       'mb-1 h-5 px-3 text-xs font-medium text-fg-subtle transition-opacity duration-200',
@@ -71,7 +78,7 @@ export function Sidebar({ contraido, onAlternar }: { contraido: boolean; onAlter
                           end={m.ruta === '/'}
                           aria-current={activo ? 'page' : undefined}
                           className={cn(
-                            'group relative flex h-11 items-center gap-3 rounded-full px-3 text-sm font-medium outline-none transition-colors',
+                            'group relative flex h-11 items-center gap-3 rounded-full px-3 text-sm font-medium outline-none transition-colors [@media(max-height:940px)]:h-10 pointer-coarse:!h-11',
                             activo ? 'text-fg' : 'text-fg-muted hover:text-fg',
                             contraido && 'justify-center px-0',
                           )}
