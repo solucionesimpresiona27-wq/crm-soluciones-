@@ -337,3 +337,108 @@ export function aplicarMovimiento(
   material.bajo_minimo = bajoMinimo(material)
   return fila
 }
+
+// ---------------------------------------------------------------------------
+// Folios, etapas y archivos de diseño
+// ---------------------------------------------------------------------------
+
+/** Siguiente folio (como tg_asignar_folio): PED-0049, COT-0011… */
+export function siguienteFolio(a: Almacen, tipo: 'pedido' | 'cotizacion') {
+  const prefijo = tipo === 'pedido' ? a.configuracion.prefijo_pedido || 'PED' : a.configuracion.prefijo_cotizacion || 'COT'
+  return `${prefijo}-${String(a.folios[tipo]++).padStart(4, '0')}`
+}
+
+/**
+ * Etapas que se omiten según los conceptos (igual que convertir_cotizacion_a_pedido):
+ * sin diseño → sin etapas de diseño; sin producción → sin taller; sin instalación → sin instalación.
+ */
+export function etapasOmitidas(a: Almacen, partidas: Array<{ tipo: string; producto_id: string | null }>) {
+  const prod = (id: string | null) => a.productos.find((p) => p.id === id)
+  const diseno = partidas.some((p) => (p.tipo === 'diseno' ? true : ['instalacion', 'transporte'].includes(p.tipo) ? false : (prod(p.producto_id)?.requiere_diseno ?? true)))
+  const produccion = partidas.some((p) => (['instalacion', 'transporte', 'diseno'].includes(p.tipo) ? false : (prod(p.producto_id)?.requiere_produccion ?? true)))
+  const instalacion = partidas.some((p) => p.tipo === 'instalacion' || Boolean(prod(p.producto_id)?.requiere_instalacion))
+  const omitidas: EstadoPedido[] = []
+  if (!diseno) omitidas.push('en_diseno', 'esperando_aprobacion', 'aprobado')
+  if (!produccion) omitidas.push('en_produccion', 'acabados')
+  if (!instalacion) omitidas.push('en_instalacion')
+  return { omitidas, instalacion }
+}
+
+type ArchivoFila = Almacen['archivos'][number]
+
+/**
+ * Igual que tg_archivos_antes/después al subir: versión consecutiva y "pendiente" para diseños,
+ * evento en la línea de tiempo y el pedido pasa a "esperando aprobación" si estaba en diseño.
+ */
+export function registrarArchivo(a: Almacen, fila: ArchivoFila, usuarioId: string | null) {
+  const pedido = fila.pedido_id ? a.pedidos.find((p) => p.id === fila.pedido_id) : undefined
+  if (pedido && !fila.cliente_id) fila.cliente_id = pedido.cliente_id
+  if (fila.categoria === 'diseno') {
+    if (fila.pedido_id) fila.version = Math.max(0, ...a.archivos.filter((x) => x.pedido_id === fila.pedido_id && x.categoria === 'diseno').map((x) => x.version ?? 0)) + 1
+    fila.estado_aprobacion = 'pendiente'
+  } else {
+    fila.version = null
+    fila.estado_aprobacion = 'no_aplica'
+  }
+  fila.aprobacion_registrada_por = null
+  fila.aprobacion_at = null
+  a.archivos.push(fila)
+  if (!pedido) return fila
+  eventoPedido(a, pedido.id, {
+    tipo: 'archivo',
+    mensaje: fila.categoria === 'diseno' ? `Diseño v${fila.version} subido: ${fila.nombre}` : `Archivo agregado: ${fila.nombre}`,
+    usuario_id: usuarioId,
+  })
+  if (fila.categoria === 'diseno' && ['nuevo', 'en_diseno'].includes(pedido.estado) && !pedido.etapas_omitidas.includes('esperando_aprobacion')) {
+    aplicarEstadoPedido(a, pedido, 'esperando_aprobacion', null, usuarioId)
+  }
+  return fila
+}
+
+/**
+ * Igual que la aprobación de archivos (tg_archivos_*): registra quién respondió, evento en la
+ * línea de tiempo y avanza el pedido a "aprobado" o lo regresa a "en diseño".
+ */
+export function responderArchivo(
+  a: Almacen,
+  archivo: ArchivoFila,
+  estado: 'aprobado' | 'cambios' | 'rechazado' | 'pendiente',
+  datos: { nombre: string | null; notas: string | null; usuarioId: string | null },
+) {
+  if (archivo.categoria !== 'diseno') throw new Error('Solo los diseños requieren aprobación')
+  if (archivo.estado_aprobacion === estado && archivo.aprobado_por_nombre === datos.nombre && archivo.aprobacion_notas === datos.notas) return archivo
+  const cambio = archivo.estado_aprobacion !== estado
+  archivo.estado_aprobacion = estado
+  archivo.aprobado_por_nombre = datos.nombre
+  archivo.aprobacion_notas = datos.notas
+  if (cambio) {
+    archivo.aprobacion_registrada_por = datos.usuarioId
+    archivo.aprobacion_at = ahoraISO()
+  }
+  archivo.updated_at = ahoraISO()
+  const pedido = archivo.pedido_id ? a.pedidos.find((p) => p.id === archivo.pedido_id) : undefined
+  if (!pedido || !cambio) return archivo
+  const txt = { aprobado: 'aprobado', cambios: 'cambios solicitados', rechazado: 'rechazado', pendiente: 'pendiente de aprobación' }[estado]
+  eventoPedido(a, pedido.id, {
+    tipo: 'aprobacion',
+    mensaje: `Diseño v${archivo.version ?? '?'}: ${txt}${datos.nombre?.trim() ? ` por ${datos.nombre.trim()}` : ''}${datos.notas?.trim() ? `. ${datos.notas.trim()}` : ''}`,
+    usuario_id: datos.usuarioId,
+  })
+  if (estado === 'aprobado' && ['nuevo', 'en_diseno', 'esperando_aprobacion'].includes(pedido.estado) && !pedido.etapas_omitidas.includes('aprobado')) {
+    aplicarEstadoPedido(a, pedido, 'aprobado', null, datos.usuarioId)
+  } else if (['cambios', 'rechazado'].includes(estado) && ['esperando_aprobacion', 'aprobado'].includes(pedido.estado) && !pedido.etapas_omitidas.includes('en_diseno')) {
+    aplicarEstadoPedido(a, pedido, 'en_diseno', null, datos.usuarioId)
+  }
+  return archivo
+}
+
+/** Vista previa de un archivo de ejemplo (imagen SVG generada en el navegador; nada se descarga). */
+export function vistaPreviaArchivo(nombre: string) {
+  const texto = nombre.replace(/[<>&"]/g, '')
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">` +
+    `<rect width="1200" height="800" fill="#22426B"/><rect x="40" y="40" width="1120" height="720" rx="32" fill="none" stroke="#F9C206" stroke-width="6" stroke-dasharray="18 14"/>` +
+    `<text x="600" y="380" font-family="sans-serif" font-size="56" font-weight="700" fill="#ffffff" text-anchor="middle">${texto}</text>` +
+    `<text x="600" y="460" font-family="sans-serif" font-size="32" fill="#F9C206" text-anchor="middle">Vista previa · archivo ficticio</text></svg>`
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
+}
