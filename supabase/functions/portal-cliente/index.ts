@@ -15,6 +15,8 @@ import { createClient } from 'npm:@supabase/supabase-js@2'
 const ORIGEN = Deno.env.get('CRM_ORIGEN_PERMITIDO') ?? '*'
 const BUCKET = 'archivos'
 const DURACION_SEGUNDOS = 600
+// Una solicitud válida ocupa menos de 200 bytes ({token, archivo_id}).
+const MAX_BYTES = 2048
 
 const cors = {
   'Access-Control-Allow-Origin': ORIGEN,
@@ -35,6 +37,34 @@ const NO_VALIDO = 'Este enlace no es válido o ya venció. Pide uno nuevo a tu a
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const TOKEN = /^[A-Za-z0-9_-]{32,128}$/
 
+// Lee el cuerpo sin pasar de MAX_BYTES: un cuerpo enorme (o que anuncia un tamaño enorme y
+// nunca llega) se rechaza sin guardarlo en memoria ni esperarlo. null = demasiado grande.
+async function leerCuerpo(req: Request): Promise<string | null> {
+  const declarado = Number(req.headers.get('content-length') ?? '0')
+  if (declarado > MAX_BYTES) return null
+  if (!req.body) return ''
+  const lector = req.body.getReader()
+  const partes: Uint8Array[] = []
+  let total = 0
+  for (;;) {
+    const { done, value } = await lector.read()
+    if (done) break
+    total += value.byteLength
+    if (total > MAX_BYTES) {
+      await lector.cancel().catch(() => {})
+      return null
+    }
+    partes.push(value)
+  }
+  const bytes = new Uint8Array(total)
+  let pos = 0
+  for (const parte of partes) {
+    bytes.set(parte, pos)
+    pos += parte.byteLength
+  }
+  return new TextDecoder().decode(bytes)
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   if (req.method !== 'POST') return respuesta({ error: 'Método no permitido' }, 405)
@@ -45,8 +75,8 @@ Deno.serve(async (req) => {
 
   let cuerpo: Record<string, unknown>
   try {
-    const texto = await req.text()
-    if (texto.length > 2000) return respuesta({ error: 'Solicitud inválida' }, 400)
+    const texto = await leerCuerpo(req)
+    if (texto === null) return respuesta({ error: 'Solicitud demasiado grande' }, 413)
     cuerpo = JSON.parse(texto)
     if (!cuerpo || typeof cuerpo !== 'object' || Array.isArray(cuerpo)) throw new Error('cuerpo')
   } catch {

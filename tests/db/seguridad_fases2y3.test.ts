@@ -1,26 +1,40 @@
 /**
  * Revisión de seguridad de las fases 2 y 3 contra Supabase local (`supabase start`).
  *
- * "Hallazgos": cada prueba demostró un problema real ANTES de la migración
- * 20261014000900_seguridad_fases_2_y_3.sql (fallaba) y comprueba la corrección (pasa).
+ * "Hallazgos": cada prueba demostró un problema real ANTES de su corrección (fallaba) y
+ * comprueba la corrección (pasa): migraciones 20261014000900_seguridad_fases_2_y_3.sql y
+ * 20261014001000_seguridad_fases_2_y_3_b.sql, y la función de Edge portal-cliente.
  * "Verificado": ataques que la base de datos ya resistía; quedan como pruebas de regresión.
  *
  *   SUPABASE_URL=... SUPABASE_ANON_KEY=... SUPABASE_SERVICE_ROLE_KEY=... npx vitest run tests/db
  *
- * Opcional: DB_URL (cadena de conexión de Postgres, usa `psql`) para revisar los privilegios
- * por defecto de lo que se cree en migraciones futuras.
+ * DB_URL (cadena de conexión de Postgres, usa `psql`) revisa los privilegios por defecto de lo
+ * que se cree en migraciones futuras. Con Supabase local (127.0.0.1:54321) se usa la cadena
+ * local de siempre si no se indica otra.
+ * PORTAL_FN_URL (opcional) prueba la función de Edge "portal-cliente" corriendo con Deno.
  */
 import { execFileSync } from 'node:child_process'
+import { connect } from 'node:net'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 const URL = process.env.SUPABASE_URL ?? ''
 const ANON = process.env.SUPABASE_ANON_KEY ?? ''
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
-const DB_URL = process.env.DB_URL ?? ''
+const FN_URL = process.env.PORTAL_FN_URL ?? ''
+const hayPsql = (() => {
+  try {
+    execFileSync('psql', ['--version'], { stdio: 'ignore' })
+    return true
+  } catch {
+    return false
+  }
+})()
+const DB_URL = process.env.DB_URL ?? (URL.includes('127.0.0.1:54321') && hayPsql ? 'postgresql://postgres:postgres@127.0.0.1:54322/postgres' : '')
 const activo = Boolean(URL && ANON && SERVICE)
 const suite = activo ? describe : describe.skip
 const itDb = activo && DB_URL ? it : it.skip
+const itFn = activo && FN_URL ? it : it.skip
 
 const sistema = activo ? createClient(URL, SERVICE, { auth: { persistSession: false } }) : (null as never)
 const PASS = 'Prueba12345'
@@ -62,10 +76,38 @@ function ok<T>(r: { data: T; error: unknown }): T {
 type Fila = Record<string, unknown>
 const num = (v: unknown) => Number(v)
 
+// Solicitud HTTP "a mano" (para mandar un Content-Length que no corresponde al cuerpo).
+// Devuelve la primera línea de la respuesta o "sin respuesta" si no contesta a tiempo.
+function solicitudCruda(destino: string, encabezados: string[], cuerpo: string, ms = 3000): Promise<string> {
+  const u = new globalThis.URL(destino)
+  return new Promise((resolve) => {
+    const s = connect(Number(u.port || 80), u.hostname)
+    let datos = ''
+    const fin = setTimeout(() => {
+      s.destroy()
+      resolve('sin respuesta')
+    }, ms)
+    s.on('connect', () => s.write(`POST ${u.pathname} HTTP/1.1\r\nHost: ${u.host}\r\n${encabezados.join('\r\n')}\r\n\r\n${cuerpo}`))
+    s.on('data', (b) => {
+      datos += b.toString()
+      if (datos.includes('\r\n')) {
+        clearTimeout(fin)
+        s.destroy()
+        resolve(datos.split('\r\n')[0])
+      }
+    })
+    s.on('error', () => {
+      clearTimeout(fin)
+      resolve('error de conexión')
+    })
+  })
+}
+
 suite('Seguridad de las fases 2 y 3', () => {
   let a: SupabaseClient, v: SupabaseClient, v2: SupabaseClient, d: SupabaseClient, p: SupabaseClient
-  let sinPrecios: SupabaseClient, conGastos: SupabaseClient, anon: SupabaseClient
-  let idAdmin = '', idVentas = '', idVentas2 = '', idConGastos = ''
+  let sinPrecios: SupabaseClient, conGastos: SupabaseClient, conBorrar: SupabaseClient, deBaja: SupabaseClient
+  let anon: SupabaseClient
+  let idAdmin = '', idVentas = '', idVentas2 = '', idConGastos = '', idDeBaja = ''
   // Venta de "ventas2": cotización, pedido y enlace del portal del pedido
   let cotB = '', pedB = '', tokenB = '', clienteB = ''
 
@@ -86,6 +128,8 @@ suite('Seguridad de las fases 2 y 3', () => {
     // Configuraciones personalizadas que el administrador puede dar desde Usuarios
     await crearUsuario(`seg-sinprecios-${sufijo}@prueba.local`, { rol: 'ventas', activo: true, nombre: 'Mostrador sin precios' }, { ver_precios: false })
     idConGastos = await crearUsuario(`seg-gastos-${sufijo}@prueba.local`, { rol: 'ventas', activo: true, nombre: 'Compras' }, { registrar_gastos: true })
+    await crearUsuario(`seg-borrar-${sufijo}@prueba.local`, { rol: 'ventas', activo: true, nombre: 'Compras con borrado' }, { registrar_gastos: true, eliminar_registros: true })
+    idDeBaja = await crearUsuario(`seg-baja-${sufijo}@prueba.local`, { rol: 'ventas', activo: true, nombre: 'Persona dada de baja' })
     a = await sesion(`seg-admin-${sufijo}@prueba.local`)
     v = await sesion(`seg-ventas-${sufijo}@prueba.local`)
     v2 = await sesion(`seg-ventas2-${sufijo}@prueba.local`)
@@ -93,6 +137,8 @@ suite('Seguridad de las fases 2 y 3', () => {
     p = await sesion(`seg-prod-${sufijo}@prueba.local`)
     sinPrecios = await sesion(`seg-sinprecios-${sufijo}@prueba.local`)
     conGastos = await sesion(`seg-gastos-${sufijo}@prueba.local`)
+    conBorrar = await sesion(`seg-borrar-${sufijo}@prueba.local`)
+    deBaja = await sesion(`seg-baja-${sufijo}@prueba.local`)
     anon = createClient(URL, ANON, { auth: { persistSession: false } })
 
     const b = await venta(v2, `Cliente de Ventas Dos ${sufijo}`)
@@ -247,12 +293,151 @@ suite('Seguridad de las fases 2 y 3', () => {
       const salida = execFileSync('psql', [DB_URL, '-q', '-At', '-v', 'ON_ERROR_STOP=1'], { input: sql, encoding: 'utf8' }).trim()
       expect(JSON.parse(salida)).toEqual({ anon_ejecuta: false, auth_ejecuta: true, servicio_ejecuta: true, anon_tabla: false, auth_truncate: false })
     })
+
+    // --- Segunda parte (migración 20261014001000) ---
+
+    it('diseños aprobados: nadie (salvo administración) apunta el diseño aprobado a otro archivo', async () => {
+      const ruta = `pedidos/${pedB}/arte-${sufijo}.png`
+      const arch = ok(await d.from('archivos').insert({ pedido_id: pedB, nombre: 'arte.png', path: ruta, mime: 'image/png' }).select('id').single()) as { id: string }
+      ok(await anon.rpc('portal_responder_diseno', { p_token: tokenB, p_archivo_id: arch.id, p_aprobado: true, p_nombre: 'Cliente Real' }))
+
+      // Producción (sin "aprobar_disenos") y diseño no cambian el archivo que aprobó el cliente
+      const intentos: Array<[SupabaseClient, Fila]> = [
+        [p, { path: `pedidos/${pedB}/otro-${sufijo}.png` }],
+        [p, { enlace_externo: 'https://ejemplo.com/otro-arte' }],
+        [d, { path: `pedidos/${pedB}/otro-${sufijo}.png` }],
+      ]
+      for (const [quien, cambio] of intentos) {
+        const { error } = await quien.from('archivos').update(cambio).eq('id', arch.id)
+        expect([cambio, error?.code]).toEqual([cambio, '42501'])
+      }
+      const fila = ok(await a.from('archivos').select('path, enlace_externo, estado_aprobacion').eq('id', arch.id).single())
+      expect(fila).toEqual({ path: ruta, enlace_externo: null, estado_aprobacion: 'aprobado' })
+
+      // Un diseño pendiente sí se reemplaza; quien registra aprobaciones puede retirar la
+      // aprobación y cambiar el archivo a la vez; administración puede todo.
+      const pend = ok(await d.from('archivos').insert({ pedido_id: pedB, nombre: 'pendiente.png', path: `pedidos/${pedB}/pendiente-${sufijo}.png` }).select('id').single()) as { id: string }
+      ok(await p.from('archivos').update({ path: `pedidos/${pedB}/pendiente-b-${sufijo}.png` }).eq('id', pend.id))
+      ok(await d.from('archivos').update({ estado_aprobacion: 'pendiente', path: `pedidos/${pedB}/arte-v2-${sufijo}.png` }).eq('id', arch.id))
+      ok(await a.from('archivos').update({ estado_aprobacion: 'aprobado', path: ruta }).eq('id', arch.id))
+      ok(await a.from('archivos').update({ enlace_externo: 'https://ejemplo.com/arte-final' }).eq('id', arch.id))
+    })
+
+    it('diseños: quien sube un diseño no deja precargado quién lo aprobó ni las notas de aprobación', async () => {
+      const arch = ok(await p.from('archivos').insert({
+        pedido_id: pedB, nombre: 'prueba-color.png', path: `pedidos/${pedB}/prueba-color-${sufijo}.png`,
+        aprobado_por_nombre: 'Juan Cliente', aprobacion_notas: 'Aprobado por teléfono',
+      }).select('id, aprobado_por_nombre, aprobacion_notas, estado_aprobacion').single()) as Fila
+      expect(arch).toMatchObject({ aprobado_por_nombre: null, aprobacion_notas: null, estado_aprobacion: 'pendiente' })
+      // Al registrar la aprobación sin nombre no aparece el nombre que intentó precargar
+      ok(await d.from('archivos').update({ estado_aprobacion: 'aprobado' }).eq('id', arch.id as string))
+      const evento = ok(await a.from('pedido_eventos').select('mensaje').eq('pedido_id', pedB).eq('tipo', 'aprobacion').order('created_at', { ascending: false }).limit(1).single()) as Fila
+      expect(evento.mensaje).not.toContain('Juan Cliente')
+    })
+
+    it('diseños aprobados: quien los subió no borra el archivo guardado para reemplazarlo por otro', async () => {
+      const png = (...b: number[]) => new Blob([Uint8Array.from(b)], { type: 'image/png' })
+      const ruta = `pedidos/${pedB}/arte-guardado-${sufijo}.png`
+      ok(await d.storage.from('archivos').upload(ruta, png(137, 80, 78, 71, 1), { contentType: 'image/png' }))
+      const arch = ok(await d.from('archivos').insert({ pedido_id: pedB, nombre: 'arte.png', path: ruta, mime: 'image/png' }).select('id').single()) as { id: string }
+      ok(await anon.rpc('portal_responder_diseno', { p_token: tokenB, p_archivo_id: arch.id, p_aprobado: true, p_nombre: 'Cliente Real' }))
+
+      await d.storage.from('archivos').remove([ruta])
+      const { error: resubir } = await d.storage.from('archivos').upload(ruta, png(0, 0, 0), { contentType: 'image/png' })
+      expect(resubir).toBeTruthy()
+      const { error: sobrescribir } = await d.storage.from('archivos').upload(ruta, png(0, 0, 0), { contentType: 'image/png', upsert: true })
+      expect(sobrescribir).toBeTruthy()
+      const { error: mover } = await d.storage.from('archivos').move(ruta, `pedidos/${pedB}/movido-${sufijo}.png`)
+      expect(mover).toBeTruthy()
+      const guardado = ok(await a.storage.from('archivos').download(ruta)) as Blob
+      expect([...new Uint8Array(await guardado.arrayBuffer())]).toEqual([137, 80, 78, 71, 1])
+
+      // Un archivo de un diseño pendiente sí lo borra quien lo subió
+      const rutaPend = `pedidos/${pedB}/pendiente-guardado-${sufijo}.png`
+      ok(await d.storage.from('archivos').upload(rutaPend, png(1, 2, 3), { contentType: 'image/png' }))
+      ok(await d.from('archivos').insert({ pedido_id: pedB, nombre: 'pendiente.png', path: rutaPend }))
+      expect(ok(await d.storage.from('archivos').remove([rutaPend]))).toHaveLength(1)
+    })
+
+    it('caja: sin "ver_precios" no se leen los pagos del día por el corte de caja', async () => {
+      const c = await venta(v, `Cliente Caja Precios ${sufijo}`, 5000)
+      const pedido = ok(await v.rpc('convertir_cotizacion_a_pedido', { p_cotizacion: c.cotizacionId })) as string
+      const fecha = fechaLibre()
+      ok(await v.from('pagos').insert({ pedido_id: pedido, fecha, importe: 1234.5, metodo: 'efectivo', tipo: 'abono' }))
+      ok(await v.rpc('cerrar_caja', { p_fecha: fecha, p_efectivo_inicial: 0, p_efectivo_contado: 1234.5 }))
+      try {
+        // Sin "ver_precios" no ve los pagos en su tabla...
+        expect(ok(await sinPrecios.from('pagos').select('id').eq('fecha', fecha))).toEqual([])
+        // ...ni a través del corte de caja (resumen, corte guardado o cierre)
+        const { data: resumen, error } = await sinPrecios.rpc('corte_caja_resumen', { p_fecha: fecha })
+        expect(error?.code).toBe('42501')
+        expect(resumen).toBeNull()
+        expect(ok(await sinPrecios.from('cortes_caja').select('resumen').eq('fecha', fecha))).toEqual([])
+        const { error: cerrar } = await sinPrecios.rpc('cerrar_caja', { p_fecha: fechaLibre(), p_efectivo_inicial: 0, p_efectivo_contado: 0 })
+        expect(cerrar?.code).toBe('42501')
+        // Ventas (con "ver_precios") sigue igual
+        const r = ok(await v.rpc('corte_caja_resumen', { p_fecha: fecha })) as { esperado: number; cerrado: boolean }
+        expect([num(r.esperado), r.cerrado]).toEqual([1234.5, true])
+      } finally {
+        ok(await a.rpc('reabrir_caja', { p_fecha: fecha, p_motivo: 'Prueba de seguridad' }))
+      }
+    })
+
+    it('caja: con el día cerrado, los gastos en efectivo tampoco se borran (salvo administración)', async () => {
+      const fecha = fechaLibre()
+      const g = ok(await conBorrar.from('gastos').insert({ fecha, concepto: `Tinta ${sufijo}`, categoria: 'material', monto: 300, metodo_pago: 'efectivo' }).select('id').single()) as { id: string }
+      ok(await v.rpc('cerrar_caja', { p_fecha: fecha, p_efectivo_inicial: 1000, p_efectivo_contado: 700 }))
+      try {
+        const { error } = await conBorrar.from('gastos').delete().eq('id', g.id)
+        expect(error?.code).toBe('42501')
+        expect(ok(await a.from('gastos').select('id').eq('id', g.id))).toHaveLength(1)
+      } finally {
+        ok(await a.rpc('reabrir_caja', { p_fecha: fecha, p_motivo: 'Prueba de seguridad' }))
+      }
+      // Con la caja abierta sí lo puede borrar (tiene "eliminar_registros")
+      ok(await conBorrar.from('gastos').delete().eq('id', g.id))
+      expect(ok(await a.from('gastos').select('id').eq('id', g.id))).toEqual([])
+    })
+
+    itFn('portal-cliente: rechaza cuerpos enormes sin leerlos ni esperarlos', async () => {
+      const grande = await fetch(FN_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: tokenB, relleno: 'x'.repeat(3000) }),
+      })
+      expect(grande.status).toBe(413)
+      // Anuncia 50 MB y no los manda: antes la función se quedaba esperando el cuerpo completo.
+      const linea = await solicitudCruda(FN_URL, ['Content-Type: application/json', 'Content-Length: 50000000'], '{"token":')
+      expect(linea).toContain('413')
+      // Una solicitud normal sigue funcionando
+      const normal = await fetch(FN_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: tokenB }) })
+      expect(normal.status).toBe(200)
+    })
   })
 
   // ===================================================================
   // Verificado (ya estaba bien; quedan como pruebas de regresión)
   // ===================================================================
   describe('verificado', () => {
+    it('usuario dado de baja: con la sesión que le quedaba no borra ni cambia sus archivos ni sus notas', async () => {
+      const ruta = `pedidos/${pedB}/baja-${sufijo}.pdf`
+      ok(await deBaja.storage.from('archivos').upload(ruta, new Blob(['%PDF-1.4 baja'], { type: 'application/pdf' }), { contentType: 'application/pdf' }))
+      const arch = ok(await deBaja.from('archivos').insert({ pedido_id: pedB, nombre: 'cotizacion-proveedor.pdf', path: ruta, categoria: 'referencia' }).select('id').single()) as { id: string }
+      const act = ok(await deBaja.from('actividades').insert({ cliente_id: clienteB, tipo: 'nota', descripcion: 'Cliente pidió factura', usuario_id: idDeBaja }).select('id').single()) as { id: string }
+
+      // Administración lo da de baja; el token de su sesión sigue vigente hasta que expire.
+      ok(await sistema.from('perfiles').update({ activo: false }).eq('id', idDeBaja))
+      await deBaja.storage.from('archivos').remove([ruta])
+      await deBaja.from('archivos').update({ nombre: 'otro.pdf' }).eq('id', arch.id)
+      await deBaja.from('archivos').delete().eq('id', arch.id)
+      await deBaja.from('actividades').update({ descripcion: 'Borrado' }).eq('id', act.id)
+      await deBaja.from('actividades').delete().eq('id', act.id)
+
+      expect(ok(await a.storage.from('archivos').download(ruta))).toBeTruthy()
+      expect(ok(await a.from('archivos').select('nombre').eq('id', arch.id))).toEqual([{ nombre: 'cotizacion-proveedor.pdf' }])
+      expect(ok(await a.from('actividades').select('descripcion').eq('id', act.id))).toEqual([{ descripcion: 'Cliente pidió factura' }])
+    })
+
     it('anon: la API solo publica las tres funciones del portal (ninguna tabla ni otra función)', async () => {
       const r = await fetch(`${URL}/rest/v1/`, { headers: { apikey: ANON, Authorization: `Bearer ${ANON}` } })
       const esquema = (await r.json()) as { paths: Record<string, unknown> }
@@ -376,6 +561,27 @@ suite('Seguridad de las fases 2 y 3', () => {
       expect(texto).not.toContain(pedOtro)
       expect(texto).not.toContain(clienteB) // ni ids internos de clientes
       expect(r.pedido.cliente).toBe(`Cliente de Ventas Dos ${sufijo}`)
+    })
+
+    itFn('portal-cliente: firma solo diseños de la carpeta del pedido y no filtra detalles en los errores', async () => {
+      const otro = ok(await v.from('clientes').insert({ nombre: `Cliente INE ${sufijo}` }).select('id').single()) as { id: string }
+      const rutaAjena = `clientes/${otro.id}/ine-${sufijo}.pdf`
+      ok(await v.storage.from('archivos').upload(rutaAjena, new Blob(['%PDF-1.4 INE'], { type: 'application/pdf' }), { contentType: 'application/pdf' }))
+      const ajeno = ok(await d.from('archivos').insert({ pedido_id: pedB, nombre: 'propuesta-final.pdf', path: rutaAjena }).select('id').single()) as { id: string }
+      const llamar = (cuerpo: unknown) =>
+        fetch(FN_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) })
+      const todos = (await (await llamar({ token: tokenB })).json()) as { archivos: Array<{ id: string; url: string }> }
+      expect(todos.archivos.map((x) => x.id)).not.toContain(ajeno.id)
+      expect(JSON.stringify(todos)).not.toContain('clientes/')
+      const uno = (await (await llamar({ token: tokenB, archivo_id: ajeno.id })).json()) as { archivos: unknown[] }
+      expect(uno.archivos).toEqual([])
+      // Token revocado: mismo 404 genérico que uno inventado
+      const nuevo = ok(await v2.rpc('crear_enlace_portal', { p_tipo: 'pedido', p_id: pedB, p_nuevo: true })) as { id: string; token: string }
+      ok(await v2.rpc('revocar_enlace_portal', { p_enlace: nuevo.id }))
+      const revocado = await llamar({ token: nuevo.token })
+      const inventado = await llamar({ token: 'Z'.repeat(43) })
+      expect([revocado.status, inventado.status]).toEqual([404, 404])
+      expect(await revocado.json()).toEqual(await inventado.json())
     })
   })
 })

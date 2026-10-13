@@ -1112,6 +1112,9 @@ isOneToOne: false
 "portal_texto_cliente":
 { Args: { "p_comentario": string,"p_nombre": string }; Returns: (string)[]
                            },
+"puede_ver_caja":
+{ Args: Record<PropertyKey, never>; Returns: boolean
+                           },
 "reabrir_caja":
 { Args: { "p_fecha": string,"p_motivo": string }; Returns: undefined
                            },
