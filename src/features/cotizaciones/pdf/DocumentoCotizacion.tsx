@@ -44,7 +44,7 @@ const s = StyleSheet.create({
     textAlign: 'center',
     transform: 'rotate(-35deg)',
     fontFamily: 'Helvetica-Bold',
-    fontSize: 34,
+    fontSize: 30,
     color: AZUL,
     opacity: 0.07,
     letterSpacing: 2,
