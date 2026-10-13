@@ -16,7 +16,8 @@ test('ventas arma una cotización con la calculadora por m², la guarda y los to
 
   // Cliente
   await page.getByPlaceholder('Nombre, WhatsApp o correo').fill(cliente)
-  await page.getByRole('option', { name: new RegExp(cliente) }).click()
+  // La lista también ofrece «Crear el cliente “…”»; se elige el cliente existente
+  await page.getByRole('option', { name: new RegExp(`^${cliente}`) }).click()
   await page.getByPlaceholder('¿Qué se cotiza?').fill(titulo)
 
   // Concepto con calculadora: 2 piezas de 2 × 1.5 m a $200 el m² → $600 por pieza → $1,200
