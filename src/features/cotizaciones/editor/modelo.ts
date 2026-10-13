@@ -340,6 +340,21 @@ export function aplicarProducto(p: PartidaEditor, prod: ProductoCatalogo, puedeC
   return sincronizar(base, prod, puedeCostos)
 }
 
+/**
+ * Precio escrito directo en la fila: deja de seguir al cálculo y, en modo manual,
+ * la calculadora toma ese mismo precio (por m², pieza, millar…) para no mostrar otro.
+ */
+export function conPrecioFila(p: PartidaEditor, precio: Num): PartidaEditor {
+  const u = unidadesCobro(p.metodo_calculo, n(p.cantidad), p.ancho, p.alto, p.largo)
+  const porCobro = precio === null ? null : u > 0 ? redondear((precio * n(p.cantidad)) / u, 4) : precio
+  return {
+    ...p,
+    precio_unitario: precio,
+    vinculado: false,
+    calc: p.calc.modo === 'manual' ? { ...p.calc, precioManual: porCobro } : p.calc,
+  }
+}
+
 export function quitarProducto(p: PartidaEditor): PartidaEditor {
   return { ...p, producto_id: null, productoNombre: null, calc: { ...p.calc, modo: p.calc.modo === 'catalogo' ? 'manual' : p.calc.modo }, vinculado: false }
 }
