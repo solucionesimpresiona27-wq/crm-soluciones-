@@ -1,25 +1,31 @@
 import implementacion from '@/data/implementacion'
+import type { ApiAdministracion } from './modulos/administracion/contrato'
+import type { ApiAgenda } from './modulos/agenda/contrato'
+import type { ApiCatalogo } from './modulos/catalogo/contrato'
+import type { ApiClientes } from './modulos/clientes/contrato'
+import type { ApiEmbudo } from './modulos/embudo/contrato'
+import type { ApiInventario } from './modulos/inventario/contrato'
+import type { ApiPagos } from './modulos/pagos/contrato'
+import type { ApiPedidos } from './modulos/pedidos/contrato'
+import type { ApiPortal } from './modulos/portal/contrato'
+import type { ApiProduccion } from './modulos/produccion/contrato'
+import type { ApiReportes } from './modulos/reportes/contrato'
 import type {
   BorradorCotizacion,
-  ClienteBreve,
-  Configuracion,
   CotizacionCompleta,
   CotizacionLista,
   DashboardResumen,
   EstadoCotizacion,
-  Perfil,
-  Plantilla,
-  ProductoCatalogo,
   ResultadoBusqueda,
   Rol,
   SesionUsuario,
 } from './tipos'
 
 /**
- * Contrato de acceso a datos. La app usa siempre `api`; en la vista previa se
- * sustituye por datos ficticios en memoria que nunca tocan la base real.
+ * NÚCLEO del acceso a datos: sesión, panel, búsqueda global y cotizaciones.
+ * Lo mantiene el orquestador (lo usan todas las pantallas).
  */
-export interface Api {
+export interface ApiNucleo {
   sesion: {
     actual(): Promise<SesionUsuario | null>
     iniciar(email: string, password: string): Promise<void>
@@ -30,16 +36,8 @@ export interface Api {
     nuevaContrasena(password: string): Promise<void>
     alCambiar(cb: () => void): () => void
   }
-  configuracion: { obtener(): Promise<Configuracion> }
-  plantillas: { listar(): Promise<Plantilla[]> }
-  usuarios: { equipo(): Promise<Pick<Perfil, 'id' | 'nombre' | 'rol' | 'email' | 'telefono'>[]> }
   dashboard: { resumen(): Promise<DashboardResumen> }
   busqueda: { global(texto: string): Promise<ResultadoBusqueda> }
-  clientes: {
-    buscar(texto: string): Promise<ClienteBreve[]>
-    crear(datos: { nombre: string; whatsapp?: string; email?: string; tipo?: 'persona' | 'empresa'; requiere_factura?: boolean; rfc?: string; razon_social?: string }): Promise<ClienteBreve>
-  }
-  catalogo: { productos(): Promise<ProductoCatalogo[]> }
   cotizaciones: {
     listar(): Promise<CotizacionLista[]>
     obtener(id: string): Promise<CotizacionCompleta>
@@ -52,6 +50,37 @@ export interface Api {
     compartirPdf(id: string, folio: string, pdf: Blob, diasVigencia: number): Promise<string | null>
   }
 }
+
+/**
+ * Contrato completo de acceso a datos: el núcleo más un contrato por módulo
+ * (`src/data/modulos/<modulo>/contrato.ts`). La app usa siempre `api`; en la vista previa se
+ * sustituye por datos ficticios en memoria que nunca tocan la base real.
+ *
+ * Espacios de cada módulo (un espacio pertenece a un solo módulo):
+ *   clientes        api.clientes, api.contactos, api.actividades
+ *   embudo          api.oportunidades
+ *   pedidos         api.pedidos, api.archivos
+ *   produccion      api.produccion
+ *   pagos           api.pagos, api.cobranza, api.caja, api.comisiones
+ *   inventario      api.materiales, api.inventario, api.proveedores, api.gastos
+ *   agenda          api.tareas, api.agenda
+ *   reportes        api.reportes
+ *   administracion  api.configuracion, api.plantillas, api.usuarios, api.bitacora
+ *   catalogo        api.catalogo
+ *   portal          api.portal
+ */
+export type Api = ApiNucleo &
+  ApiClientes &
+  ApiEmbudo &
+  ApiPedidos &
+  ApiProduccion &
+  ApiPagos &
+  ApiInventario &
+  ApiAgenda &
+  ApiReportes &
+  ApiAdministracion &
+  ApiCatalogo &
+  ApiPortal
 
 /** Real (Supabase) o vista previa (en memoria), según VITE_DEMO al compilar. Ver vite.config.ts. */
 export const api: Api = implementacion

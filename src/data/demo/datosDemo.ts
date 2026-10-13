@@ -5,7 +5,7 @@
  */
 import { calcularTotales, importePartida } from '@/lib/calculadora'
 import { sumarDias } from '@/lib/format'
-import type { Configuracion, CotizacionCompleta, EntregaProxima, Perfil, Plantilla, ProductoCatalogo, Rol } from '../tipos'
+import type { Configuracion, CotizacionCompleta, Perfil, Plantilla, ProductoCatalogo, Rol } from '../tipos'
 
 export { AVISO_DEMO } from '@/lib/supabase'
 
@@ -27,7 +27,7 @@ export function perfilesDemo(): Record<Rol, Perfil> {
   }
   return {
     admin: { ...base, id: 'demo-admin', nombre: 'Ana Ramírez', email: 'admin@demo.local', rol: 'admin', puesto: 'Dirección' },
-    ventas: { ...base, id: 'demo-ventas', nombre: 'Luis Herrera', email: 'ventas@demo.local', rol: 'ventas', puesto: 'Ventas' },
+    ventas: { ...base, id: 'demo-ventas', nombre: 'Luis Herrera', email: 'ventas@demo.local', rol: 'ventas', puesto: 'Ventas', comision_pct: 5 },
     diseno: { ...base, id: 'demo-diseno', nombre: 'Sofía Méndez', email: 'diseno@demo.local', rol: 'diseno', puesto: 'Diseño' },
     produccion: { ...base, id: 'demo-produccion', nombre: 'Jorge Castillo', email: 'produccion@demo.local', rol: 'produccion', puesto: 'Producción' },
   }
@@ -74,32 +74,48 @@ export const configuracionDemo: Configuracion = {
   updated_at: '2026-01-01T00:00:00Z',
 }
 
-export const plantillasDemo: Plantilla[] = [
+type PlantillaBase = Pick<Plantilla, 'clave' | 'nombre' | 'contexto' | 'orden' | 'texto'>
+
+/** Mismas plantillas que instala la base de datos (migraciones 06 y 18). */
+const PLANTILLAS: PlantillaBase[] = [
+  { clave: 'saludo', nombre: 'Saludo', contexto: 'cliente', orden: 10, texto: 'Hola {cliente} 👋, te saluda {vendedor} de {empresa}. ¿En qué te podemos ayudar?' },
   {
-    id: 'p1',
     clave: 'cotizacion_envio',
     nombre: 'Envío de cotización',
     contexto: 'cotizacion',
     orden: 20,
-    activo: true,
     texto:
       'Hola {cliente} 👋, te compartimos la cotización *{folio}* por *{total}*.\n\n{enlace}\n\nVigencia: {vigencia}. Anticipo para iniciar: {anticipo}.\nQuedamos atentos a tus comentarios. ¡Gracias por considerar a {empresa}!',
-    created_at: '',
-    updated_at: '',
   },
+  { clave: 'portal_cotizacion', nombre: 'Cotización para aprobar en línea', contexto: 'cotizacion', orden: 25, texto: 'Hola {cliente} 👋, aquí puedes revisar y aprobar tu cotización *{folio}* por *{total}*:\n\n{enlace}\n\nVigencia: {vigencia}. Cualquier duda, con gusto te ayudamos.' },
   {
-    id: 'p2',
     clave: 'cotizacion_seguimiento',
     nombre: 'Seguimiento de cotización',
     contexto: 'cotizacion',
     orden: 30,
-    activo: true,
     texto:
       'Hola {cliente}, ¿pudiste revisar la cotización *{folio}*? Con gusto resolvemos tus dudas o hacemos ajustes. La cotización es válida hasta el {vigencia}.',
-    created_at: '',
-    updated_at: '',
   },
+  { clave: 'anticipo_recibido', nombre: 'Anticipo recibido', contexto: 'pago', orden: 40, texto: 'Hola {cliente}, confirmamos la recepción de tu anticipo de *{monto}* para el pedido *{folio}*. ✅\nSaldo pendiente: {saldo}.\n¡Comenzamos con tu proyecto!' },
+  { clave: 'pago_recibido', nombre: 'Pago recibido', contexto: 'pago', orden: 50, texto: 'Hola {cliente}, recibimos tu pago de *{monto}* para el pedido *{folio}*. ✅\nSaldo pendiente: {saldo}.\n¡Gracias!' },
+  { clave: 'diseno_revision', nombre: 'Diseño para aprobación', contexto: 'pedido', orden: 60, texto: 'Hola {cliente}, te compartimos la propuesta de diseño de tu pedido *{folio}*. Por favor revísala y confírmanos tu aprobación para pasar a producción. Cualquier cambio posterior a la aprobación puede generar costos adicionales.' },
+  { clave: 'portal_pedido', nombre: 'Seguimiento del pedido en línea', contexto: 'pedido', orden: 65, texto: 'Hola {cliente}, en este enlace puedes ver el avance de tu pedido *{folio}* y aprobar los diseños cuando estén listos:\n\n{enlace}' },
+  { clave: 'portal_diseno', nombre: 'Diseño para aprobar en línea', contexto: 'pedido', orden: 66, texto: 'Hola {cliente}, ya está lista la propuesta de diseño de tu pedido *{folio}*. Revísala y apruébala o pide cambios aquí:\n\n{enlace}\n\nCualquier cambio posterior a la aprobación puede generar costos adicionales.' },
+  { clave: 'pedido_listo', nombre: 'Pedido listo', contexto: 'pedido', orden: 70, texto: 'Hola {cliente}, ¡tu pedido *{folio}* está listo! 🎉\nSaldo pendiente: {saldo}.\n¿Cuándo te gustaría recogerlo o coordinar la entrega/instalación?' },
+  { clave: 'instalacion_programada', nombre: 'Instalación programada', contexto: 'pedido', orden: 80, texto: 'Hola {cliente}, te confirmamos la instalación de tu pedido *{folio}* para el {fecha_entrega}. Te avisaremos cuando vayamos en camino.' },
+  { clave: 'recordatorio_pago', nombre: 'Recordatorio de pago', contexto: 'pago', orden: 90, texto: 'Hola {cliente}, te recordamos amablemente que el pedido *{folio}* tiene un saldo pendiente de *{saldo}*. Si ya realizaste el pago, por favor envíanos tu comprobante. ¡Gracias!' },
+  { clave: 'agradecimiento', nombre: 'Agradecimiento', contexto: 'pedido', orden: 100, texto: 'Hola {cliente}, ¡gracias por confiar en {empresa}! Esperamos que tu pedido *{folio}* haya quedado como lo imaginaste. Nos encantaría ver tu opinión o una foto en nuestras redes 💛' },
+  { clave: 'reactivacion', nombre: 'Volver a contactar', contexto: 'cliente', orden: 110, texto: 'Hola {cliente}, ¡hace tiempo que no sabemos de ti! En {empresa} tenemos nuevas opciones en impresión, publicidad y servicios digitales. ¿Tienes algún proyecto en mente?' },
 ]
+
+/** Plantillas de WhatsApp de la vista previa (ids estables: p1 = envío, p2 = seguimiento, como antes). */
+export const plantillasDemo: Plantilla[] = PLANTILLAS.map((p) => ({
+  ...p,
+  id: p.clave === 'cotizacion_envio' ? 'p1' : p.clave === 'cotizacion_seguimiento' ? 'p2' : `p-${p.clave}`,
+  activo: true,
+  created_at: '',
+  updated_at: '',
+}))
 
 export interface ClienteDemo {
   id: string
@@ -259,8 +275,7 @@ const semillas: Semilla[] = [
   },
 ]
 
-export function cotizacionesDemo(perfiles: Record<Rol, Perfil>): CotizacionCompleta[] {
-  const fechaHoy = hoy()
+export function cotizacionesDemo(perfiles: Record<Rol, Perfil>, fechaHoy = hoy()): CotizacionCompleta[] {
   return semillas.map((s, i) => {
     const cliente = clientesDemo.find((c) => c.id === s.cliente)!
     const partidas = s.partidas.map((p, j) => ({
@@ -343,40 +358,3 @@ export function cotizacionesDemo(perfiles: Record<Rol, Perfil>): CotizacionCompl
     }
   })
 }
-
-export function pedidosDemo(): Array<EntregaProxima & { total: number; pagado: number; responsable: Rol | null; vencido?: boolean }> {
-  const h = hoy()
-  return [
-    { id: 'demo-ped-3', folio: 'PED-0042', titulo: 'Señalética de consultorios', estado: 'en_produccion', prioridad: 'alta', fecha_entrega: sumarDias(h, 1), cliente: 'Clínica Dental Sonríe', requiere_instalacion: true, total: 4593.6, pagado: 2296.8, responsable: 'produccion' },
-    { id: 'demo-ped-5', folio: 'PED-0044', titulo: 'Lonas para desarrollos', estado: 'esperando_aprobacion', prioridad: 'normal', fecha_entrega: sumarDias(h, 3), cliente: 'Inmobiliaria Horizonte', requiere_instalacion: false, total: 58200.48, pagado: 29100, responsable: 'diseno' },
-    { id: 'demo-ped-a', folio: 'PED-0038', titulo: 'Vinil para cristales de recepción', estado: 'en_instalacion', prioridad: 'normal', fecha_entrega: h, cliente: 'Escuela Montessori Arcoíris', requiere_instalacion: true, total: 6380, pagado: 3190, responsable: 'produccion' },
-    { id: 'demo-ped-b', folio: 'PED-0035', titulo: 'Banner para expo', estado: 'listo_entrega', prioridad: 'urgente', fecha_entrega: sumarDias(h, -1), cliente: 'Boutique Lirio', requiere_instalacion: false, total: 2088, pagado: 1044, responsable: 'ventas', vencido: true },
-    { id: 'demo-ped-c', folio: 'PED-0040', titulo: 'Playeras para torneo', estado: 'en_diseno', prioridad: 'normal', fecha_entrega: sumarDias(h, 6), cliente: 'Gimnasio Titán', requiere_instalacion: false, total: 7540, pagado: 3770, responsable: 'diseno' },
-    { id: 'demo-ped-d', folio: 'PED-0041', titulo: 'Letras volumétricas', estado: 'acabados', prioridad: 'alta', fecha_entrega: sumarDias(h, 2), cliente: 'Taller Mecánico Rueda', requiere_instalacion: true, total: 15660, pagado: 7830, responsable: 'produccion' },
-    { id: 'demo-ped-e', folio: 'PED-0036', titulo: 'Menú digital', estado: 'nuevo', prioridad: 'baja', fecha_entrega: sumarDias(h, 9), cliente: 'Taquería Los Compadres', requiere_instalacion: false, total: 3480, pagado: 0, responsable: 'admin' },
-    { id: 'demo-ped-f', folio: 'PED-0033', titulo: 'Rotulación de camioneta', estado: 'pausado', prioridad: 'normal', fecha_entrega: sumarDias(h, -4), cliente: 'Taller Mecánico Rueda', requiere_instalacion: true, total: 9860, pagado: 4930, responsable: 'produccion', vencido: true },
-    { id: 'demo-ped-g', folio: 'PED-0045', titulo: 'Volantes de temporada', estado: 'en_produccion', prioridad: 'normal', fecha_entrega: sumarDias(h, 4), cliente: 'Cafetería Barrio Alto', requiere_instalacion: false, total: 2900, pagado: 1450, responsable: 'produccion' },
-    { id: 'demo-ped-h', folio: 'PED-0046', titulo: 'Vinil para vitrina', estado: 'en_diseno', prioridad: 'alta', fecha_entrega: sumarDias(h, 5), cliente: 'Boutique Lirio', requiere_instalacion: true, total: 1856, pagado: 928, responsable: 'diseno' },
-    { id: 'demo-ped-i', folio: 'PED-0047', titulo: 'Lona de inauguración', estado: 'aprobado', prioridad: 'normal', fecha_entrega: sumarDias(h, 2), cliente: 'Gimnasio Titán', requiere_instalacion: true, total: 3480, pagado: 1740, responsable: 'produccion' },
-    { id: 'demo-ped-j', folio: 'PED-0048', titulo: 'Etiquetas para salsas', estado: 'en_produccion', prioridad: 'baja', fecha_entrega: sumarDias(h, 8), cliente: 'Taquería Los Compadres', requiere_instalacion: false, total: 1740, pagado: 870, responsable: 'produccion' },
-  ]
-}
-
-export const serieMensualDemo = (() => {
-  const meses: Array<{ mes: string; ventas: number; cobrado: number }> = []
-  const d = new Date()
-  const valores = [
-    [84200, 71500],
-    [96400, 88100],
-    [78900, 80300],
-    [112300, 97600],
-    [104800, 101200],
-    [121650, 86420],
-  ]
-  for (let i = 5; i >= 0; i--) {
-    const m = new Date(d.getFullYear(), d.getMonth() - i, 1)
-    const [ventas, cobrado] = valores[5 - i]
-    meses.push({ mes: `${m.getFullYear()}-${String(m.getMonth() + 1).padStart(2, '0')}`, ventas, cobrado })
-  }
-  return meses
-})()
