@@ -8,6 +8,7 @@ import {
   Hammer,
   LayoutDashboard,
   Package,
+  Palette,
   Settings,
   UserCog,
   Users,
@@ -15,6 +16,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import type { Permiso } from '@/data/tipos'
+import { DEMO } from '@/lib/supabase'
 
 export interface Modulo {
   ruta: string
@@ -88,6 +90,8 @@ export const MODULOS: Modulo[] = [
     descripcion: 'Datos de la empresa, logo y condiciones',
     incluye: ['Datos de contacto y fiscales', 'Logo y colores', 'Condiciones de cotización', 'Plantillas de WhatsApp', 'Métodos de pago'],
   },
+  // Vitrina del sistema de diseño: en la vista previa la ven todos para validarlo; en la app real, solo administración
+  { ruta: '/sistema-diseno', titulo: 'Diseño', icono: Palette, grupo: 'Sistema', soloAdmin: !DEMO, descripcion: 'Vitrina del sistema de diseño Impresiona Glass' },
 ]
 
 export const GRUPOS = ['Principal', 'Operación', 'Análisis', 'Sistema'] as const
