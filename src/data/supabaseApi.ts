@@ -283,7 +283,9 @@ export const apiSupabase: Api = {
       const ruta = `cotizaciones/${id}/${folio}.pdf`
       const subida = await sb.storage.from('documentos').upload(ruta, pdf, { upsert: true, contentType: 'application/pdf' })
       if (subida.error) throw new Error(mensajeError(subida.error))
-      await sb.from('cotizaciones').update({ pdf_path: ruta }).eq('id', id)
+      const registro = await sb.from('cotizaciones').update({ pdf_path: ruta }).eq('id', id)
+      // No impide compartir: el enlace firmado funciona aunque no se haya registrado la ruta
+      if (registro.error) console.warn('No se registró la ruta del PDF de la cotización:', mensajeError(registro.error))
       const firmado = await sb.storage.from('documentos').createSignedUrl(ruta, Math.max(1, diasVigencia) * 86400)
       return firmado.data?.signedUrl ?? null
     },
