@@ -31,7 +31,42 @@ src/
   styles/         tokens y material de cristal (index.css)
 ```
 
-- La UI llama **siempre** a `api` (`@/data/api`), nunca a Supabase directo. Si agregas un método, impleméntalo en `supabaseApi.ts` **y** en `demo/apiDemo.ts`.
+- La UI llama **siempre** a `api` (`@/data/api`), nunca a Supabase directo.
+
+## Capa de datos por módulos
+
+```
+src/data/
+  api.ts            Api = ApiNucleo (sesion, dashboard, busqueda, cotizaciones) & contratos de módulo
+  supabaseApi.ts    real: componer(núcleo, clientesSupabase, …)   ← solo orquestador
+  demo/apiDemo.ts   vista previa: componer(núcleo, clientesDemo, …) ← solo orquestador
+  comun/            componer.ts (falla si dos módulos definen el mismo espacio) y real.ts
+                    (supabase(), revisar(), mensajeError(), limpio(), hoyLocal() en zona de Guadalajara…)
+  modulos/<modulo>/ contrato.ts (interfaz Api<Modulo> + tipos, con JSDoc) · supabase.ts · demo.ts · demo.test.ts
+  demo/             almacen.ts (tablas en memoria), semilla*.ts (datos ficticios), reglas.ts (triggers simulados),
+                    sesion.ts (permisos de la vista previa), paraPruebas.ts
+```
+
+| Módulo | Espacios de `api` | Pantallas (`src/features/…`) |
+|---|---|---|
+| clientes | `clientes` (incl. `buscar`, `crear`, listas de precio, `inactivos`), `contactos`, `actividades` | `clientes/` |
+| embudo | `oportunidades` | `embudo/` |
+| pedidos | `pedidos` (eventos, facturación), `archivos` (diseños y aprobaciones) | `pedidos/` |
+| produccion | `produccion` (tablero y órdenes **sin precios**) | `produccion/` |
+| pagos | `pagos`, `cobranza`, `caja` (corte), `comisiones` | `pagos/` |
+| inventario | `materiales`, `inventario` (movimientos), `proveedores`, `gastos` | `inventario/` |
+| agenda | `tareas`, `agenda` (calendario agregado) | `agenda/` |
+| reportes | `reportes` | `reportes/` |
+| administracion | `configuracion` (logo), `plantillas`, `usuarios` (función `admin-usuarios`), `bitacora` | `usuarios/`, `configuracion/` |
+| catalogo | `catalogo` (productos, categorías, costos, precios por lista) | `catalogo/`, `calculadora/` |
+| portal | `portal` (enlaces y vista pública sin sesión) | `portal/` (ruta pública `/portal/:token`) |
+
+**Reglas para los agentes de módulo** (las revisa `src/data/modulos/estructura.test.ts`):
+- Cada módulo edita **solo** `src/data/modulos/<modulo>/` y `src/features/<modulo>/`. Un método nuevo va en su `contrato.ts` (con JSDoc en español) y se implementa en su `supabase.ts` **y** su `demo.ts`, con prueba en `demo.test.ts`.
+- Un módulo no importa archivos de otro módulo. `supabase.ts`/`contrato.ts` nunca importan `data/demo`; `demo.ts`/`contrato.ts` nunca importan Supabase.
+- Lo compartido (`api.ts`, núcleo, `tipos.ts`, `comun/`, `demo/almacen.ts`/semillas/reglas, `app/rutas.tsx`, `app/navegacion.ts`, `components/`, `lib/`) se pide al orquestador.
+- Real: `revisar(await …)` para lanzar errores en español con `mensajeError`; los permisos los aplica la base (RLS/RPC, error 42501). Los tipos generados de RPC que devuelven tablas marcan columnas como no nulas aunque puedan serlo: decláralas `| null` en el contrato.
+- Las páginas ya existen como stubs (`ModuloPendiente`) y sus rutas ya están en `rutas.tsx` (los módulos con pestañas usan `/*` y `secciones` en `MODULOS`); el agente solo reemplaza sus páginas. El flag `pendiente` de `MODULOS` lo quita el orquestador.
 - Permisos: `useSesion().puede('ver_costos')`. La seguridad real está en la base de datos (RLS); la UI solo oculta.
 - Montos en MXN con `dinero()` de `@/lib/format`; cifras con la clase `num` (tabulares).
 - Inserciones masivas con supabase-js: usa `{ defaultToNull: false }` o envía todos los campos.
@@ -57,3 +92,8 @@ Estética Liquid Glass (Centro de Control de Apple) con la marca: azul `#22426B`
 ## Vista previa (demo)
 
 `VITE_DEMO=true` usa `HashRouter` y `data/demo/apiDemo.ts`: datos ficticios en memoria, nunca escribe en Supabase. El aviso "Vista previa con datos ficticios" debe permanecer visible.
+
+- **Almacén central** (`src/data/demo/almacen.ts`): tablas en memoria con la forma de las Row de `database.types.ts`, sembradas por `semilla*.ts` con fechas relativas a hoy. Todos los `modulos/<m>/demo.ts` leen y escriben ese almacén, así lo que se cobra en Pagos aparece en el pedido, el panel y los reportes.
+- `reglas.ts` imita los triggers/funciones de la base (totales, saldos, existencias, corte de caja, bitácora). Exige los mismos permisos que la base con `exigir('permiso')` de `demo/sesion.ts`.
+- Devuelve siempre copias (`copia()`), usa `nuevoId()` y nunca red, Supabase ni almacenamiento persistente (al recargar vuelve a la semilla). Pruebas: `entrarComo(rol)` de `demo/paraPruebas.ts` (fija el día con `vi.setSystemTime` y reinicia el almacén con `reiniciarAlmacen()`).
+- Datos claramente de ejemplo (nombres y teléfonos ficticios, sin precios inventados fuera del catálogo de muestra). Si un módulo necesita más datos o una tabla nueva, se pide al orquestador.

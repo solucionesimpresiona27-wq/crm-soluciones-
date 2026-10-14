@@ -72,8 +72,12 @@ export function nombreArchivoSeguro(nombre: string) {
   return limpio.slice(-120) || 'archivo'
 }
 
-/** Fecha de hoy (AAAA-MM-DD) en la zona del navegador. */
+const FECHA_NEGOCIO = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Mexico_City' })
+
+/**
+ * Fecha de hoy (AAAA-MM-DD) en la zona del negocio (Guadalajara = America/Mexico_City), la misma
+ * que usa la base de datos para "hoy" (agenda, corte de caja, tareas), aunque el equipo esté en otra zona.
+ */
 export function hoyLocal() {
-  const d = new Date()
-  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10)
+  return FECHA_NEGOCIO.format(new Date())
 }

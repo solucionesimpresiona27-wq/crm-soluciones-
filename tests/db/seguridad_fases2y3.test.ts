@@ -2,8 +2,9 @@
  * Revisión de seguridad de las fases 2 y 3 contra Supabase local (`supabase start`).
  *
  * "Hallazgos": cada prueba demostró un problema real ANTES de su corrección (fallaba) y
- * comprueba la corrección (pasa): migraciones 20261014000900_seguridad_fases_2_y_3.sql y
- * 20261014001000_seguridad_fases_2_y_3_b.sql, y la función de Edge portal-cliente.
+ * comprueba la corrección (pasa): migraciones 20261014000900_seguridad_fases_2_y_3.sql,
+ * 20261014001000_seguridad_fases_2_y_3_b.sql y 20261014001100_seguridad_fases_2_y_3_c.sql, y la
+ * función de Edge portal-cliente.
  * "Verificado": ataques que la base de datos ya resistía; quedan como pruebas de regresión.
  *
  *   SUPABASE_URL=... SUPABASE_ANON_KEY=... SUPABASE_SERVICE_ROLE_KEY=... npx vitest run tests/db
@@ -412,6 +413,19 @@ suite('Seguridad de las fases 2 y 3', () => {
       // Una solicitud normal sigue funcionando
       const normal = await fetch(FN_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: tokenB }) })
       expect(normal.status).toBe(200)
+    })
+
+    it('portal: con solo "aprobar_disenos" no se leen las aprobaciones de cotizaciones del cliente', async () => {
+      const q = await venta(v2, `Cliente aprobación ${sufijo}`)
+      const enlace = ok(await v2.rpc('crear_enlace_portal', { p_tipo: 'cotizacion', p_id: q.cotizacionId })) as { token: string }
+      ok(await anon.rpc('portal_aprobar_cotizacion', { p_token: enlace.token, p_nombre: 'Laura Gómez', p_comentario: 'Adelante con el precio acordado' }))
+      // Diseño (aprobar_disenos, sin gestionar cotizaciones) veía nombre, comentario, IP y navegador.
+      expect(ok(await d.from('portal_respuestas').select('*').eq('cotizacion_id', q.cotizacionId))).toEqual([])
+      // Quien gestiona cotizaciones sí la ve; las respuestas sobre diseños siguen visibles para Diseño.
+      expect(ok(await v2.from('portal_respuestas').select('nombre').eq('cotizacion_id', q.cotizacionId))).toEqual([{ nombre: 'Laura Gómez' }])
+      const arch = ok(await d.from('archivos').insert({ pedido_id: pedB, nombre: `respuesta-${sufijo}.png`, path: `pedidos/${pedB}/respuesta-${sufijo}.png` }).select('id').single()) as { id: string }
+      ok(await anon.rpc('portal_responder_diseno', { p_token: tokenB, p_archivo_id: arch.id, p_aprobado: false, p_nombre: 'Laura Gómez', p_comentario: 'Cambiar el color del fondo' }))
+      expect(ok(await d.from('portal_respuestas').select('accion').eq('archivo_id', arch.id))).toEqual([{ accion: 'cambios_diseno' }])
     })
   })
 

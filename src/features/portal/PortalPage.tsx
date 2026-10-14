@@ -19,7 +19,7 @@ export default function PortalPage() {
       <AvisoDemo />
       <GlassPanel className="w-full max-w-xl p-2">
         <div className="flex justify-center pt-6">
-          <Marca />
+          <Marca className="h-11 w-auto" />
         </div>
         <EstadoVacio
           icono={<Link2 />}
