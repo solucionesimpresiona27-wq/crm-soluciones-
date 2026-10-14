@@ -18,7 +18,7 @@ import {
 import { esAdmin, espera, exigir, exigirAlguno, puede, usuario } from '@/data/demo/sesion'
 import { importePartida } from '@/lib/calculadora'
 import { normalizar } from '@/lib/utils'
-import type { ApiPedidos, Archivo, CambiosPedido, PartidaPedido, PedidoDetalle, PedidoLista } from './contrato'
+import type { ApiPedidos, Archivo, CambiosPartida, CambiosPedido, PartidaPedido, PedidoDetalle, PedidoLista } from './contrato'
 
 const limpio = (v: string | null | undefined) => (v?.trim() ? v.trim() : null)
 const CERRADOS = ['entregado', 'finalizado', 'cancelado']
@@ -212,7 +212,6 @@ export const pedidosDemo: ApiPedidos = {
       const cliente = a.clientes.find((c) => c.id === datos.cliente_id)
       if (!cliente) throw new Error('Selecciona un cliente')
       if (!datos.titulo?.trim()) throw new Error('Escribe el título del pedido')
-      if (!datos.partidas?.length) throw new Error('Agrega al menos un concepto')
       const ahora = ahoraISO()
       const id = nuevoId('demo-ped')
       const etapas = etapasOmitidas(a, datos.partidas.map((x) => ({ tipo: x.tipo ?? 'concepto', producto_id: x.producto_id ?? null })))
@@ -361,6 +360,78 @@ export const pedidosDemo: ApiPedidos = {
         eventoPedido(a, id, { tipo: 'factura', mensaje: `Marcado como facturado${p.folio_factura ? ` (folio ${p.folio_factura})` : ''}`, usuario_id: s.id })
       }
       registrarBitacora(a, { tabla: 'pedidos', registro_id: id, accion: 'modificar', etiqueta: `${p.folio} · ${p.titulo}`, cambios: { facturado: [antes, datos.facturado] }, usuario_id: s.id })
+    },
+
+    async agregarPartida(pedidoId, x) {
+      exigir('gestionar_pedidos')
+      exigir('ver_precios')
+      await espera()
+      const p = buscar(pedidoId)
+      if (!x.concepto?.trim()) throw new Error('Cada concepto necesita una descripción')
+      if (!(x.cantidad > 0)) throw new Error('La cantidad debe ser mayor a cero')
+      const ahora = ahoraISO()
+      const orden = Math.max(0, ...a.partidas.filter((y) => y.pedido_id === pedidoId).map((y) => y.orden)) + 1
+      a.partidas.push({
+        id: nuevoId('demo-pa'),
+        cotizacion_id: null,
+        pedido_id: pedidoId,
+        orden,
+        tipo: x.tipo ?? 'concepto',
+        producto_id: x.producto_id ?? null,
+        concepto: x.concepto.trim(),
+        descripcion: limpio(x.descripcion),
+        metodo_calculo: x.metodo_calculo,
+        unidad: x.unidad ?? 'pza',
+        ancho: x.ancho ?? null,
+        alto: x.alto ?? null,
+        largo: x.largo ?? null,
+        cantidad: x.cantidad,
+        precio_unitario: x.precio_unitario,
+        descuento_pct: x.descuento_pct ?? 0,
+        importe: importePartida(x.cantidad, x.precio_unitario, x.descuento_pct ?? 0),
+        notas_produccion: limpio(x.notas_produccion),
+        created_at: ahora,
+        updated_at: ahora,
+      })
+      p.updated_at = ahora
+      recalcularPedido(a, p)
+    },
+
+    async actualizarPartida(id, c: CambiosPartida) {
+      exigir('gestionar_pedidos')
+      exigir('ver_precios')
+      await espera()
+      const x = a.partidas.find((y) => y.id === id && y.pedido_id)
+      if (!x) throw new Error('Concepto no encontrado')
+      if (c.concepto !== undefined) {
+        if (!c.concepto.trim()) throw new Error('Cada concepto necesita una descripción')
+        x.concepto = c.concepto.trim()
+      }
+      if (c.cantidad !== undefined && !(c.cantidad > 0)) throw new Error('La cantidad debe ser mayor a cero')
+      if (c.descripcion !== undefined) x.descripcion = limpio(c.descripcion)
+      if (c.notas_produccion !== undefined) x.notas_produccion = limpio(c.notas_produccion)
+      if (c.metodo_calculo !== undefined) x.metodo_calculo = c.metodo_calculo
+      if (c.unidad !== undefined) x.unidad = c.unidad
+      if (c.ancho !== undefined) x.ancho = c.ancho
+      if (c.alto !== undefined) x.alto = c.alto
+      if (c.largo !== undefined) x.largo = c.largo
+      if (c.cantidad !== undefined) x.cantidad = c.cantidad
+      if (c.precio_unitario !== undefined) x.precio_unitario = c.precio_unitario
+      if (c.descuento_pct !== undefined) x.descuento_pct = c.descuento_pct
+      x.importe = importePartida(x.cantidad, x.precio_unitario, x.descuento_pct)
+      x.updated_at = ahoraISO()
+      recalcularPedido(a, buscar(x.pedido_id!))
+    },
+
+    async eliminarPartida(id) {
+      exigir('gestionar_pedidos')
+      await espera()
+      const x = a.partidas.find((y) => y.id === id && y.pedido_id)
+      if (!x) throw new Error('Concepto no encontrado')
+      a.partidas.splice(a.partidas.indexOf(x), 1)
+      const costo = a.partida_costos.findIndex((k) => k.partida_id === id)
+      if (costo >= 0) a.partida_costos.splice(costo, 1)
+      recalcularPedido(a, buscar(x.pedido_id!))
     },
   },
 

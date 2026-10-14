@@ -15,6 +15,14 @@ describe('producción · vista previa', () => {
     expect(hoja.partidas[0]).not.toHaveProperty('precio_unitario')
     expect(hoja.partidas[0].notas_produccion).toMatch(/negro mate/)
     expect(hoja.disenos.map((d) => d.version)).toEqual([2, 1])
+    expect(hoja.evidencias).toEqual([])
+    // Diseños por aprobar: el contador del tablero coincide con los archivos pendientes
+    const conPendientes = t.filter((o) => o.num_pendientes > 0)
+    expect(conPendientes.length).toBeGreaterThan(0)
+    for (const o of conPendientes) {
+      const h = await api.produccion.orden(o.id)
+      expect(h.disenos.filter((d) => d.estado_aprobacion === 'pendiente')).toHaveLength(o.num_pendientes)
+    }
   })
 
   it('producción mueve etapas y guarda notas; no cancela', async () => {

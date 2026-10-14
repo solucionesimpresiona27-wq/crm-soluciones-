@@ -51,7 +51,7 @@ export const MODULOS: Modulo[] = [
   { ruta: '/', titulo: 'Inicio', icono: LayoutDashboard, grupo: 'Principal', descripcion: 'Panel de control' },
   {
     // Producción solo ve el nombre del cliente dentro de su orden de trabajo (PLAN.md §3)
-    ruta: '/clientes', titulo: 'Clientes', icono: Users, grupo: 'Principal', permisos: ['gestionar_clientes', 'aprobar_disenos'], pendiente: true,
+    ruta: '/clientes', titulo: 'Clientes', icono: Users, grupo: 'Principal', permisos: ['gestionar_clientes', 'aprobar_disenos'],
     descripcion: 'Clientes, contactos e historial completo',
     incluye: ['Ficha con datos de contacto y fiscales', 'Historial de cotizaciones, pedidos y pagos', 'Notas y seguimientos', 'Exportar a Excel'],
   },
@@ -67,17 +67,17 @@ export const MODULOS: Modulo[] = [
     incluye: ['Costos de material, mano de obra y desperdicio', 'Margen y precio sugerido', 'Instalación y transporte por separado', 'Enviar el resultado a una cotización'],
   },
   {
-    ruta: '/pedidos', titulo: 'Pedidos', icono: Package, grupo: 'Operación', pendiente: true,
+    ruta: '/pedidos', titulo: 'Pedidos', icono: Package, grupo: 'Operación',
     descripcion: 'Órdenes de trabajo y su avance',
     incluye: ['Etapas que se omiten según el tipo de trabajo', 'Pausar o cancelar con motivo', 'Archivos de diseño con versiones y aprobación', 'Facturación externa'],
   },
   {
-    ruta: '/produccion', titulo: 'Producción', icono: Hammer, grupo: 'Operación', permisos: ['actualizar_produccion'], pendiente: true,
+    ruta: '/produccion', titulo: 'Producción', icono: Hammer, grupo: 'Operación', permisos: ['actualizar_produccion'],
     descripcion: 'Tablero de producción e instalación',
     incluye: ['Tablero por etapas con arrastrar y soltar', 'Hoja de orden de trabajo sin precios', 'Notas y evidencias de instalación'],
   },
   {
-    ruta: '/pagos', titulo: 'Pagos', icono: Wallet, grupo: 'Operación', permisos: ['ver_precios'], pendiente: true,
+    ruta: '/pagos', titulo: 'Pagos', icono: Wallet, grupo: 'Operación', permisos: ['ver_precios'],
     descripcion: 'Cobros, saldos y cuentas por cobrar',
     incluye: ['Anticipos, abonos y liquidaciones', 'Comprobantes', 'Pagos vencidos y devoluciones', 'Corte de caja'],
     secciones: [

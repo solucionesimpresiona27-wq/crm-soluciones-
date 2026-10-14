@@ -1,7 +1,7 @@
 /** MÓDULO PEDIDOS · implementación real (Supabase). */
 import { hoyLocal, limpio, mensajeError, n, nn, nombreArchivoSeguro, revisar, sinError, supabase, textoBusqueda } from '@/data/comun/real'
 import type { TablesInsert, TablesUpdate } from '@/lib/database.types'
-import type { ApiPedidos, Archivo, CambiosPedido, NuevaPartida, PartidaPedido, PedidoDetalle, PedidoLista } from './contrato'
+import type { ApiPedidos, Archivo, CambiosPartida, CambiosPedido, NuevaPartida, PartidaPedido, PedidoDetalle, PedidoLista } from './contrato'
 
 const DURACION_ENLACE = 600
 
@@ -41,6 +41,20 @@ function filaPartida(p: NuevaPartida, pedidoId: string, orden: number): TablesIn
     descuento_pct: p.descuento_pct ?? 0,
     notas_produccion: limpio(p.notas_produccion),
   }
+}
+
+function filaCambiosPartida(c: CambiosPartida): TablesUpdate<'partidas'> {
+  const f: TablesUpdate<'partidas'> = {}
+  if (c.concepto !== undefined) {
+    if (!c.concepto.trim()) throw new Error('Cada concepto necesita una descripción')
+    f.concepto = c.concepto.trim()
+  }
+  if (c.cantidad !== undefined && !(c.cantidad > 0)) throw new Error('La cantidad debe ser mayor a cero')
+  for (const k of ['descripcion', 'notas_produccion'] as const) if (c[k] !== undefined) f[k] = limpio(c[k])
+  for (const k of ['metodo_calculo', 'unidad', 'ancho', 'alto', 'largo', 'cantidad', 'precio_unitario', 'descuento_pct'] as const) {
+    if (c[k] !== undefined) (f as Record<string, unknown>)[k] = c[k]
+  }
+  return f
 }
 
 function filaPedido(c: CambiosPedido): TablesUpdate<'pedidos'> {
@@ -176,7 +190,6 @@ export const pedidosSupabase: ApiPedidos = {
 
     async crear(datos) {
       if (!datos.titulo?.trim()) throw new Error('Escribe el título del pedido')
-      if (!datos.partidas?.length) throw new Error('Agrega al menos un concepto')
       const sb = supabase()
       const { partidas, ...cabecera } = datos
       const pedido = revisar(
@@ -186,6 +199,7 @@ export const pedidosSupabase: ApiPedidos = {
           .select('id, folio')
           .single(),
       )
+      if (!partidas?.length) return pedido
       const r = await sb.from('partidas').insert(partidas.map((p, i) => filaPartida(p, pedido.id, i + 1)), { defaultToNull: false })
       if (r.error) {
         // Sin conceptos el pedido no sirve: se intenta deshacer (requiere permiso de eliminar).
@@ -225,6 +239,23 @@ export const pedidosSupabase: ApiPedidos = {
           .select('id')
           .single(),
       )
+    },
+
+    async agregarPartida(pedidoId, partida) {
+      if (!(partida.cantidad > 0)) throw new Error('La cantidad debe ser mayor a cero')
+      const sb = supabase()
+      const ultima = revisar(await sb.from('partidas').select('orden').eq('pedido_id', pedidoId).order('orden', { ascending: false }).limit(1))
+      revisar(await sb.from('partidas').insert(filaPartida(partida, pedidoId, n(ultima[0]?.orden) + 1)).select('id').single())
+    },
+
+    async actualizarPartida(id, cambios) {
+      revisar(await supabase().from('partidas').update(filaCambiosPartida(cambios)).eq('id', id).select('id').single())
+    },
+
+    async eliminarPartida(id) {
+      const r = await supabase().from('partidas').delete().eq('id', id).select('id')
+      if (r.error) throw new Error(mensajeError(r.error))
+      if (!r.data?.length) throw new Error('No se pudo quitar el concepto: solo ventas o administración pueden cambiar los conceptos del pedido')
     },
   },
 

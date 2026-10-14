@@ -64,4 +64,14 @@ describe('clientes · vista previa', () => {
     await api.clientes.eliminar('c16')
     await expect(api.clientes.obtener('c16')).rejects.toThrow('no encontrado')
   })
+
+  it('saldos por cliente y contacto principal en la lista', async () => {
+    entrarComo('ventas')
+    const saldos = await api.clientes.saldos()
+    expect(saldos.c5).toBeCloseTo(29100.48, 2)
+    const lista = await api.clientes.listar()
+    expect(lista.some((c) => c.contacto_principal !== null)).toBe(true)
+    cambiarA('diseno')
+    expect(await api.clientes.saldos()).toEqual({})
+  })
 })

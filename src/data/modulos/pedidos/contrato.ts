@@ -168,8 +168,12 @@ export interface DatosPedido {
   fecha_limite_pago?: string | null
   requiere_factura?: boolean
   notas_internas?: string | null
+  /** Puede ir vacío: los conceptos se agregan después con `agregarPartida`. */
   partidas: NuevaPartida[]
 }
+
+/** Cambios a un concepto del pedido (los que no se envían no cambian). */
+export type CambiosPartida = Partial<Omit<NuevaPartida, 'tipo' | 'producto_id'>>
 
 export type CambiosPedido = Partial<Omit<DatosPedido, 'cliente_id' | 'partidas'>>
 
@@ -186,7 +190,7 @@ export interface ApiPedidos {
     listar(filtros?: FiltrosPedidos): Promise<PedidoLista[]>
     /** Detalle completo con conceptos. */
     obtener(id: string): Promise<PedidoDetalle>
-    /** Pedido directo con sus conceptos. Requiere `gestionar_pedidos`. */
+    /** Pedido directo; los conceptos pueden ir vacíos y agregarse después. Requiere `gestionar_pedidos`. */
     crear(datos: DatosPedido): Promise<{ id: string; folio: string }>
     /** Cambia datos generales (no conceptos ni etapa). Requiere `gestionar_pedidos`. */
     actualizar(id: string, cambios: CambiosPedido): Promise<void>
@@ -201,6 +205,12 @@ export interface ApiPedidos {
     eventos(id: string): Promise<EventoPedido[]>
     /** Facturación externa: marca facturado con folio CFDI. Requiere `gestionar_pedidos`. */
     facturar(id: string, datos: DatosFactura): Promise<void>
+    /** Agrega un concepto al final del pedido (los totales se recalculan). Requiere `gestionar_pedidos` y `ver_precios`. */
+    agregarPartida(pedidoId: string, partida: NuevaPartida): Promise<void>
+    /** Cambia un concepto (cantidad, precio, notas de producción…). Requiere `gestionar_pedidos` y `ver_precios`. */
+    actualizarPartida(id: string, cambios: CambiosPartida): Promise<void>
+    /** Quita un concepto del pedido. Requiere `gestionar_pedidos`. */
+    eliminarPartida(id: string): Promise<void>
   }
   archivos: {
     /** Archivos del pedido, lo más reciente primero. */

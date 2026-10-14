@@ -1,10 +1,11 @@
 import type { UseQueryResult } from '@tanstack/react-query'
 import { ArrowLeft, FileSearch, Lock, PackageCheck, RotateCcw } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useBlocker, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useBlocker, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useConfiguracion } from '@/app/consultas'
 import { useSesion } from '@/app/sesion'
+import { api } from '@/data/api'
 import { EstadoVacio, GlassButton, GlassIconButton, GlassModal, GlassPanel, Pildora, Skeleton } from '@/components/glass'
 import type { Configuracion, CotizacionCompleta, ProductoCatalogo } from '@/data/tipos'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
@@ -176,6 +177,27 @@ function Editor({
     productos.data,
   )
   const { estado, totales, errores } = ed
+
+  // Desde la ficha del cliente: /cotizaciones/nueva?cliente=<id> deja al cliente ya elegido
+  const [params] = useSearchParams()
+  const clienteInicial = cotizacion ? null : params.get('cliente')
+  const { actualizar } = ed
+  useEffect(() => {
+    if (!clienteInicial) return
+    let vigente = true
+    api.clientes
+      .obtener(clienteInicial)
+      .then((c) => {
+        if (!vigente) return
+        actualizar('cliente', { id: c.id, nombre: c.nombre, whatsapp: c.whatsapp, telefono: c.telefono, email: c.email, requiere_factura: c.requiere_factura, rfc: c.rfc, razon_social: c.razon_social })
+      })
+      .catch(() => {
+        /* si no se encuentra, se elige a mano */
+      })
+    return () => {
+      vigente = false
+    }
+  }, [clienteInicial, actualizar])
   const [intentos, setIntentos] = useState(0)
   const mostrarErrores = intentos > 0
   const hoy = useMemo(() => hoyISO(), [])

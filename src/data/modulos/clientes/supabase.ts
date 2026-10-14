@@ -5,7 +5,7 @@ import type { ApiClientes, Cliente, ClienteLista, DatosCliente, DatosContacto, H
 
 const CAMPOS_BREVE = 'id, nombre, whatsapp, telefono, email, requiere_factura'
 const CAMPOS_LISTA =
-  'id, nombre, tipo, whatsapp, telefono, email, ciudad, etiquetas, lista_precio, requiere_factura, dias_credito, activo, vendedor_id, ultima_compra_at, created_at, vendedor:perfiles!vendedor_id(nombre)'
+  'id, nombre, tipo, whatsapp, telefono, email, ciudad, etiquetas, lista_precio, requiere_factura, dias_credito, activo, vendedor_id, ultima_compra_at, created_at, rfc, vendedor:perfiles!vendedor_id(nombre), contactos(nombre, puesto, whatsapp, principal, created_at)'
 
 /** Normaliza lo capturado: textos vacíos → null, RFC en mayúsculas. Solo incluye lo enviado. */
 function filaCliente(d: Partial<DatosCliente>) {
@@ -53,7 +53,16 @@ export const clientesSupabase: ApiClientes = {
       if (filtros.vendedorId) q = q.eq('vendedor_id', filtros.vendedorId)
       if (filtros.lista) q = q.eq('lista_precio', filtros.lista)
       const filas = revisar(await q.order('nombre').limit(filtros.limite ?? 500))
-      return filas.map(({ vendedor, ...c }) => ({ ...c, vendedor: (vendedor as { nombre: string } | null)?.nombre ?? null }) as ClienteLista)
+      return filas.map(({ vendedor, contactos, ...c }) => {
+        type Ct = { nombre: string; puesto: string | null; whatsapp: string | null; principal: boolean; created_at: string }
+        const lista = ((contactos ?? []) as Ct[]).slice().sort((x, y) => Number(y.principal) - Number(x.principal) || x.created_at.localeCompare(y.created_at))
+        const p = lista[0]
+        return {
+          ...c,
+          vendedor: (vendedor as { nombre: string } | null)?.nombre ?? null,
+          contacto_principal: p ? { nombre: p.nombre, puesto: p.puesto, whatsapp: p.whatsapp } : null,
+        } as ClienteLista
+      })
     },
 
     async obtener(id) {
@@ -121,6 +130,14 @@ export const clientesSupabase: ApiClientes = {
     async inactivos(dias) {
       const filas = revisar(await supabase().rpc('clientes_inactivos', dias ? { p_dias: dias } : {}))
       return filas.map((f) => ({ ...f, total_comprado: nn(f.total_comprado), pedidos: n(f.pedidos), dias_sin_compra: n(f.dias_sin_compra) }))
+    },
+
+    async saldos() {
+      // La política de pedidos exige "ver_precios": sin él, la consulta llega vacía.
+      const filas = revisar(await supabase().from('pedidos').select('cliente_id, saldo').neq('estado', 'cancelado').gt('saldo', 0).limit(5000))
+      const r: Record<string, number> = {}
+      for (const f of filas) r[f.cliente_id] = Math.round(((r[f.cliente_id] ?? 0) + n(f.saldo)) * 100) / 100
+      return r
     },
   },
 

@@ -13,7 +13,18 @@ async function nombres(ids: Array<string | null>) {
   return new Map(filas.map((p) => [p.id, p.nombre]))
 }
 
-function aOrden(f: Record<string, unknown>, mapa: Map<string, string>): OrdenTrabajo {
+/** Diseños pendientes de aprobación por pedido (una sola consulta para todo el tablero). */
+async function pendientes(ids: string[]) {
+  const conteo = new Map<string, number>()
+  if (!ids.length) return conteo
+  const filas = revisar(
+    await supabase().from('archivos').select('pedido_id').in('pedido_id', ids).eq('categoria', 'diseno').eq('estado_aprobacion', 'pendiente'),
+  )
+  for (const f of filas) if (f.pedido_id) conteo.set(f.pedido_id, (conteo.get(f.pedido_id) ?? 0) + 1)
+  return conteo
+}
+
+function aOrden(f: Record<string, unknown>, mapa: Map<string, string>, porAprobar = 0): OrdenTrabajo {
   return {
     id: f.id as string,
     folio: f.folio as string,
@@ -37,6 +48,7 @@ function aOrden(f: Record<string, unknown>, mapa: Map<string, string>): OrdenTra
     anticipo_recibido: Boolean(f.anticipo_recibido),
     num_partidas: n(f.num_partidas),
     num_disenos: n(f.num_disenos),
+    num_pendientes: porAprobar,
     created_at: f.created_at as string,
     updated_at: f.updated_at as string,
   }
@@ -49,14 +61,17 @@ export const produccionSupabase: ApiProduccion = {
       q = q.not('estado', 'in', filtros.incluirEntregados ? '(finalizado,cancelado)' : '(entregado,finalizado,cancelado)')
       if (filtros.responsableId) q = q.eq('responsable_id', filtros.responsableId)
       const filas = revisar(await q.order('fecha_entrega', { ascending: true, nullsFirst: false }).order('folio').limit(500)) as unknown as Array<Record<string, unknown>>
-      const mapa = await nombres(filas.flatMap((f) => [f.responsable_id as string, f.disenador_id as string]))
+      const [mapa, porAprobar] = await Promise.all([
+        nombres(filas.flatMap((f) => [f.responsable_id as string, f.disenador_id as string])),
+        pendientes(filas.map((f) => f.id as string)),
+      ])
       const t = textoBusqueda(filtros.texto ?? '')
-      return filas.map((f) => aOrden(f, mapa)).filter((o) => !t || textoBusqueda(`${o.folio} ${o.titulo} ${o.cliente}`).includes(t))
+      return filas.map((f) => aOrden(f, mapa, porAprobar.get(f.id as string) ?? 0)).filter((o) => !t || textoBusqueda(`${o.folio} ${o.titulo} ${o.cliente}`).includes(t))
     },
 
     async orden(id) {
       const sb = supabase()
-      const [orden, partidas, disenos, notas] = await Promise.all([
+      const [orden, partidas, disenos, evidencias, notas] = await Promise.all([
         sb.from('ordenes_trabajo').select(COLUMNAS).eq('id', id).maybeSingle(),
         sb
           .from('orden_partidas')
@@ -69,14 +84,21 @@ export const produccionSupabase: ApiProduccion = {
           .eq('pedido_id', id)
           .eq('categoria', 'diseno')
           .order('version', { ascending: false, nullsFirst: false }),
+        sb
+          .from('archivos')
+          .select('id, nombre, mime, path, enlace_externo, created_at, autor:perfiles!subido_por(nombre)')
+          .eq('pedido_id', id)
+          .eq('categoria', 'evidencia')
+          .order('created_at', { ascending: false }),
         sb.from('pedido_eventos').select('id, mensaje, created_at, usuario:perfiles!usuario_id(nombre)').eq('pedido_id', id).eq('tipo', 'nota').order('created_at', { ascending: false }),
       ])
       if (orden.error) throw new Error(mensajeError(orden.error))
       if (!orden.data) throw new Error('Orden de trabajo no encontrada')
       const f = orden.data as unknown as Record<string, unknown>
       const mapa = await nombres([f.responsable_id as string, f.disenador_id as string])
+      const disenosFilas = revisar(disenos)
       const hoja: HojaOrden = {
-        orden: aOrden(f, mapa),
+        orden: aOrden(f, mapa, disenosFilas.filter((d) => d.estado_aprobacion === 'pendiente').length),
         partidas: revisar(partidas).map((p) => ({
           id: p.id ?? '',
           orden: n(p.orden),
@@ -91,7 +113,12 @@ export const produccionSupabase: ApiProduccion = {
           cantidad: n(p.cantidad),
           notas_produccion: p.notas_produccion,
         })),
-        disenos: revisar(disenos).map(({ path, ...d }) => ({ ...d, tiene_archivo: Boolean(path) })),
+        disenos: disenosFilas.map(({ path, ...d }) => ({ ...d, tiene_archivo: Boolean(path) })),
+        evidencias: revisar(evidencias).map(({ path, autor, ...e }) => ({
+          ...e,
+          tiene_archivo: Boolean(path),
+          subido_por: (autor as { nombre: string } | null)?.nombre ?? null,
+        })),
         notas: revisar(notas).map(({ usuario, ...x }) => ({ ...x, mensaje: x.mensaje ?? '', usuario: (usuario as { nombre: string } | null)?.nombre ?? null })),
       }
       return hoja

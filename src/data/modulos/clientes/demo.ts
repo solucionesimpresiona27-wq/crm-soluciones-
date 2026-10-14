@@ -140,6 +140,8 @@ export const clientesDemo: ApiClientes = {
             vendedor: nombrePerfil(a, c.vendedor_id),
             ultima_compra_at: c.ultima_compra_at,
             created_at: c.created_at,
+            rfc: c.rfc,
+            contacto_principal: principalDe(c.id),
           }),
         )
     },
@@ -291,6 +293,19 @@ export const clientesDemo: ApiClientes = {
         })
         .sort((x, y) => y.ultima_compra.localeCompare(x.ultima_compra))
     },
+
+    async saldos() {
+      usuario()
+      await espera(120)
+      if (!puede('ver_precios')) return {}
+      const r: Record<string, number> = {}
+      for (const p of a.pedidos) {
+        const saldo = p.saldo ?? 0
+        if (p.estado === 'cancelado' || saldo <= 0) continue
+        r[p.cliente_id] = Math.round(((r[p.cliente_id] ?? 0) + saldo) * 100) / 100
+      }
+      return r
+    },
   },
 
   contactos: {
@@ -381,6 +396,14 @@ export const clientesDemo: ApiClientes = {
       a.actividades.splice(a.actividades.indexOf(x), 1)
     },
   },
+}
+
+function principalDe(clienteId: string): ClienteLista['contacto_principal'] {
+  const lista = a.contactos
+    .filter((x) => x.cliente_id === clienteId)
+    .sort((x, y) => Number(y.principal) - Number(x.principal) || x.created_at.localeCompare(y.created_at))
+  const p = lista[0]
+  return p ? { nombre: p.nombre, puesto: p.puesto, whatsapp: p.whatsapp } : null
 }
 
 function conNombres(x: (typeof a.actividades)[number]): Actividad {

@@ -30,6 +30,7 @@ function aOrden(p: PedidoFila): OrdenTrabajo {
     anticipo_recibido: p.pagado > 0,
     num_partidas: a.partidas.filter((x) => x.pedido_id === p.id).length,
     num_disenos: a.archivos.filter((x) => x.pedido_id === p.id && x.categoria === 'diseno').length,
+    num_pendientes: a.archivos.filter((x) => x.pedido_id === p.id && x.categoria === 'diseno' && x.estado_aprobacion === 'pendiente').length,
     created_at: p.created_at,
     updated_at: p.updated_at,
   }
@@ -90,6 +91,18 @@ export const produccionDemo: ApiProduccion = {
             mime: x.mime,
             tiene_archivo: Boolean(x.path),
             enlace_externo: x.enlace_externo,
+            created_at: x.created_at,
+          })),
+        evidencias: a.archivos
+          .filter((x) => x.pedido_id === id && x.categoria === 'evidencia')
+          .sort((x, y) => y.created_at.localeCompare(x.created_at))
+          .map((x) => ({
+            id: x.id,
+            nombre: x.nombre,
+            mime: x.mime,
+            tiene_archivo: Boolean(x.path),
+            enlace_externo: x.enlace_externo,
+            subido_por: nombrePerfil(a, x.subido_por),
             created_at: x.created_at,
           })),
         notas: a.pedido_eventos

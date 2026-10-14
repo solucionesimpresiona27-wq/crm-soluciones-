@@ -32,7 +32,7 @@ export function Sidebar({ contraido, onAlternar }: { contraido: boolean; onAlter
     <Tooltip.Provider delayDuration={250}>
       <aside
         aria-label="Menú principal"
-        className="glass glass-strong fixed bottom-3 left-3 top-3 z-30 hidden flex-col overflow-hidden rounded-sheet md:flex"
+        className="no-print glass glass-strong fixed bottom-3 left-3 top-3 z-30 hidden flex-col overflow-hidden rounded-sheet md:flex"
         style={{
           width: contraido ? ANCHO_SIDEBAR.cerrado : ANCHO_SIDEBAR.abierto,
           transition: reducir ? undefined : 'width 0.5s var(--ease-spring-soft)',

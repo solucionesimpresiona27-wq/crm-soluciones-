@@ -38,6 +38,8 @@ export interface OrdenTrabajo {
   anticipo_recibido: boolean
   num_partidas: number
   num_disenos: number
+  /** Diseños esperando la respuesta del cliente (estado_aprobacion = pendiente) */
+  num_pendientes: number
   created_at: string
   updated_at: string
 }
@@ -72,6 +74,11 @@ export interface HojaOrden {
     enlace_externo: string | null
     created_at: string
   }>
+  /**
+   * Evidencias de entrega o instalación (archivos con categoría "evidencia"), lo más reciente primero.
+   * Se suben con `api.archivos.subir(pedidoId, foto, { categoria: 'evidencia' })` y se abren con `api.archivos.url(id)`.
+   */
+  evidencias: Array<{ id: string; nombre: string; mime: string | null; tiene_archivo: boolean; enlace_externo: string | null; subido_por: string | null; created_at: string }>
   /** Notas de la línea de tiempo (lo más reciente primero) */
   notas: Array<{ id: number; mensaje: string; usuario: string | null; created_at: string }>
 }

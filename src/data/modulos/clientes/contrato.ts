@@ -55,6 +55,10 @@ export interface ClienteLista {
   vendedor: string | null
   ultima_compra_at: string | null
   created_at: string
+  /** RFC (para buscar y exportar) */
+  rfc: string | null
+  /** Contacto marcado como principal (o el primero registrado) */
+  contacto_principal: { nombre: string; puesto: string | null; whatsapp: string | null } | null
 }
 
 export interface FiltrosClientes {
@@ -192,6 +196,11 @@ export interface ApiClientes {
      * configuración). Requiere `gestionar_clientes`.
      */
     inactivos(dias?: number): Promise<ClienteInactivo[]>
+    /**
+     * Saldo pendiente por cliente (pedidos no cancelados con saldo mayor a cero), como
+     * `{ [cliente_id]: saldo }`. Requiere `ver_precios`; sin él devuelve un objeto vacío.
+     */
+    saldos(): Promise<Record<string, number>>
   }
   contactos: {
     /** Contactos del cliente, el principal primero. */
