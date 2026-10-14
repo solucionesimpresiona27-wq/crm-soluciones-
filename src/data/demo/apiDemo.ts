@@ -1,50 +1,52 @@
 /**
- * Implementación de la API para la VISTA PREVIA.
- * Trabaja en memoria con datos ficticios: nada se envía a Supabase ni a ningún servidor.
+ * Implementación de la API para la VISTA PREVIA: el núcleo (sesión, panel, búsqueda y
+ * cotizaciones) más los módulos de `src/data/modulos/<modulo>/demo.ts`.
+ * Todo trabaja sobre el almacén en memoria (`./almacen.ts`) con datos ficticios: nada se envía
+ * a Supabase ni a ningún servidor.
  */
 import { calcularTotales, importePartida } from '@/lib/calculadora'
+import type { Json } from '@/lib/database.types'
 import { hoyISO, sumarDias } from '@/lib/format'
-import { permisosDeRol } from '@/lib/permisos'
 import { normalizar } from '@/lib/utils'
-import type { Api } from '../api'
-import type { CotizacionCompleta, CotizacionLista, DashboardResumen, Rol, SesionUsuario } from '../tipos'
-import {
-  clientesDemo,
-  configuracionDemo,
-  cotizacionesDemo,
-  pedidosDemo,
-  perfilesDemo,
-  plantillasDemo,
-  productosDemo,
-  serieMensualDemo,
-} from './datosDemo'
+import type { Api, ApiNucleo } from '../api'
+import { componer } from '../comun/componer'
+import { administracionDemo } from '../modulos/administracion/demo'
+import { agendaDemo } from '../modulos/agenda/demo'
+import { catalogoDemo } from '../modulos/catalogo/demo'
+import { clientesDemo } from '../modulos/clientes/demo'
+import { embudoDemo } from '../modulos/embudo/demo'
+import { inventarioDemo } from '../modulos/inventario/demo'
+import { pagosDemo } from '../modulos/pagos/demo'
+import { pedidosDemo } from '../modulos/pedidos/demo'
+import { portalDemo } from '../modulos/portal/demo'
+import { produccionDemo } from '../modulos/produccion/demo'
+import { reportesDemo } from '../modulos/reportes/demo'
+import type { CotizacionCompleta, CotizacionLista, DashboardResumen, EntregaProxima, EstadoCotizacion } from '../tipos'
+import { almacen as a, copia, type PedidoFila } from './almacen'
+import { ahoraISO, etapasOmitidas, eventoPedido, fechaLocal, recalcularPedido, redondear2, registrarBitacora, siguienteFolio } from './reglas'
+import { alCambiarSesion, cambiarRol, espera, exigir, sesionDemo, usuario } from './sesion'
 
-const perfiles = perfilesDemo()
-const clientes = [...clientesDemo]
-let cotizaciones: CotizacionCompleta[] = cotizacionesDemo(perfiles)
-const pedidos = pedidosDemo()
-let rolActual: Rol | null = null
-const oyentes = new Set<() => void>()
-let siguienteFolio = cotizaciones.length + 1
+const CERRADOS = ['entregado', 'finalizado', 'cancelado']
 
-try {
-  rolActual = (sessionStorage.getItem('impresiona:demo-rol') as Rol | null) ?? null
-} catch {
-  rolActual = null
-}
-
-const espera = (ms = 260) => new Promise((r) => setTimeout(r, ms))
-const avisar = () => oyentes.forEach((cb) => cb())
-
-function sesion(): SesionUsuario | null {
-  if (!rolActual) return null
-  const perfil = perfiles[rolActual]
-  return { id: perfil.id, email: perfil.email, perfil, permisos: permisosDeRol(rolActual) }
-}
-
-function exigir(permiso: keyof SesionUsuario['permisos']) {
-  const s = sesion()
-  if (!s?.permisos[permiso]) throw new Error('No tienes permiso para realizar esta acción')
+/** La cotización con los datos actuales del cliente (pudo editarse en Clientes). */
+function conCliente(c: CotizacionCompleta): CotizacionCompleta {
+  const cl = a.clientes.find((x) => x.id === c.cliente.id)
+  if (!cl) return c
+  return {
+    ...c,
+    cliente: {
+      ...c.cliente,
+      nombre: cl.nombre,
+      whatsapp: cl.whatsapp,
+      telefono: cl.telefono,
+      email: cl.email,
+      requiere_factura: cl.requiere_factura,
+      rfc: cl.rfc,
+      razon_social: cl.razon_social,
+      direccion: cl.direccion,
+      ciudad: cl.ciudad,
+    },
+  }
 }
 
 function aLista(c: CotizacionCompleta): CotizacionLista {
@@ -78,32 +80,53 @@ function recalcular(c: CotizacionCompleta) {
   c.fecha_vencimiento = sumarDias(c.fecha, c.vigencia_dias)
 }
 
-export const apiDemo: Api = {
+function buscarCotizacion(id: string) {
+  const c = a.cotizaciones.find((x) => x.id === id)
+  if (!c) throw new Error('Cotización no encontrada')
+  return c
+}
+
+/** Igual que tg_cotizaciones_oportunidad(): enviada adelanta la oportunidad; aceptada la gana. */
+function avanzarOportunidad(c: CotizacionCompleta) {
+  const op = a.oportunidades.find((o) => o.id === a.cotizacion_oportunidad[c.id])
+  if (!op) return
+  if (c.estado === 'enviada' && ['prospecto_nuevo', 'contactado', 'interesado'].includes(op.etapa)) {
+    Object.assign(op, { etapa: 'cotizacion_enviada', updated_at: ahoraISO() })
+  } else if (c.estado === 'aceptada' && op.etapa !== 'ganado') {
+    Object.assign(op, { etapa: 'ganado', cerrada_at: ahoraISO(), motivo_perdida: null, updated_at: ahoraISO() })
+  }
+}
+
+/** Entrega o pendiente con la forma del panel (cliente por nombre). */
+function aEntrega(p: PedidoFila): EntregaProxima {
+  return {
+    id: p.id,
+    folio: p.folio,
+    titulo: p.titulo,
+    estado: p.estado,
+    prioridad: p.prioridad,
+    fecha_entrega: p.fecha_entrega ?? '',
+    cliente: a.clientes.find((c) => c.id === p.cliente_id)?.nombre ?? '',
+    requiere_instalacion: p.requiere_instalacion,
+  }
+}
+
+const porEntrega = (x: PedidoFila, y: PedidoFila) => (x.fecha_entrega ?? '9999').localeCompare(y.fecha_entrega ?? '9999') || x.folio.localeCompare(y.folio)
+
+const nucleo: ApiNucleo = {
   sesion: {
     async actual() {
-      return sesion()
+      return sesionDemo()
     },
     async iniciar() {
       throw new Error('En la vista previa elige un rol de ejemplo para entrar')
     },
     async iniciarDemo(rol) {
       await espera(500)
-      rolActual = rol
-      try {
-        sessionStorage.setItem('impresiona:demo-rol', rol)
-      } catch {
-        /* sin almacenamiento: la sesión dura mientras la página esté abierta */
-      }
-      avisar()
+      cambiarRol(rol)
     },
     async cerrar() {
-      rolActual = null
-      try {
-        sessionStorage.removeItem('impresiona:demo-rol')
-      } catch {
-        /* nada que limpiar */
-      }
-      avisar()
+      cambiarRol(null)
     },
     async recuperar() {
       await espera()
@@ -113,157 +136,167 @@ export const apiDemo: Api = {
       throw new Error('No disponible en la vista previa')
     },
     alCambiar(cb) {
-      oyentes.add(cb)
-      return () => oyentes.delete(cb)
-    },
-  },
-
-  configuracion: {
-    async obtener() {
-      return configuracionDemo
-    },
-  },
-
-  plantillas: {
-    async listar() {
-      return plantillasDemo
-    },
-  },
-
-  usuarios: {
-    async equipo() {
-      return Object.values(perfiles).map(({ id, nombre, rol, email, telefono }) => ({ id, nombre, rol, email, telefono }))
+      return alCambiarSesion(cb)
     },
   },
 
   dashboard: {
+    /** Igual que dashboard_resumen() en la base de datos, calculado sobre el almacén. */
     async resumen() {
       await espera(420)
-      const s = sesion()
-      if (!s) throw new Error('Sesión requerida')
+      const s = usuario()
       const hoy = hoyISO()
-      const activos = pedidos.filter((p) => !['entregado', 'finalizado', 'cancelado'].includes(p.estado))
+      const inicioMes = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+      const inicioMesAnterior = new Date(inicioMes.getFullYear(), inicioMes.getMonth() - 1, 1)
+      const activos = a.pedidos.filter((p) => !CERRADOS.includes(p.estado))
       const porEstado: DashboardResumen['pedidos_por_estado'] = {}
-      for (const p of activos) porEstado[p.estado] = (porEstado[p.estado] ?? 0) + 1
+      for (const p of a.pedidos.filter((x) => !['finalizado', 'cancelado'].includes(x.estado))) porEstado[p.estado] = (porEstado[p.estado] ?? 0) + 1
 
       const r: DashboardResumen = {
         hoy,
         pedidos_por_estado: porEstado,
         pedidos_activos: activos.length,
-        pedidos_atrasados: activos.filter((p) => p.fecha_entrega < hoy).length,
-        pedidos_pausados: activos.filter((p) => p.estado === 'pausado').length,
-        // Mismo orden y límite que dashboard_resumen() en la base de datos
+        pedidos_atrasados: activos.filter((p) => p.fecha_entrega && p.fecha_entrega < hoy).length,
+        pedidos_pausados: a.pedidos.filter((p) => p.estado === 'pausado').length,
         entregas_proximas: activos
-          .filter((p) => p.fecha_entrega <= sumarDias(hoy, 7))
-          .sort((a, b) => a.fecha_entrega.localeCompare(b.fecha_entrega) || a.folio.localeCompare(b.folio))
+          .filter((p) => p.fecha_entrega && p.fecha_entrega <= sumarDias(hoy, 7))
+          .sort(porEntrega)
           .slice(0, 10)
-          .map(({ total: _t, pagado: _p, responsable: _r, vencido: _v, ...e }) => e),
+          .map(aEntrega),
         mis_pendientes: activos
-          .filter((p) => p.responsable === s.perfil.rol)
-          .sort((a, b) => a.fecha_entrega.localeCompare(b.fecha_entrega) || a.folio.localeCompare(b.folio))
+          .filter((p) => p.responsable_id === s.id || p.disenador_id === s.id)
+          .sort(porEntrega)
           .slice(0, 10)
-          .map(({ total: _t, pagado: _p, responsable: _r, vencido: _v, ...e }) => e),
-        disenos_pendientes: 2,
+          .map(aEntrega),
+        disenos_pendientes: a.archivos.filter(
+          (x) => x.categoria === 'diseno' && x.estado_aprobacion === 'pendiente' && !['finalizado', 'cancelado'].includes(a.pedidos.find((p) => p.id === x.pedido_id)?.estado ?? 'cancelado'),
+        ).length,
       }
 
       if (s.permisos.ver_precios) {
-        const abiertas = cotizaciones.filter((c) => ['borrador', 'enviada'].includes(c.estado) && c.fecha_vencimiento >= hoy)
-        r.cotizaciones_abiertas = { cantidad: abiertas.length, total: abiertas.reduce((t, c) => t + c.total, 0) }
-        r.cotizaciones_por_vencer = cotizaciones
+        const abiertas = a.cotizaciones.filter((c) => ['borrador', 'enviada'].includes(c.estado) && c.fecha_vencimiento >= hoy)
+        r.cotizaciones_abiertas = { cantidad: abiertas.length, total: redondear2(abiertas.reduce((t, c) => t + c.total, 0)) }
+        r.cotizaciones_por_vencer = a.cotizaciones
           .filter((c) => c.estado === 'enviada' && c.fecha_vencimiento >= hoy && c.fecha_vencimiento <= sumarDias(hoy, 3))
-          .map((c) => ({ id: c.id, folio: c.folio, titulo: c.titulo, total: c.total, fecha_vencimiento: c.fecha_vencimiento, cliente: c.cliente.nombre }))
-        const cerradas = cotizaciones.filter((c) => ['aceptada', 'rechazada'].includes(c.estado))
-        r.tasa_cierre_90d = cerradas.length
-          ? Math.round((cotizaciones.filter((c) => c.estado === 'aceptada').length / cerradas.length) * 1000) / 10
-          : null
+          .sort((x, y) => x.fecha_vencimiento.localeCompare(y.fecha_vencimiento))
+          .slice(0, 10)
+          .map((c) => ({ id: c.id, folio: c.folio, titulo: c.titulo, total: c.total, fecha_vencimiento: c.fecha_vencimiento, cliente: conCliente(c).cliente.nombre }))
+        const recientes = a.cotizaciones.filter((c) => c.fecha >= sumarDias(hoy, -90))
+        const cerradas = recientes.filter((c) => ['aceptada', 'rechazada'].includes(c.estado))
+        r.tasa_cierre_90d = cerradas.length ? Math.round((recientes.filter((c) => c.estado === 'aceptada').length / cerradas.length) * 1000) / 10 : null
       }
 
       if (s.permisos.ver_reportes) {
-        const actual = serieMensualDemo[serieMensualDemo.length - 1]
-        r.ventas_mes = actual.ventas
-        r.ventas_mes_anterior = serieMensualDemo[serieMensualDemo.length - 2].ventas
-        r.cobrado_mes = actual.cobrado
-        const saldo = pedidos.filter((p) => p.estado !== 'cancelado').reduce((t, p) => t + (p.total - p.pagado), 0)
-        r.por_cobrar = { total: Math.round(saldo * 100) / 100, pedidos: pedidos.filter((p) => p.total > p.pagado).length }
-        const vencidos = pedidos.filter((p) => p.vencido)
-        r.pagos_vencidos = { total: vencidos.reduce((t, p) => t + (p.total - p.pagado), 0), pedidos: vencidos.length }
-        r.serie_mensual = serieMensualDemo
-      }
-      if (s.permisos.ver_reportes && s.permisos.ver_costos) {
-        r.utilidad_estimada_mes = { venta: 104870.69, costo: 58212.4, utilidad: 46658.29 }
-      }
-      if (s.permisos.gestionar_clientes) {
-        r.seguimientos = [
-          { id: 'o1', titulo: 'Menú luminoso', etapa: 'cotizacion_enviada', proxima_accion: 'Llamar para resolver dudas del neón', proxima_accion_fecha: hoy, valor_estimado: 5568, cliente: 'Taquería Los Compadres', cliente_id: 'c4', whatsapp: '3344445566' },
-          { id: 'o2', titulo: 'Tarjetas y etiquetas', etapa: 'en_seguimiento', proxima_accion: 'Enviar muestras de papel', proxima_accion_fecha: sumarDias(hoy, -1), valor_estimado: 900, cliente: 'Boutique Lirio', cliente_id: 'c7', whatsapp: '3377778899' },
-        ]
-        r.embudo = {
-          prospecto_nuevo: { cantidad: 4, valor: 18400 },
-          contactado: { cantidad: 3, valor: 12600 },
-          interesado: { cantidad: 2, valor: 21300 },
-          cotizacion_enviada: { cantidad: 4, valor: 31940 },
-          en_seguimiento: { cantidad: 2, valor: 7400 },
-          ganado: { cantidad: 5, valor: 62800 },
-          perdido: { cantidad: 1, valor: 5011 },
+        const noCancelados = a.pedidos.filter((p) => p.estado !== 'cancelado')
+        const vendido = (desde: Date, hasta: Date) => redondear2(noCancelados.filter((p) => new Date(p.created_at) >= desde && new Date(p.created_at) < hasta).reduce((t, p) => t + p.total, 0))
+        const cobrado = (desde: string, hasta: string) =>
+          redondear2(a.pagos.filter((p) => !p.cancelado && p.fecha >= desde && p.fecha < hasta).reduce((t, p) => t + (p.tipo === 'devolucion' ? -p.importe : p.importe), 0))
+        const lejano = new Date(9999, 0, 1)
+        r.ventas_mes = vendido(inicioMes, lejano)
+        r.ventas_mes_anterior = vendido(inicioMesAnterior, inicioMes)
+        r.cobrado_mes = cobrado(fechaLocal(inicioMes), '9999-12-31')
+        const conSaldo = noCancelados.filter((p) => (p.saldo ?? 0) > 0)
+        r.por_cobrar = { total: redondear2(conSaldo.reduce((t, p) => t + (p.saldo ?? 0), 0)), pedidos: conSaldo.length }
+        const vencidos = conSaldo.filter((p) => p.fecha_limite_pago && p.fecha_limite_pago < hoy)
+        r.pagos_vencidos = { total: redondear2(vencidos.reduce((t, p) => t + (p.saldo ?? 0), 0)), pedidos: vencidos.length }
+        r.serie_mensual = Array.from({ length: 6 }, (_, i) => {
+          const desde = new Date(inicioMes.getFullYear(), inicioMes.getMonth() - 5 + i, 1)
+          const hasta = new Date(desde.getFullYear(), desde.getMonth() + 1, 1)
+          return { mes: fechaLocal(desde).slice(0, 7), ventas: vendido(desde, hasta), cobrado: cobrado(fechaLocal(desde), fechaLocal(hasta)) }
+        })
+        if (s.permisos.ver_costos) {
+          const delMes = noCancelados.filter((p) => new Date(p.created_at) >= inicioMes)
+          const ids = new Set(a.partidas.filter((x) => delMes.some((p) => p.id === x.pedido_id)).map((x) => x.id))
+          const venta = redondear2(delMes.reduce((t, p) => t + p.total - p.iva, 0))
+          const costo = redondear2(a.partida_costos.filter((x) => ids.has(x.partida_id)).reduce((t, x) => t + x.costo_total, 0))
+          r.utilidad_estimada_mes = { venta, costo, utilidad: redondear2(venta - costo) }
         }
       }
-      return r
+
+      if (s.permisos.gestionar_clientes) {
+        r.seguimientos = a.oportunidades
+          .filter((o) => !['ganado', 'perdido'].includes(o.etapa) && o.proxima_accion_fecha && o.proxima_accion_fecha <= hoy)
+          .sort((x, y) => x.proxima_accion_fecha!.localeCompare(y.proxima_accion_fecha!))
+          .slice(0, 10)
+          .map((o) => {
+            const c = a.clientes.find((x) => x.id === o.cliente_id)
+            return {
+              id: o.id,
+              titulo: o.titulo,
+              etapa: o.etapa,
+              proxima_accion: o.proxima_accion,
+              proxima_accion_fecha: o.proxima_accion_fecha!,
+              valor_estimado: o.valor_estimado,
+              cliente: c?.nombre ?? '',
+              cliente_id: o.cliente_id,
+              whatsapp: c?.whatsapp ?? c?.telefono ?? null,
+            }
+          })
+        const embudo: NonNullable<DashboardResumen['embudo']> = {}
+        const inicio = inicioMes.toISOString()
+        for (const o of a.oportunidades.filter((x) => !['ganado', 'perdido'].includes(x.etapa) || (x.cerrada_at && x.cerrada_at >= inicio))) {
+          const e = (embudo[o.etapa] ??= { cantidad: 0, valor: 0 })
+          e.cantidad++
+          e.valor = redondear2(e.valor + (o.valor_estimado ?? 0))
+        }
+        r.embudo = embudo
+      }
+
+      // Fases 2 y 3: tareas del día, alerta de stock y caja
+      const misTareas = a.tareas
+        .filter((t) => t.responsable_id === s.id && !t.completada && t.fecha <= hoy)
+        .sort((x, y) => x.fecha.localeCompare(y.fecha) || (x.hora ?? '99').localeCompare(y.hora ?? '99') || x.titulo.localeCompare(y.titulo, 'es'))
+      r.tareas_hoy = misTareas.slice(0, 10).map((t) => ({
+        id: t.id,
+        titulo: t.titulo,
+        tipo: t.tipo,
+        fecha: t.fecha,
+        hora: t.hora,
+        prioridad: t.prioridad,
+        cliente_id: t.cliente_id,
+        cliente: a.clientes.find((c) => c.id === t.cliente_id)?.nombre ?? null,
+        pedido_id: t.pedido_id,
+        vencida: t.fecha < hoy,
+      }))
+      r.tareas_pendientes = misTareas.length
+      const bajos = a.materiales.filter((m) => m.bajo_minimo).sort((x, y) => x.nombre.localeCompare(y.nombre, 'es'))
+      r.stock_bajo = {
+        cantidad: bajos.length,
+        materiales: bajos.slice(0, 5).map((m) => ({ id: m.id, nombre: m.nombre, unidad: m.unidad, existencia: m.existencia, stock_minimo: m.stock_minimo })),
+      }
+      if (s.permisos.registrar_pagos) r.caja_hoy = { cerrada: a.cortes_caja.some((c) => c.fecha === hoy) }
+      return copia(r)
     },
   },
 
   busqueda: {
+    /** Igual que busqueda_global(): clientes, cotizaciones (con `ver_precios`) y pedidos. */
     async global(texto) {
+      const s = usuario()
       const q = normalizar(texto)
-      const s = sesion()
-      if (q.length < 2) return { clientes: [], cotizaciones: [], pedidos: [] }
-      return {
-        clientes: clientes
-          .filter((c) => normalizar(c.nombre).includes(q))
+      if (texto.trim().length < 2) return { clientes: [], cotizaciones: [], pedidos: [] }
+      const folio = texto.trim().toUpperCase()
+      const clientePorId = (id: string) => a.clientes.find((c) => c.id === id)
+      return copia({
+        clientes: a.clientes
+          .filter((c) => (c.busqueda ?? '').includes(q))
+          .sort((x, y) => Number(y.activo) - Number(x.activo) || x.nombre.localeCompare(y.nombre, 'es'))
           .slice(0, 6)
-          .map((c) => ({ id: c.id, nombre: c.nombre, telefono: c.whatsapp, email: c.email })),
-        cotizaciones: s?.permisos.ver_precios
-          ? cotizaciones
-              .filter((c) => normalizar(`${c.folio} ${c.titulo ?? ''} ${c.cliente.nombre}`).includes(q))
+          .map((c) => ({ id: c.id, nombre: c.nombre, telefono: c.whatsapp ?? c.telefono, email: c.email })),
+        cotizaciones: s.permisos.ver_precios
+          ? a.cotizaciones
+              .map(conCliente)
+              .filter((c) => c.folio.toUpperCase().includes(folio) || normalizar(c.titulo ?? '').includes(q) || (clientePorId(c.cliente.id)?.busqueda ?? '').includes(q))
+              .sort((x, y) => y.created_at.localeCompare(x.created_at))
               .slice(0, 6)
               .map((c) => ({ id: c.id, folio: c.folio, titulo: c.titulo, estado: c.estado, total: c.total, cliente: c.cliente.nombre }))
           : [],
-        pedidos: pedidos
-          .filter((p) => normalizar(`${p.folio} ${p.titulo} ${p.cliente}`).includes(q))
+        pedidos: a.pedidos
+          .filter((p) => p.folio.toUpperCase().includes(folio) || normalizar(p.titulo).includes(q) || (clientePorId(p.cliente_id)?.busqueda ?? '').includes(q))
+          .sort((x, y) => y.created_at.localeCompare(x.created_at))
           .slice(0, 6)
-          .map((p) => ({ id: p.id, folio: p.folio, titulo: p.titulo, estado: p.estado, cliente: p.cliente })),
-      }
-    },
-  },
-
-  clientes: {
-    async buscar(texto) {
-      await espera(120)
-      const q = normalizar(texto)
-      return clientes.filter((c) => !q || normalizar(`${c.nombre} ${c.whatsapp ?? ''} ${c.email ?? ''}`).includes(q)).slice(0, 20)
-    },
-    async crear(datos) {
-      exigir('gestionar_clientes')
-      await espera()
-      const nuevo = {
-        id: `c-${Date.now()}`,
-        nombre: datos.nombre.trim(),
-        whatsapp: datos.whatsapp?.trim() || null,
-        telefono: null,
-        email: datos.email?.trim() || null,
-        requiere_factura: datos.requiere_factura ?? false,
-        rfc: datos.rfc?.trim().toUpperCase() || null,
-        razon_social: datos.razon_social?.trim() || null,
-        direccion: null,
-        ciudad: null,
-      }
-      clientes.unshift(nuevo)
-      return nuevo
-    },
-  },
-
-  catalogo: {
-    async productos() {
-      return productosDemo(Boolean(sesion()?.permisos.ver_costos))
+          .map((p) => ({ id: p.id, folio: p.folio, titulo: p.titulo, estado: p.estado, cliente: clientePorId(p.cliente_id)?.nombre ?? '' })),
+      })
     },
   },
 
@@ -271,37 +304,36 @@ export const apiDemo: Api = {
     async listar() {
       exigir('ver_precios')
       await espera(380)
-      return cotizaciones.map(aLista)
+      return a.cotizaciones.map((c) => aLista(conCliente(c)))
     },
     async obtener(id) {
-      exigir('ver_precios')
+      const s = exigir('ver_precios')
       await espera(220)
-      const c = cotizaciones.find((x) => x.id === id)
-      if (!c) throw new Error('Cotización no encontrada')
-      const verCostos = sesion()?.permisos.ver_costos
-      return structuredClone({ ...c, partidas: c.partidas.map((p) => ({ ...p, costos: verCostos ? p.costos : null })) })
+      const c = conCliente(buscarCotizacion(id))
+      return copia({ ...c, partidas: c.partidas.map((p) => ({ ...p, costos: s.permisos.ver_costos ? p.costos : null })) })
     },
     async guardar(b) {
-      exigir('gestionar_cotizaciones')
+      const s = exigir('gestionar_cotizaciones')
       await espera(450)
-      const s = sesion()!
-      const cliente = clientes.find((c) => c.id === b.cliente_id)
+      const cliente = a.clientes.find((c) => c.id === b.cliente_id)
       if (!cliente) throw new Error('Selecciona un cliente')
-      const existente = b.id ? cotizaciones.find((c) => c.id === b.id) : undefined
+      const existente = b.id ? a.cotizaciones.find((c) => c.id === b.id) : undefined
       if (existente?.pedido_id) throw new Error(`Esta cotización ya se convirtió en el pedido ${existente.pedido_folio}`)
-      const ahora = new Date().toISOString()
-      const base: CotizacionCompleta = existente ?? {
-        id: `demo-cot-n${Date.now()}`,
-        folio: `COT-${String(siguienteFolio++).padStart(4, '0')}`,
-        estado: 'borrador',
-        motivo_rechazo: null,
-        pedido_id: null,
-        pedido_folio: null,
-        enviada_at: null,
-        aceptada_at: null,
-        created_at: ahora,
-        vendedor: { id: s.id, nombre: s.perfil.nombre, email: s.email, telefono: null },
-      } as CotizacionCompleta
+      const ahora = ahoraISO()
+      const base: CotizacionCompleta =
+        existente ??
+        ({
+          id: `demo-cot-n${Date.now()}`,
+          folio: siguienteFolio(a, 'cotizacion'),
+          estado: 'borrador',
+          motivo_rechazo: null,
+          pedido_id: null,
+          pedido_folio: null,
+          enviada_at: null,
+          aceptada_at: null,
+          created_at: ahora,
+          vendedor: { id: s.id, nombre: s.perfil.nombre, email: s.email, telefono: null },
+        } as CotizacionCompleta)
       Object.assign(base, {
         titulo: b.titulo || null,
         fecha: b.fecha,
@@ -318,7 +350,18 @@ export const apiDemo: Api = {
         notas: b.notas || null,
         notas_internas: b.notas_internas || null,
         updated_at: ahora,
-        cliente: { ...cliente },
+        cliente: {
+          id: cliente.id,
+          nombre: cliente.nombre,
+          whatsapp: cliente.whatsapp,
+          telefono: cliente.telefono,
+          email: cliente.email,
+          requiere_factura: cliente.requiere_factura,
+          rfc: cliente.rfc,
+          razon_social: cliente.razon_social,
+          direccion: cliente.direccion,
+          ciudad: cliente.ciudad,
+        },
         partidas: b.partidas.map((p, i) => ({
           ...p,
           id: p.id || `demo-p-${Date.now()}-${i}`,
@@ -328,29 +371,39 @@ export const apiDemo: Api = {
         })),
       })
       recalcular(base)
-      if (!existente) cotizaciones = [base, ...cotizaciones]
+      if (!existente) a.cotizaciones.unshift(base)
+      registrarBitacora(a, { tabla: 'cotizaciones', registro_id: base.id, accion: existente ? 'modificar' : 'crear', etiqueta: `${base.folio} · ${base.titulo ?? ''}`.trim(), usuario_id: s.id })
       return { id: base.id, folio: base.folio }
     },
-    async cambiarEstado(id, estado, motivo) {
-      exigir('gestionar_cotizaciones')
+    async cambiarEstado(id, estado: EstadoCotizacion, motivo) {
+      const s = exigir('gestionar_cotizaciones')
       await espera(200)
-      const c = cotizaciones.find((x) => x.id === id)
-      if (!c) throw new Error('Cotización no encontrada')
+      const c = buscarCotizacion(id)
+      const antes = c.estado
       c.estado = estado
-      c.motivo_rechazo = estado === 'rechazada' ? motivo ?? null : null
-      if (estado === 'enviada') c.enviada_at ??= new Date().toISOString()
-      if (estado === 'aceptada') c.aceptada_at ??= new Date().toISOString()
+      c.motivo_rechazo = estado === 'rechazada' ? (motivo ?? null) : null
+      if (estado === 'enviada') c.enviada_at ??= ahoraISO()
+      if (estado === 'aceptada') c.aceptada_at ??= ahoraISO()
+      if (antes !== estado) {
+        avanzarOportunidad(c)
+        registrarBitacora(a, {
+          tabla: 'cotizaciones',
+          registro_id: id,
+          accion: estado === 'cancelada' ? 'cancelar' : 'cambio_estado',
+          etiqueta: `${c.folio} · ${c.titulo ?? ''}`.trim(),
+          cambios: { estado: [antes, estado] },
+          usuario_id: s.id,
+        })
+      }
     },
     async duplicar(id) {
-      exigir('gestionar_cotizaciones')
+      const s = exigir('gestionar_cotizaciones')
       await espera(300)
-      const c = cotizaciones.find((x) => x.id === id)
-      if (!c) throw new Error('Cotización no encontrada')
-      const s = sesion()!
-      const copia: CotizacionCompleta = structuredClone(c)
-      Object.assign(copia, {
+      const c = buscarCotizacion(id)
+      const copiaCot: CotizacionCompleta = structuredClone(conCliente(c))
+      Object.assign(copiaCot, {
         id: `demo-cot-n${Date.now()}`,
-        folio: `COT-${String(siguienteFolio++).padStart(4, '0')}`,
+        folio: siguienteFolio(a, 'cotizacion'),
         titulo: c.titulo ? `${c.titulo} (copia)` : null,
         fecha: hoyISO(),
         estado: 'borrador',
@@ -359,32 +412,134 @@ export const apiDemo: Api = {
         pedido_folio: null,
         enviada_at: null,
         aceptada_at: null,
-        created_at: new Date().toISOString(),
+        created_at: ahoraISO(),
         vendedor: { id: s.id, nombre: s.perfil.nombre, email: s.email, telefono: null },
       })
-      copia.partidas = copia.partidas.map((p, i) => ({ ...p, id: `demo-p-${Date.now()}-${i}` }))
-      recalcular(copia)
-      cotizaciones = [copia, ...cotizaciones]
-      return copia.id
+      copiaCot.partidas = copiaCot.partidas.map((p, i) => ({ ...p, id: `demo-p-${Date.now()}-${i}` }))
+      recalcular(copiaCot)
+      a.cotizaciones.unshift(copiaCot)
+      if (a.cotizacion_oportunidad[id]) a.cotizacion_oportunidad[copiaCot.id] = a.cotizacion_oportunidad[id]
+      return copiaCot.id
     },
-    async convertir(id) {
-      exigir('gestionar_pedidos')
+    /** Igual que convertir_cotizacion_a_pedido(): crea el pedido con las mismas partidas y costos. */
+    async convertir(id, opciones) {
+      const s = exigir('gestionar_pedidos')
       await espera(450)
-      const c = cotizaciones.find((x) => x.id === id)
-      if (!c) throw new Error('Cotización no encontrada')
+      const c = buscarCotizacion(id)
       if (c.pedido_id) throw new Error(`Esta cotización ya se convirtió en el pedido ${c.pedido_folio}`)
       if (['rechazada', 'cancelada'].includes(c.estado)) throw new Error('No se puede convertir una cotización rechazada o cancelada')
+      if (!c.partidas.length) throw new Error('La cotización no tiene conceptos')
+      const cliente = a.clientes.find((x) => x.id === c.cliente.id)
+      const etapas = etapasOmitidas(a, c.partidas)
+      const ahora = ahoraISO()
+      const pedidoId = `demo-ped-n${Date.now()}`
+      const p: PedidoFila = {
+        id: pedidoId,
+        folio: siguienteFolio(a, 'pedido'),
+        cotizacion_id: c.id,
+        cliente_id: c.cliente.id,
+        contacto_id: null,
+        vendedor_id: c.vendedor?.id ?? s.id,
+        responsable_id: null,
+        disenador_id: null,
+        titulo: opciones.titulo?.trim() || c.titulo?.trim() || `Pedido de cotización ${c.folio}`,
+        descripcion: c.notas,
+        estado: 'nuevo',
+        estado_anterior: null,
+        motivo_estado: null,
+        etapas_omitidas: etapas.omitidas,
+        prioridad: 'normal',
+        fecha_entrega: opciones.fechaEntrega ?? null,
+        requiere_instalacion: etapas.instalacion,
+        direccion_instalacion: null,
+        anticipo_pct: c.anticipo_pct,
+        aplica_iva: c.aplica_iva,
+        iva_pct: c.iva_pct,
+        descuento_tipo: c.descuento_tipo,
+        descuento_valor: c.descuento_valor,
+        recargo_pct: c.recargo_pct,
+        recargo_concepto: c.recargo_concepto,
+        subtotal: 0,
+        descuento: 0,
+        recargo: 0,
+        iva: 0,
+        total: 0,
+        condiciones: c.condiciones,
+        pagado: 0,
+        saldo: 0,
+        estado_pago: 'pendiente',
+        fecha_limite_pago: opciones.fechaEntrega ?? null,
+        requiere_factura: cliente?.requiere_factura ?? false,
+        facturado: false,
+        folio_factura: null,
+        fecha_factura: null,
+        notas_internas: c.notas_internas,
+        entregado_at: null,
+        finalizado_at: null,
+        cancelado_at: null,
+        created_by: s.id,
+        created_at: ahora,
+        updated_at: ahora,
+      }
+      a.pedidos.push(p)
+      c.partidas.forEach((x, i) => {
+        const partidaId = `${pedidoId}-pa${i + 1}`
+        a.partidas.push({
+          id: partidaId,
+          cotizacion_id: null,
+          pedido_id: pedidoId,
+          orden: x.orden,
+          tipo: x.tipo,
+          producto_id: x.producto_id,
+          concepto: x.concepto,
+          descripcion: x.descripcion,
+          metodo_calculo: x.metodo_calculo,
+          unidad: x.unidad,
+          ancho: x.ancho,
+          alto: x.alto,
+          largo: x.largo,
+          cantidad: x.cantidad,
+          precio_unitario: x.precio_unitario,
+          descuento_pct: x.descuento_pct,
+          importe: x.importe,
+          notas_produccion: x.notas_produccion,
+          created_at: ahora,
+          updated_at: ahora,
+        })
+        if (x.costos) {
+          a.partida_costos.push({
+            partida_id: partidaId,
+            costo_material: x.costos.costo_material,
+            costo_mano_obra: x.costos.costo_mano_obra,
+            costo_fijo: x.costos.costo_fijo,
+            desperdicio_pct: x.costos.desperdicio_pct,
+            ganancia_pct: x.costos.ganancia_pct,
+            costo_total: x.costos.costo_total ?? 0,
+            calculo: (x.costos.calculo ?? {}) as NonNullable<Json>,
+            updated_at: ahora,
+          })
+        }
+      })
+      recalcularPedido(a, p)
+      if (cliente) cliente.ultima_compra_at = ahora
       c.estado = 'aceptada'
-      c.aceptada_at = new Date().toISOString()
-      c.pedido_id = `demo-ped-n${Date.now()}`
-      c.pedido_folio = `PED-${String(50 + siguienteFolio).padStart(4, '0')}`
-      return { pedidoId: c.pedido_id }
+      c.aceptada_at ??= ahora
+      c.pedido_id = pedidoId
+      c.pedido_folio = p.folio
+      avanzarOportunidad(c)
+      eventoPedido(a, pedidoId, { tipo: 'creado', estado_a: 'nuevo', mensaje: `Pedido creado desde la cotización ${c.folio}`, usuario_id: s.id })
+      registrarBitacora(a, { tabla: 'pedidos', registro_id: pedidoId, accion: 'crear', etiqueta: `${p.folio} · ${p.titulo}`, usuario_id: s.id })
+      return { pedidoId }
     },
     async eliminar(id) {
-      exigir('gestionar_cotizaciones')
-      const c = cotizaciones.find((x) => x.id === id)
-      if (c && c.estado !== 'borrador') throw new Error('Solo se pueden eliminar borradores')
-      cotizaciones = cotizaciones.filter((x) => x.id !== id)
+      const s = exigir('gestionar_cotizaciones')
+      const c = a.cotizaciones.find((x) => x.id === id)
+      if (!c) return
+      if (c.pedido_id) throw new Error(`Esta cotización ya se convirtió en el pedido ${c.pedido_folio}`)
+      if (c.estado !== 'borrador' && !s.permisos.eliminar_registros) throw new Error('Solo se pueden eliminar borradores')
+      a.cotizaciones.splice(a.cotizaciones.indexOf(c), 1)
+      delete a.cotizacion_oportunidad[id]
+      registrarBitacora(a, { tabla: 'cotizaciones', registro_id: id, accion: 'eliminar', etiqueta: `${c.folio} · ${c.titulo ?? ''}`.trim(), usuario_id: s.id })
     },
     async compartirPdf() {
       // En la vista previa no se sube nada: el PDF se comparte desde el dispositivo.
@@ -392,5 +547,20 @@ export const apiDemo: Api = {
     },
   },
 }
+
+export const apiDemo: Api = componer(
+  nucleo,
+  clientesDemo,
+  embudoDemo,
+  pedidosDemo,
+  produccionDemo,
+  pagosDemo,
+  inventarioDemo,
+  agendaDemo,
+  reportesDemo,
+  administracionDemo,
+  catalogoDemo,
+  portalDemo,
+)
 
 export default apiDemo

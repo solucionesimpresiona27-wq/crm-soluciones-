@@ -23,16 +23,16 @@ export function mensajeError(error: unknown): string {
 }
 
 /** Devuelve los datos o lanza un Error con mensaje claro. Falla también si no hay datos. */
-export function revisar<T>(r: { data: T | null; error: unknown }): T {
+export function revisar<R extends { data: unknown; error: unknown }>(r: R): NonNullable<R['data']> {
   if (r.error) throw new Error(mensajeError(r.error))
-  if (r.data === null) throw new Error('No se encontró la información solicitada')
-  return r.data
+  if (r.data === null || r.data === undefined) throw new Error('No se encontró la información solicitada')
+  return r.data as NonNullable<R['data']>
 }
 
 /** Como `revisar`, pero acepta que no haya registro (consultas con maybeSingle). */
-export function revisarOpcional<T>(r: { data: T | null; error: unknown }): T | null {
+export function revisarOpcional<R extends { data: unknown; error: unknown }>(r: R): NonNullable<R['data']> | null {
   if (r.error) throw new Error(mensajeError(r.error))
-  return r.data
+  return (r.data ?? null) as NonNullable<R['data']> | null
 }
 
 /** Para escrituras sin respuesta (update/delete sin select): solo revisa el error. */

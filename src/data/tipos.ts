@@ -215,6 +215,24 @@ export interface DashboardResumen {
     whatsapp: string | null
   }>
   embudo?: Partial<Record<Enums['etapa_comercial'], { cantidad: number; valor: number }>>
+  /** Fases 2 y 3: mis tareas sin completar de hoy o atrasadas (hasta 10) */
+  tareas_hoy?: Array<{
+    id: string
+    titulo: string
+    tipo: Enums['tipo_tarea']
+    fecha: string
+    hora: string | null
+    prioridad: Enums['prioridad']
+    cliente_id: string | null
+    cliente: string | null
+    pedido_id: string | null
+    vencida: boolean
+  }>
+  tareas_pendientes?: number
+  /** Materiales en o por debajo del mínimo (hasta 5) */
+  stock_bajo?: { cantidad: number; materiales: Array<{ id: string; nombre: string; unidad: Enums['unidad_material']; existencia: number; stock_minimo: number }> }
+  /** Solo con "registrar_pagos" */
+  caja_hoy?: { cerrada: boolean }
 }
 
 export interface ResultadoBusqueda {

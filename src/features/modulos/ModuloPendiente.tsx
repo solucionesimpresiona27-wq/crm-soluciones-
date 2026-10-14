@@ -1,16 +1,17 @@
 import { ArrowLeft, Check, Sparkles } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { EstadoVacio, GlassButton, GlassPanel } from '@/components/glass'
+import type { Modulo } from '@/app/navegacion'
 import { moduloDeRuta } from '@/components/shell/usarModulos'
 
 /**
  * Módulos que se construyen después de aprobar el diseño.
  * Muestra con honestidad qué incluirá, sin simular funciones.
  */
-export default function ModuloPendiente() {
+export default function ModuloPendiente({ modulo }: { modulo?: Modulo } = {}) {
   const { pathname } = useLocation()
   const navegar = useNavigate()
-  const m = moduloDeRuta(pathname)
+  const m = modulo ?? moduloDeRuta(pathname)
   if (!m) return null
   const Icono = m.icono
 

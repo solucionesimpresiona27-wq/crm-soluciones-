@@ -1,5 +1,6 @@
 /** MÓDULO CLIENTES · implementación real (Supabase). */
 import { limpio, mensajeError, n, nn, revisar, sinError, supabase, textoBusqueda } from '@/data/comun/real'
+import type { TablesInsert, TablesUpdate } from '@/lib/database.types'
 import type { ApiClientes, Cliente, ClienteLista, DatosCliente, DatosContacto, HistorialCliente, ResumenCliente } from './contrato'
 
 const CAMPOS_BREVE = 'id, nombre, whatsapp, telefono, email, requiere_factura'
@@ -37,7 +38,7 @@ export const clientesSupabase: ApiClientes = {
       return revisar(
         await supabase()
           .from('clientes')
-          .insert({ tipo: 'empresa', ...filaCliente(datos), nombre: datos.nombre.trim() })
+          .insert({ tipo: 'empresa', ...filaCliente(datos), nombre: datos.nombre.trim() } as TablesInsert<'clientes'>)
           .select(CAMPOS_BREVE)
           .single(),
       )
@@ -62,7 +63,7 @@ export const clientesSupabase: ApiClientes = {
 
     async actualizar(id, cambios) {
       const c = revisar(
-        await supabase().from('clientes').update(filaCliente(cambios)).eq('id', id).select('*, vendedor:perfiles!vendedor_id(id, nombre)').single(),
+        await supabase().from('clientes').update(filaCliente(cambios) as TablesUpdate<'clientes'>).eq('id', id).select('*, vendedor:perfiles!vendedor_id(id, nombre)').single(),
       )
       return aCliente(c as unknown as Record<string, unknown>)
     },
@@ -132,7 +133,7 @@ export const clientesSupabase: ApiClientes = {
     async crear(clienteId, datos) {
       const sb = supabase()
       if (datos.principal) sinError(await sb.from('contactos').update({ principal: false }).eq('cliente_id', clienteId))
-      return revisar(await sb.from('contactos').insert({ ...filaContacto(datos), cliente_id: clienteId, nombre: datos.nombre.trim() }).select('*').single())
+      return revisar(await sb.from('contactos').insert({ ...filaContacto(datos), cliente_id: clienteId, nombre: datos.nombre.trim() } as TablesInsert<'contactos'>).select('*').single())
     },
     async actualizar(id, cambios) {
       const sb = supabase()
@@ -140,7 +141,7 @@ export const clientesSupabase: ApiClientes = {
         const actual = revisar(await sb.from('contactos').select('cliente_id').eq('id', id).single())
         sinError(await sb.from('contactos').update({ principal: false }).eq('cliente_id', actual.cliente_id).neq('id', id))
       }
-      return revisar(await sb.from('contactos').update(filaContacto(cambios)).eq('id', id).select('*').single())
+      return revisar(await sb.from('contactos').update(filaContacto(cambios) as TablesUpdate<'contactos'>).eq('id', id).select('*').single())
     },
     async eliminar(id) {
       const r = await supabase().from('contactos').delete().eq('id', id).select('id')

@@ -1,31 +1,26 @@
-import { supabase } from '@/lib/supabase'
+/**
+ * Implementación REAL del acceso a datos (Supabase): el núcleo (sesión, panel, búsqueda y
+ * cotizaciones) más los módulos de `src/data/modulos/<modulo>/supabase.ts`.
+ * La elige el alias `@/data/implementacion` cuando VITE_DEMO no es "true" (ver vite.config.ts).
+ */
 import type { Json } from '@/lib/database.types'
-import type { Api } from './api'
-import { PERMISOS, type CotizacionCompleta, type CotizacionLista, type DashboardResumen, type PartidaDoc, type Permisos, type ProductoCatalogo, type ResultadoBusqueda } from './tipos'
+import type { Api, ApiNucleo } from './api'
+import { componer } from './comun/componer'
+import { mensajeError, n, nn, revisar, supabase } from './comun/real'
+import { administracionSupabase } from './modulos/administracion/supabase'
+import { agendaSupabase } from './modulos/agenda/supabase'
+import { catalogoSupabase } from './modulos/catalogo/supabase'
+import { clientesSupabase } from './modulos/clientes/supabase'
+import { embudoSupabase } from './modulos/embudo/supabase'
+import { inventarioSupabase } from './modulos/inventario/supabase'
+import { pagosSupabase } from './modulos/pagos/supabase'
+import { pedidosSupabase } from './modulos/pedidos/supabase'
+import { portalSupabase } from './modulos/portal/supabase'
+import { produccionSupabase } from './modulos/produccion/supabase'
+import { reportesSupabase } from './modulos/reportes/supabase'
+import { PERMISOS, type CotizacionCompleta, type CotizacionLista, type DashboardResumen, type PartidaDoc, type Permisos, type ResultadoBusqueda } from './tipos'
 
-/** Convierte errores de Supabase/Postgres en mensajes claros para el usuario. */
-export function mensajeError(error: unknown): string {
-  if (!error) return 'Ocurrió un error inesperado'
-  const e = error as { message?: string; code?: string; details?: string }
-  const msg = e.message ?? String(error)
-  if (/Invalid login credentials/i.test(msg)) return 'Correo o contraseña incorrectos'
-  if (/Email not confirmed/i.test(msg)) return 'Confirma tu correo antes de entrar'
-  if (/User is banned/i.test(msg)) return 'Tu cuenta está desactivada. Habla con el administrador.'
-  if (/Failed to fetch|NetworkError|network/i.test(msg)) return 'Sin conexión con el servidor. Revisa tu internet.'
-  if (e.code === '42501' || /row-level security/i.test(msg)) return msg.includes('permiso') ? msg : 'No tienes permiso para realizar esta acción'
-  if (e.code === '23503') return 'No se puede completar porque hay información relacionada'
-  if (e.code === '23505') return 'Ya existe un registro con esos datos'
-  return msg
-}
-
-function revisar<T>(r: { data: T | null; error: unknown }): T {
-  if (r.error) throw new Error(mensajeError(r.error))
-  if (r.data === null) throw new Error('No se encontró la información solicitada')
-  return r.data
-}
-
-const n = (v: unknown) => (v === null || v === undefined ? 0 : Number(v))
-const nn = (v: unknown) => (v === null || v === undefined ? null : Number(v))
+export { mensajeError }
 
 function aPartida(p: Record<string, unknown>): PartidaDoc {
   const c = (p.partida_costos ?? null) as Record<string, unknown> | null
@@ -60,7 +55,7 @@ function aPartida(p: Record<string, unknown>): PartidaDoc {
   }
 }
 
-export const apiSupabase: Api = {
+const nucleo: ApiNucleo = {
   sesion: {
     async actual() {
       const sb = supabase()
@@ -107,26 +102,6 @@ export const apiSupabase: Api = {
     },
   },
 
-  configuracion: {
-    async obtener() {
-      return revisar(await supabase().from('configuracion').select('*').eq('id', 1).single())
-    },
-  },
-
-  plantillas: {
-    async listar() {
-      return revisar(await supabase().from('plantillas_mensaje').select('*').eq('activo', true).order('orden'))
-    },
-  },
-
-  usuarios: {
-    async equipo() {
-      return revisar(
-        await supabase().from('perfiles').select('id, nombre, rol, email, telefono').eq('activo', true).order('nombre'),
-      )
-    },
-  },
-
   dashboard: {
     async resumen() {
       return revisar(await supabase().rpc('dashboard_resumen')) as unknown as DashboardResumen
@@ -136,77 +111,6 @@ export const apiSupabase: Api = {
   busqueda: {
     async global(texto) {
       return revisar(await supabase().rpc('busqueda_global', { p_texto: texto })) as unknown as ResultadoBusqueda
-    },
-  },
-
-  clientes: {
-    async buscar(texto) {
-      const sb = supabase()
-      let q = sb.from('clientes').select('id, nombre, whatsapp, telefono, email, requiere_factura').eq('activo', true)
-      const t = texto
-        .normalize('NFD')
-        .replace(/[̀-ͯ]/g, '')
-        .toLowerCase()
-        .trim()
-        .replace(/[%,()]/g, ' ')
-      if (t) q = q.ilike('busqueda', `%${t}%`)
-      return revisar(await q.order('nombre').limit(20))
-    },
-    async crear(datos) {
-      return revisar(
-        await supabase()
-          .from('clientes')
-          .insert({
-            nombre: datos.nombre.trim(),
-            whatsapp: datos.whatsapp?.trim() || null,
-            email: datos.email?.trim() || null,
-            tipo: datos.tipo ?? 'empresa',
-            requiere_factura: datos.requiere_factura ?? false,
-            rfc: datos.rfc?.trim().toUpperCase() || null,
-            razon_social: datos.razon_social?.trim() || null,
-          })
-          .select('id, nombre, whatsapp, telefono, email, requiere_factura')
-          .single(),
-      )
-    },
-  },
-
-  catalogo: {
-    async productos() {
-      const sb = supabase()
-      const [productos, costos] = await Promise.all([
-        sb
-          .from('productos')
-          .select('id, nombre, descripcion, metodo_calculo, unidad, precio_venta, precio_minimo, escalas, categoria:categorias(id, nombre, grupo, orden)')
-          .eq('activo', true)
-          .order('nombre'),
-        sb.from('producto_costos').select('*'),
-      ])
-      const lista = revisar(productos)
-      const mapaCostos = new Map((costos.data ?? []).map((c) => [c.producto_id, c]))
-      return lista.map((p): ProductoCatalogo => {
-        const c = mapaCostos.get(p.id)
-        return {
-          id: p.id,
-          nombre: p.nombre,
-          descripcion: p.descripcion,
-          metodo_calculo: p.metodo_calculo,
-          unidad: p.unidad,
-          precio_venta: nn(p.precio_venta),
-          precio_minimo: nn(p.precio_minimo),
-          escalas: Array.isArray(p.escalas) ? (p.escalas as { desde: number; precio: number }[]) : [],
-          categoria: p.categoria ? { id: p.categoria.id, nombre: p.categoria.nombre, grupo: p.categoria.grupo } : null,
-          costos: c
-            ? {
-                costo_material: n(c.costo_material),
-                costo_mano_obra: n(c.costo_mano_obra),
-                costo_fijo: n(c.costo_fijo),
-                desperdicio_pct: n(c.desperdicio_pct),
-                ganancia_pct: n(c.ganancia_pct),
-              }
-            : null,
-        }
-      })
     },
   },
 
@@ -291,5 +195,20 @@ export const apiSupabase: Api = {
     },
   },
 }
+
+export const apiSupabase: Api = componer(
+  nucleo,
+  clientesSupabase,
+  embudoSupabase,
+  pedidosSupabase,
+  produccionSupabase,
+  pagosSupabase,
+  inventarioSupabase,
+  agendaSupabase,
+  reportesSupabase,
+  administracionSupabase,
+  catalogoSupabase,
+  portalSupabase,
+)
 
 export default apiSupabase
