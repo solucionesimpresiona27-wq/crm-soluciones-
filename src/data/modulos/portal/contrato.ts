@@ -19,7 +19,7 @@ type Enums = Database['public']['Enums']
 export type TipoEnlace = 'cotizacion' | 'pedido'
 
 /** Mensaje único para enlaces inválidos, vencidos o revocados. */
-export const ENLACE_NO_VALIDO = 'Este enlace no es válido o ya venció. Pide uno nuevo a tu asesor.'
+export const ENLACE_NO_VALIDO = 'Este enlace ya no está disponible. Pide uno nuevo a Soluciones Impresiona.'
 
 export interface EnlacePortal {
   id: string

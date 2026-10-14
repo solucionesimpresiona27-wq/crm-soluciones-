@@ -1,3 +1,4 @@
+import { RecordatorioTareas } from '@/features/agenda/RecordatorioTareas'
 import { AnimatePresence, motion, useIsPresent, useReducedMotion } from 'motion/react'
 import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { Navigate, useLocation, useOutlet } from 'react-router-dom'
@@ -123,6 +124,7 @@ export function AppShell() {
           </AnimatePresence>
         </div>
       </div>
+      <RecordatorioTareas />
       <NavegacionMovil />
       {paletaUsada ? (
         <Suspense fallback={null}>

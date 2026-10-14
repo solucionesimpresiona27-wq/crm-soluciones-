@@ -43,6 +43,18 @@ function aMovimiento(f: Record<string, unknown>): Movimiento {
   }
 }
 
+/**
+ * Producción y diseño no leen la tabla `pedidos` (precios): el folio se completa con la vista
+ * `ordenes_trabajo`, que sí pueden ver.
+ */
+async function conFolios(movs: Movimiento[]): Promise<Movimiento[]> {
+  const faltan = [...new Set(movs.filter((m) => m.pedido_id && !m.folio_pedido).map((m) => m.pedido_id as string))]
+  if (!faltan.length) return movs
+  const { data } = await supabase().from('ordenes_trabajo').select('id, folio').in('id', faltan)
+  const mapa = new Map((data ?? []).map((o) => [o.id as string, o.folio as string]))
+  return movs.map((m) => (m.pedido_id && !m.folio_pedido ? { ...m, folio_pedido: mapa.get(m.pedido_id) ?? null } : m))
+}
+
 function aGasto(f: Record<string, unknown>): Gasto {
   const { proveedor, pedido, usuario, ...g } = f as Record<string, unknown> & {
     proveedor: { nombre: string } | null
@@ -147,7 +159,7 @@ export const inventarioSupabase: ApiInventario = {
       if (filtros.desde) q = q.gte('fecha', `${filtros.desde}T00:00:00`)
       if (filtros.hasta) q = q.lte('fecha', `${filtros.hasta}T23:59:59`)
       const filas = revisar(await q.order('fecha', { ascending: false }).order('created_at', { ascending: false }).limit(filtros.limite ?? 300))
-      return filas.map((f) => aMovimiento(f as unknown as Record<string, unknown>))
+      return conFolios(filas.map((f) => aMovimiento(f as unknown as Record<string, unknown>)))
     },
 
     async registrar(datos) {

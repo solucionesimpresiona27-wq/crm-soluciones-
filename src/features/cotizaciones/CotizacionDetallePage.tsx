@@ -1,3 +1,4 @@
+import { BotonEnlacePortal } from '@/features/portal/BotonEnlacePortal'
 import { AlarmClock, ArrowLeft, CopyPlus, FileSearch, Lock, PackageCheck, RotateCcw, XCircle } from 'lucide-react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useMemo, useState, type ReactNode } from 'react'
@@ -171,6 +172,10 @@ function Detalle({ id }: { id: string }) {
           ocupado={{ whatsapp: enCurso === 'whatsapp', pdf: enCurso === 'pdf', duplicar: duplicar.isPending, bloqueado: ocupado }}
           className="xl:max-w-[36rem] xl:shrink-0"
         />
+      </div>
+
+      <div className="flex justify-end">
+        <BotonEnlacePortal tipo="cotizacion" id={c.id} folio={c.folio} clienteWhatsapp={c.cliente.whatsapp ?? null} />
       </div>
 
       <Avisos c={c} visible={visible} gestionar={gestionar} onDuplicar={en.duplicar} duplicando={duplicar.isPending} />

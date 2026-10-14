@@ -1,0 +1,187 @@
+import type { EntradaBitacora, Usuario } from '@/data/modulos/administracion/contrato'
+import { PERMISOS, type Permiso, type Rol } from '@/data/tipos'
+import type { Json } from '@/lib/database.types'
+import { permisosDeRol } from '@/lib/permisos'
+
+export const ROLES: Rol[] = ['admin', 'ventas', 'diseno', 'produccion']
+
+/** Grupos de permisos para la matriz (orden de lectura, no técnico). */
+export const GRUPOS_PERMISO: { titulo: string; permisos: Permiso[] }[] = [
+  { titulo: 'Dinero', permisos: ['ver_precios', 'ver_costos', 'ver_reportes', 'registrar_pagos', 'cancelar_pagos'] },
+  { titulo: 'Ventas', permisos: ['gestionar_clientes', 'gestionar_cotizaciones', 'gestionar_pedidos', 'editar_catalogo'] },
+  { titulo: 'Taller', permisos: ['actualizar_produccion', 'aprobar_disenos', 'gestionar_inventario', 'registrar_consumos', 'registrar_gastos'] },
+  { titulo: 'Datos', permisos: ['exportar_datos', 'eliminar_registros'] },
+]
+
+export interface EstadoPermiso {
+  permiso: Permiso
+  /** Lo que da el rol */
+  delRol: boolean
+  /** Lo que tiene realmente */
+  efectivo: boolean
+  /** Hay una anulación por usuario que difiere del rol */
+  anulado: boolean
+}
+
+export function estadoPermisos(u: Pick<Usuario, 'rol' | 'permisos_personalizados'>): Record<Permiso, EstadoPermiso> {
+  const rol = permisosDeRol(u.rol)
+  const final = permisosDeRol(u.rol, u.permisos_personalizados)
+  return Object.fromEntries(
+    PERMISOS.map((p) => [p, { permiso: p, delRol: rol[p], efectivo: final[p], anulado: u.rol !== 'admin' && final[p] !== rol[p] }]),
+  ) as Record<Permiso, EstadoPermiso>
+}
+
+/** Cuántas anulaciones reales (distintas del rol) tiene el usuario. */
+export function contarAnulaciones(u: Pick<Usuario, 'rol' | 'permisos_personalizados'>) {
+  return Object.values(estadoPermisos(u)).filter((e) => e.anulado).length
+}
+
+/** Contraseña temporal legible: 4 letras + 4 números + 2 letras, sin caracteres confusos. */
+export function generarContrasena(aleatorio: (n: number) => number = aleatorioSeguro) {
+  const letras = 'abcdefghjkmnpqrstuvwxyz'
+  const mayus = 'ABCDEFGHJKLMNPQRSTUVWXYZ'
+  const nums = '23456789'
+  const tomar = (fuente: string, n: number) => Array.from({ length: n }, () => fuente[aleatorio(fuente.length)]).join('')
+  return `${tomar(mayus, 1)}${tomar(letras, 3)}-${tomar(nums, 4)}-${tomar(letras, 2)}`
+}
+
+function aleatorioSeguro(n: number) {
+  const b = new Uint32Array(1)
+  crypto.getRandomValues(b)
+  return b[0]! % n
+}
+
+export function contrasenaValida(p: string) {
+  return p.length >= 8 && /[a-zA-Z]/.test(p) && /\d/.test(p)
+}
+
+export const correoValido = (c: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.trim())
+
+// ---------------------------------------------------------------- Bitácora
+
+export const NOMBRE_TABLA: Record<string, string> = {
+  perfiles: 'Usuarios',
+  configuracion: 'Configuración',
+  folios: 'Folios',
+  clientes: 'Clientes',
+  contactos: 'Contactos',
+  oportunidades: 'Oportunidades',
+  categorias: 'Categorías',
+  productos: 'Productos',
+  producto_costos: 'Costos de producto',
+  producto_precios: 'Precios por lista',
+  cotizaciones: 'Cotizaciones',
+  pedidos: 'Pedidos',
+  partidas: 'Partidas',
+  partida_costos: 'Costos de partida',
+  pagos: 'Pagos',
+  archivos: 'Archivos y diseños',
+  plantillas_mensaje: 'Plantillas de WhatsApp',
+  tareas: 'Tareas',
+  proveedores: 'Proveedores',
+  materiales: 'Materiales',
+  material_costos: 'Costos de material',
+  movimientos_inventario: 'Inventario',
+  gastos: 'Gastos',
+  cortes_caja: 'Corte de caja',
+  portal_enlaces: 'Portal de clientes',
+}
+
+export const ACCIONES_BITACORA = {
+  crear: 'Creó',
+  modificar: 'Modificó',
+  eliminar: 'Eliminó',
+  cambio_estado: 'Cambió el estado',
+  aprobar: 'Aprobó',
+  cancelar: 'Canceló',
+} as const
+export type AccionBitacora = keyof typeof ACCIONES_BITACORA
+
+const CAMPOS: Record<string, string> = {
+  nombre_comercial: 'Nombre comercial',
+  eslogan: 'Eslogan',
+  ciudad: 'Ciudad',
+  direccion: 'Dirección',
+  telefono: 'Teléfono',
+  whatsapp: 'WhatsApp',
+  email: 'Correo',
+  sitio_web: 'Sitio web',
+  rfc: 'RFC',
+  razon_social: 'Razón social',
+  regimen_fiscal: 'Régimen fiscal',
+  mostrar_datos_fiscales: 'Mostrar datos fiscales',
+  datos_bancarios: 'Datos bancarios',
+  logo_url: 'Logo',
+  iva_pct: 'IVA %',
+  anticipo_pct: 'Anticipo %',
+  vigencia_dias: 'Vigencia (días)',
+  tiempo_entrega_default: 'Tiempo de entrega',
+  condiciones_cotizacion: 'Condiciones',
+  notas_pie_cotizacion: 'Notas al pie',
+  metodos_pago_activos: 'Métodos de pago',
+  prefijo_cotizacion: 'Prefijo de cotización',
+  prefijo_pedido: 'Prefijo de pedido',
+  dias_reactivacion: 'Días para reactivación',
+  rol: 'Rol',
+  activo: 'Activo',
+  permisos: 'Permisos personalizados',
+  comision_pct: 'Comisión %',
+  puesto: 'Puesto',
+  estado: 'Estado',
+  texto: 'Mensaje',
+  nombre: 'Nombre',
+  total: 'Total',
+  monto: 'Monto',
+  notas: 'Notas',
+}
+
+export const nombreCampo = (c: string) =>
+  CAMPOS[c] ?? c.replace(/_at$/, '').replace(/_pct$/, ' %').replace(/_/g, ' ').replace(/^./, (l) => l.toUpperCase())
+
+/** Valor de la bitácora en texto legible. */
+export function valorLegible(v: Json | undefined): string {
+  if (v === null || v === undefined || v === '') return 'vacío'
+  if (typeof v === 'boolean') return v ? 'Sí' : 'No'
+  if (Array.isArray(v)) return v.length ? v.map((x) => valorLegible(x)).join(', ') : 'ninguno'
+  if (typeof v === 'object') {
+    const pares = Object.entries(v)
+    if (!pares.length) return 'ninguno'
+    return pares.map(([k, x]) => `${nombreCampo(k)}: ${valorLegible(x as Json)}`).join(' · ')
+  }
+  if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(v)) {
+    const d = new Date(v)
+    if (!Number.isNaN(d.getTime())) return d.toLocaleString('es-MX', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+  }
+  return String(v)
+}
+
+export interface CambioLegible {
+  campo: string
+  antes: string
+  despues: string
+}
+
+const OCULTOS = new Set(['updated_at', 'created_at', 'busqueda', 'id'])
+
+/** Diferencias {campo: [antes, después]} de tg_bitacora a una lista legible. */
+export function cambiosLegibles(e: Pick<EntradaBitacora, 'cambios' | 'datos' | 'accion'>): CambioLegible[] {
+  const c = e.cambios
+  if (c && typeof c === 'object' && !Array.isArray(c)) {
+    return Object.entries(c)
+      .filter(([k]) => !OCULTOS.has(k))
+      .map(([k, par]) => {
+        const [antes, despues] = Array.isArray(par) ? par : [null, par]
+        return { campo: nombreCampo(k), antes: valorLegible(antes), despues: valorLegible(despues) }
+      })
+  }
+  return []
+}
+
+/** Resumen corto de un registro creado o eliminado (los primeros campos con valor). */
+export function resumenDatos(datos: Json | null, max = 4): { campo: string; valor: string }[] {
+  if (!datos || typeof datos !== 'object' || Array.isArray(datos)) return []
+  return Object.entries(datos)
+    .filter(([k, v]) => !OCULTOS.has(k) && !k.endsWith('_id') && v !== null && v !== '' && typeof v !== 'object')
+    .slice(0, max)
+    .map(([k, v]) => ({ campo: nombreCampo(k), valor: valorLegible(v as Json) }))
+}

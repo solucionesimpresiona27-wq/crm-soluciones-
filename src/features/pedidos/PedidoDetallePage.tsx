@@ -1,3 +1,4 @@
+import { BotonEnlacePortal } from '@/features/portal/BotonEnlacePortal'
 import * as Menu from '@radix-ui/react-dropdown-menu'
 import { AlertTriangle, ArrowLeft, Ban, ClipboardList, FileText, MessageCircle, PackageSearch, Pause, RotateCcw } from 'lucide-react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
@@ -126,6 +127,10 @@ function Detalle({ id }: { id: string }) {
           </div>
         </div>
         <Acciones p={p} whatsapp={whatsapp} destacarWhatsApp={listo} ordenTrabajo={puede('actualizar_produccion')} />
+      </div>
+
+      <div className="flex justify-end">
+        <BotonEnlacePortal tipo="pedido" id={p.id} folio={p.folio} clienteWhatsapp={p.cliente_datos.whatsapp} />
       </div>
 
       <AvisoEstado p={p} />

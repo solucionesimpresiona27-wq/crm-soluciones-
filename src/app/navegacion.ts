@@ -56,13 +56,13 @@ export const MODULOS: Modulo[] = [
     incluye: ['Ficha con datos de contacto y fiscales', 'Historial de cotizaciones, pedidos y pagos', 'Notas y seguimientos', 'Exportar a Excel'],
   },
   {
-    ruta: '/embudo', titulo: 'Embudo', icono: Filter, grupo: 'Principal', permisos: ['gestionar_clientes'], pendiente: true,
+    ruta: '/embudo', titulo: 'Embudo', icono: Filter, grupo: 'Principal', permisos: ['gestionar_clientes'],
     descripcion: 'Seguimiento comercial de prospectos',
     incluye: ['Tablero: prospecto → contactado → interesado → cotización → seguimiento → ganado/perdido', 'Recordatorios de próxima acción', 'Motivos de pérdida'],
   },
   { ruta: '/cotizaciones', titulo: 'Cotizaciones', icono: FileText, grupo: 'Principal', permisos: ['ver_precios'], descripcion: 'Presupuestos, PDF y envío por WhatsApp' },
   {
-    ruta: '/calculadora', titulo: 'Calculadora', icono: Calculator, grupo: 'Principal', permisos: ['gestionar_cotizaciones'], pendiente: true,
+    ruta: '/calculadora', titulo: 'Calculadora', icono: Calculator, grupo: 'Principal', permisos: ['gestionar_cotizaciones'],
     descripcion: 'Precios por m², metro lineal, millar, pieza, hora y proyecto',
     incluye: ['Costos de material, mano de obra y desperdicio', 'Margen y precio sugerido', 'Instalación y transporte por separado', 'Enviar el resultado a una cotización'],
   },
@@ -89,7 +89,7 @@ export const MODULOS: Modulo[] = [
     ],
   },
   {
-    ruta: '/inventario', titulo: 'Inventario', icono: Boxes, grupo: 'Operación', pendiente: true,
+    ruta: '/inventario', titulo: 'Inventario', icono: Boxes, grupo: 'Operación',
     descripcion: 'Materiales, proveedores y compras',
     incluye: ['Existencias de vinil, lonas, papel y tintas', 'Alertas de stock mínimo', 'Proveedores y compras'],
     // Todo el equipo ve materiales y existencias (Producción registra consumos)
@@ -101,12 +101,12 @@ export const MODULOS: Modulo[] = [
     ],
   },
   {
-    ruta: '/agenda', titulo: 'Agenda', icono: CalendarDays, grupo: 'Operación', pendiente: true,
+    ruta: '/agenda', titulo: 'Agenda', icono: CalendarDays, grupo: 'Operación',
     descripcion: 'Entregas, instalaciones y recordatorios',
     incluye: ['Calendario de entregas e instalaciones', 'Recordatorios y tareas por responsable'],
   },
   {
-    ruta: '/reportes', titulo: 'Reportes', icono: ChartColumn, grupo: 'Análisis', permisos: ['ver_reportes'], pendiente: true,
+    ruta: '/reportes', titulo: 'Reportes', icono: ChartColumn, grupo: 'Análisis', permisos: ['ver_reportes'],
     descripcion: 'Ventas y rentabilidad',
     incluye: ['Ventas por periodo, producto y vendedor', 'Utilidad real por pedido', 'Clientes que dejaron de comprar'],
     secciones: [
@@ -118,7 +118,7 @@ export const MODULOS: Modulo[] = [
     ],
   },
   {
-    ruta: '/usuarios', titulo: 'Usuarios', icono: UserCog, grupo: 'Sistema', soloAdmin: true, pendiente: true,
+    ruta: '/usuarios', titulo: 'Usuarios', icono: UserCog, grupo: 'Sistema', soloAdmin: true,
     descripcion: 'Equipo, roles y permisos',
     incluye: ['Alta de usuarios con contraseña', 'Roles y permisos personalizados', 'Activar o desactivar cuentas', 'Bitácora de cambios'],
     secciones: [
@@ -127,7 +127,7 @@ export const MODULOS: Modulo[] = [
     ],
   },
   {
-    ruta: '/configuracion', titulo: 'Configuración', icono: Settings, grupo: 'Sistema', soloAdmin: true, pendiente: true,
+    ruta: '/configuracion', titulo: 'Configuración', icono: Settings, grupo: 'Sistema', soloAdmin: true,
     descripcion: 'Datos de la empresa, logo y condiciones',
     incluye: ['Datos de contacto y fiscales', 'Logo y colores', 'Condiciones de cotización', 'Plantillas de WhatsApp', 'Métodos de pago'],
     secciones: [
@@ -151,7 +151,6 @@ export const CATALOGO: Modulo = {
   icono: Tags,
   grupo: 'Sistema',
   permisos: ['editar_catalogo', 'ver_precios'],
-  pendiente: true,
   descripcion: 'Productos, precios por lista y costos',
   incluye: ['Productos y categorías', 'Precio público, mayoreo y agencia', 'Precios por volumen', 'Costos base para el margen'],
 }
