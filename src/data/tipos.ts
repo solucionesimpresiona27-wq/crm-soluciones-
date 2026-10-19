@@ -171,6 +171,8 @@ export interface BorradorCotizacion {
   notas: string
   notas_internas: string
   partidas: Array<Omit<PartidaDoc, 'importe' | 'orden'>>
+  /** Oportunidad del embudo a la que se liga (solo al crear; al editar se conserva la que tenga) */
+  oportunidad_id?: string | null
 }
 
 export interface EntregaProxima {

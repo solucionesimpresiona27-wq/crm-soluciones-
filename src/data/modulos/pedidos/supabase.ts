@@ -92,11 +92,13 @@ export const pedidosSupabase: ApiPedidos = {
       if (filtros.soloAtrasados) q = q.eq('atrasado', true)
       if (filtros.desde) q = q.gte('created_at', `${filtros.desde}T00:00:00`)
       if (filtros.hasta) q = q.lte('created_at', `${filtros.hasta}T23:59:59`)
-      const filas = revisar(await q.order('fecha_entrega', { ascending: true, nullsFirst: false }).order('folio').limit(filtros.limite ?? 500))
+      const filas = revisar(await q.order('fecha_entrega', { ascending: true, nullsFirst: false }).order('folio').limit(filtros.texto ? 2000 : (filtros.limite ?? 500)))
       const t = textoBusqueda(filtros.texto ?? '')
+      // El texto se filtra aquí (incluye el nombre del cliente), así que el límite va después
       return filas
         .map((f) => aLista(f as unknown as Record<string, unknown>))
         .filter((p) => !t || textoBusqueda(`${p.folio} ${p.titulo} ${p.cliente}`).includes(t))
+        .slice(0, filtros.limite ?? 500)
     },
 
     async obtener(id) {

@@ -526,3 +526,47 @@ export function primerError(err: Errores): string | null {
   const fila = Object.values(filas)[0]
   return fila ? (fila.concepto ?? fila.cantidad ?? fila.descuento ?? null) : null
 }
+
+/** Concepto que llega armado desde la Calculadora (ver features/calculadora/borrador.ts). */
+export function partidaDesdeCalculadora(p: {
+  tipo: TipoPartida
+  producto_id: string | null
+  concepto: string
+  descripcion: string
+  metodo_calculo: MetodoCalculo
+  unidad: string
+  ancho: number | null
+  alto: number | null
+  largo: number | null
+  cantidad: number
+  precio_unitario: number
+  costos: { costo_material: number; costo_mano_obra: number; costo_fijo: number; desperdicio_pct: number; ganancia_pct: number } | null
+}): PartidaEditor {
+  const base = nuevaPartida(p.tipo)
+  return {
+    ...base,
+    producto_id: p.producto_id,
+    productoNombre: p.producto_id ? p.concepto : null,
+    concepto: p.concepto,
+    descripcion: p.descripcion,
+    metodo_calculo: p.metodo_calculo,
+    unidad: p.unidad,
+    ancho: p.ancho,
+    alto: p.alto,
+    largo: p.largo,
+    cantidad: p.cantidad,
+    precio_unitario: p.precio_unitario,
+    vinculado: false,
+    conCostos: Boolean(p.costos),
+    calc: p.costos
+      ? {
+          ...base.calc,
+          costoMaterial: p.costos.costo_material,
+          costoManoObra: p.costos.costo_mano_obra,
+          costoFijo: p.costos.costo_fijo,
+          desperdicioPct: p.costos.desperdicio_pct,
+          gananciaPct: p.costos.ganancia_pct,
+        }
+      : base.calc,
+  }
+}

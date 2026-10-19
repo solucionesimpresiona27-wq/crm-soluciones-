@@ -150,6 +150,11 @@ const nucleo: ApiNucleo = {
     },
 
     async guardar(borrador) {
+      // guardar_cotizacion reescribe oportunidad_id: al editar se conserva la que ya tenía
+      if (borrador.id && borrador.oportunidad_id === undefined) {
+        const actual = revisar(await supabase().from('cotizaciones').select('oportunidad_id').eq('id', borrador.id).single())
+        borrador = { ...borrador, oportunidad_id: actual.oportunidad_id }
+      }
       const r = revisar(await supabase().rpc('guardar_cotizacion', { p_datos: borrador as unknown as Json }))
       return r as unknown as { id: string; folio: string }
     },

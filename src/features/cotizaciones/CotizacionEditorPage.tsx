@@ -8,13 +8,14 @@ import { useSesion } from '@/app/sesion'
 import { api } from '@/data/api'
 import { EstadoVacio, GlassButton, GlassIconButton, GlassModal, GlassPanel, Pildora, Skeleton } from '@/components/glass'
 import type { Configuracion, CotizacionCompleta, ProductoCatalogo } from '@/data/tipos'
+import { CLAVE_BORRADOR_CALCULADORA, type BorradorCalculadora } from '@/features/calculadora/borrador'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { ESTADO_COTIZACION, estadoVisibleCotizacion } from '@/lib/estados'
 import { hoyISO } from '@/lib/format'
 import { DEMO } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 import { useCotizacion, useGuardarCotizacion, useProductos } from './consultas'
-import { aBorrador, estadoDesdeCotizacion, estadoNuevo, primerError, type Errores, type EstadoEditor } from './editor/modelo'
+import { aBorrador, estadoDesdeCotizacion, estadoNuevo, partidaDesdeCalculadora, primerError, type Errores, type EstadoEditor } from './editor/modelo'
 import { BarraGuardar, Resumen } from './editor/Resumen'
 import { SELECTOR_BUSCAR_CLIENTE, SeccionCliente } from './editor/SeccionCliente'
 import { SeccionCondiciones } from './editor/SeccionCondiciones'
@@ -171,8 +172,9 @@ function Editor({
   const navegar = useNavigate()
   const escritorio = useMediaQuery('(min-width: 1280px)')
   const guardarMut = useGuardarCotizacion()
+  const desdeCalculadora = (useLocation().state as { desdeCalculadora?: BorradorCalculadora } | null)?.desdeCalculadora
   const ed = useEditorCotizacion(
-    () => (cotizacion ? estadoDesdeCotizacion(cotizacion) : estadoNuevo(config)),
+    () => (cotizacion ? estadoDesdeCotizacion(cotizacion) : conCalculadora(estadoNuevo(config), desdeCalculadora)),
     puedeCostos,
     productos.data,
   )
@@ -181,6 +183,8 @@ function Editor({
   // Desde la ficha del cliente: /cotizaciones/nueva?cliente=<id> deja al cliente ya elegido
   const [params] = useSearchParams()
   const clienteInicial = cotizacion ? null : params.get('cliente')
+  // Desde el embudo: ?oportunidad=<id> liga la cotización nueva a la oportunidad
+  const oportunidadInicial = cotizacion ? null : params.get('oportunidad')
   const { actualizar } = ed
   useEffect(() => {
     if (!clienteInicial) return
@@ -232,7 +236,7 @@ function Editor({
       return
     }
     try {
-      const r = await guardarMut.mutateAsync(aBorrador(estado, puedeCostos))
+      const r = await guardarMut.mutateAsync({ ...aBorrador(estado, puedeCostos), ...(oportunidadInicial ? { oportunidad_id: oportunidadInicial } : {}) })
       saliendo.current = true
       toast.success(cotizacion ? `${r.folio} guardada` : `Cotización ${r.folio} guardada`, {
         description: cotizacion ? 'Los totales se actualizaron.' : 'Quedó como borrador. Desde aquí la puedes enviar por WhatsApp.',
@@ -378,4 +382,20 @@ function Editor({
       </GlassModal>
     </div>
   )
+}
+
+/** Precarga los conceptos que vienen de la Calculadora (state de navegación o sessionStorage) y borra el borrador. */
+function conCalculadora(e: EstadoEditor, desdeState: BorradorCalculadora | undefined): EstadoEditor {
+  let b = desdeState
+  try {
+    if (!b) {
+      const crudo = sessionStorage.getItem(CLAVE_BORRADOR_CALCULADORA)
+      if (crudo) b = JSON.parse(crudo) as BorradorCalculadora
+    }
+    sessionStorage.removeItem(CLAVE_BORRADOR_CALCULADORA)
+  } catch {
+    /* sin almacenamiento: solo el state */
+  }
+  if (!b || b.version !== 1 || !Array.isArray(b.partidas) || !b.partidas.length) return e
+  return { ...e, aplica_iva: b.aplica_iva, partidas: b.partidas.map(partidaDesdeCalculadora) }
 }

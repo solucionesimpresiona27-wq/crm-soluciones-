@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { api } from '@/data/api'
 import type { Permiso, SesionUsuario } from '@/data/tipos'
 
@@ -19,26 +19,31 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
   const [sesion, setSesion] = useState<SesionUsuario | null>(null)
   const [error, setError] = useState<string | null>(null)
   const qc = useQueryClient()
+  const usuarioId = useRef<string | null>(null)
 
   const recargar = useCallback(async () => {
     try {
       setError(null)
-      setSesion(await api.sesion.actual())
+      const nueva = await api.sesion.actual()
+      // Limpia el caché solo si cambió la persona (no al refrescar el token ni al volver a la pestaña)
+      const id = nueva?.id ?? null
+      if (usuarioId.current !== null && usuarioId.current !== id) qc.clear()
+      usuarioId.current = id
+      setSesion(nueva)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo cargar la sesión')
       setSesion(null)
     } finally {
       setCargando(false)
     }
-  }, [])
+  }, [qc])
 
   useEffect(() => {
     void recargar()
     return api.sesion.alCambiar(() => {
-      qc.clear()
       void recargar()
     })
-  }, [recargar, qc])
+  }, [recargar])
 
   const valor = useMemo<ContextoSesion>(
     () => ({

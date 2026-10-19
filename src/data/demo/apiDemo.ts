@@ -372,6 +372,7 @@ const nucleo: ApiNucleo = {
       })
       recalcular(base)
       if (!existente) a.cotizaciones.unshift(base)
+      if (!existente && b.oportunidad_id && a.oportunidades.some((o) => o.id === b.oportunidad_id)) a.cotizacion_oportunidad[base.id] = b.oportunidad_id
       registrarBitacora(a, { tabla: 'cotizaciones', registro_id: base.id, accion: existente ? 'modificar' : 'crear', etiqueta: `${base.folio} · ${base.titulo ?? ''}`.trim(), usuario_id: s.id })
       return { id: base.id, folio: base.folio }
     },
