@@ -1,6 +1,6 @@
-# Vista previa del diseño Impresiona Glass
+# Vista previa del CRM Impresiona
 
-Es una versión navegable del CRM para validar el diseño **antes** de aplicarlo al resto del sistema. Incluye tres pantallas terminadas: **inicio de sesión**, **panel de control** y **cotizaciones**. Cotizaciones abarca la lista, el detalle, el editor con calculadora, el PDF y el envío por WhatsApp. También trae la vitrina del sistema de diseño.
+Es una versión navegable del CRM completo con datos ficticios, con el diseño Impresiona Glass. Incluye todos los módulos: panel, clientes, embudo, cotizaciones y calculadora, pedidos, producción, pagos y cobranza, inventario y gastos, agenda y tareas, reportes, catálogo, usuarios y bitácora, configuración y el portal del cliente. También trae la vitrina del sistema de diseño.
 
 ## Datos ficticios, aislados de producción
 
@@ -25,15 +25,18 @@ También funciona en el celular: ábrelo en el navegador del teléfono para ver 
 
 | Qué | Dónde |
 |---|---|
-| Cristal, reflejos y profundidad | Cualquier pantalla. Pasa el cursor sobre módulos y botones: el reflejo sigue al puntero. |
-| Botones tipo Centro de Control | Accesos directos del panel y la barra de acciones del detalle de una cotización. |
-| Respuesta con resorte al presionar | Cualquier botón circular o cápsula. |
-| Módulos que se expanden | Panel → módulo **Ventas** o **Producción** (clic o mantener presionado). Escape o clic fuera para cerrar. |
-| Selector con indicador deslizante | Filtros de cotizaciones y la Agenda del panel. |
-| Modo claro y oscuro | Botón del sol o la luna (arriba a la derecha). La preferencia se recuerda. |
-| Cristal sobre distintos fondos | Menú → **Diseño** (vitrina): cambia el fondo entre campo de luz, fotográfico, rayas y liso. |
-| Calculadora de precios | **Nueva cotización** → agrega un concepto → abre la calculadora (m², metro lineal, pieza, millar, hora…). |
-| Flujo completo | Crea una cotización, guárdala, duplícala y conviértela en pedido. |
+| Panel y accesos directos | Inicio. Cambia de rol para ver qué ve cada quien. |
+| Clientes y seguimiento | **Clientes** → abre una ficha: contactos, actividades, cotizaciones y pedidos. |
+| Embudo | **Embudo**: arrastra tarjetas entre etapas o usa "Mover a…". Al marcar Perdido pide motivo. |
+| Cotizar | **Calculadora** → "Usar en cotización", o **Nueva cotización**. Guárdala, duplícala y conviértela en pedido. |
+| Pedidos y producción | **Pedidos** (etapas, diseños, facturación) y **Producción** (tablero sin precios). |
+| Cobrar | **Pagos**: registrar pago, cobranza por antigüedad, corte de caja y comisiones. |
+| Inventario y gastos | **Inventario**: materiales con stock bajo, movimientos, proveedores y gastos. |
+| Agenda | **Agenda**: Hoy, Semana y Mes; captura rápida de tareas. |
+| Reportes | **Reportes** (solo administración): ventas, productos, vendedores, clientes y utilidad. |
+| Portal del cliente | En el detalle de una cotización o pedido → **Enlace para el cliente**. |
+| Usuarios y configuración | Solo administración: equipo, permisos, bitácora, datos de la empresa y plantillas. |
+| Modo claro y oscuro | Botón del sol o la luna (arriba a la derecha). |
 
 ## Limitaciones del visor
 
@@ -48,6 +51,6 @@ VITE_DEMO=true npm run dev
 
 Para publicarla en otro lugar: `npm run build:demo` genera la carpeta `dist-demo`.
 
-## Después de tu aprobación
+## Siguiente paso
 
-Con el diseño aprobado, se construyen con el mismo sistema los demás módulos: clientes, embudo, pedidos, producción, pagos, inventario, agenda, reportes, usuarios y configuración. Si quieres ajustes (colores, intensidad del cristal, tamaños, textos), dímelos antes y los aplico en todo el sistema.
+Cuando la revises, dime qué ajustar (textos, colores, pasos de un proceso). Después se conecta a tu proyecto de Supabase con `supabase/instalar.sql` (base nueva) o `supabase/actualizar-fases-2-y-3.sql` (base que ya tenía la primera versión).

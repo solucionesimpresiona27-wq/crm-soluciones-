@@ -33,6 +33,7 @@ function buscar(id: string) {
 function aplicarEtapa(o: Fila, etapa: EtapaComercial) {
   const antes = o.etapa
   o.etapa = etapa
+  if (antes !== etapa) o.etapa_cambiada_at = ahoraISO()
   if (CERRADAS.includes(etapa)) {
     if (antes !== etapa) o.cerrada_at = o.cerrada_at && CERRADAS.includes(antes) ? o.cerrada_at : ahoraISO()
   } else o.cerrada_at = null
@@ -115,6 +116,7 @@ export const embudoDemo: ApiEmbudo = {
         created_by: s.id,
         created_at: ahora,
         updated_at: ahora,
+        etapa_cambiada_at: ahora,
       }
       aplicar(o, { ...datos, titulo: datos.titulo ?? '' })
       a.oportunidades.push(o)
@@ -135,7 +137,7 @@ export const embudoDemo: ApiEmbudo = {
         registro_id: id,
         accion: antes.etapa !== o.etapa ? 'cambio_estado' : 'modificar',
         etiqueta: o.titulo,
-        cambios: diferencias(antes, o, ['updated_at', 'cerrada_at']),
+        cambios: diferencias(antes, o, ['updated_at', 'cerrada_at', 'etapa_cambiada_at']),
         usuario_id: s.id,
       })
       return conNombres(o)

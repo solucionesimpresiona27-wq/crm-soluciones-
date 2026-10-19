@@ -174,6 +174,7 @@ export function semillaOportunidades(c: Ctx): Almacen['oportunidades'] {
       created_by: o.resp,
       created_at: creada,
       updated_at: cerrada ?? creada,
+      etapa_cambiada_at: cerrada ?? creada,
     }
   })
 }

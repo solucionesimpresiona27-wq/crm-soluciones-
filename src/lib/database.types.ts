@@ -401,14 +401,14 @@ isOneToOne: false
                   ]
                 },"oportunidades": {
                   Row: {
-                    "cerrada_at": string | null,"cliente_id": string,"created_at": string,"created_by": string | null,"descripcion": string | null,"etapa": Database["public"]['Enums']["etapa_comercial"],"id": string,"motivo_perdida": string | null,"origen": string | null,"proxima_accion": string | null,"proxima_accion_fecha": string | null,"responsable_id": string | null,"titulo": string,"updated_at": string,"valor_estimado": number | null
+                    "cerrada_at": string | null,"cliente_id": string,"created_at": string,"created_by": string | null,"descripcion": string | null,"etapa": Database["public"]['Enums']["etapa_comercial"],"etapa_cambiada_at": string,"id": string,"motivo_perdida": string | null,"origen": string | null,"proxima_accion": string | null,"proxima_accion_fecha": string | null,"responsable_id": string | null,"titulo": string,"updated_at": string,"valor_estimado": number | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "cerrada_at"?: string | null,"cliente_id": string,"created_at"?: string,"created_by"?: string | null,"descripcion"?: string | null,"etapa"?: Database["public"]['Enums']["etapa_comercial"],"id"?: string,"motivo_perdida"?: string | null,"origen"?: string | null,"proxima_accion"?: string | null,"proxima_accion_fecha"?: string | null,"responsable_id"?: string | null,"titulo": string,"updated_at"?: string,"valor_estimado"?: number | null
+                    "cerrada_at"?: string | null,"cliente_id": string,"created_at"?: string,"created_by"?: string | null,"descripcion"?: string | null,"etapa"?: Database["public"]['Enums']["etapa_comercial"],"etapa_cambiada_at"?: string,"id"?: string,"motivo_perdida"?: string | null,"origen"?: string | null,"proxima_accion"?: string | null,"proxima_accion_fecha"?: string | null,"responsable_id"?: string | null,"titulo": string,"updated_at"?: string,"valor_estimado"?: number | null
                   }
                   Update: {
-                    "cerrada_at"?: string | null,"cliente_id"?: string,"created_at"?: string,"created_by"?: string | null,"descripcion"?: string | null,"etapa"?: Database["public"]['Enums']["etapa_comercial"],"id"?: string,"motivo_perdida"?: string | null,"origen"?: string | null,"proxima_accion"?: string | null,"proxima_accion_fecha"?: string | null,"responsable_id"?: string | null,"titulo"?: string,"updated_at"?: string,"valor_estimado"?: number | null
+                    "cerrada_at"?: string | null,"cliente_id"?: string,"created_at"?: string,"created_by"?: string | null,"descripcion"?: string | null,"etapa"?: Database["public"]['Enums']["etapa_comercial"],"etapa_cambiada_at"?: string,"id"?: string,"motivo_perdida"?: string | null,"origen"?: string | null,"proxima_accion"?: string | null,"proxima_accion_fecha"?: string | null,"responsable_id"?: string | null,"titulo"?: string,"updated_at"?: string,"valor_estimado"?: number | null
                   }
                   Relationships: [
                     {

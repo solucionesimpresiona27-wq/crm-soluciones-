@@ -72,7 +72,7 @@ export const TarjetaOportunidad = forwardRef<HTMLDivElement, PropsTarjeta>(funct
   ref,
 ) {
   const estado = o.etapa === 'ganado' || o.etapa === 'perdido' ? null : estadoAccion(o.proxima_accion_fecha, hoy)
-  const dias = diasDesde(o.updated_at, hoy)
+  const dias = diasDesde(o.etapa_cambiada_at ?? o.updated_at, hoy)
   return (
     <div
       ref={ref}
