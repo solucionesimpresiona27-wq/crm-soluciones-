@@ -418,7 +418,8 @@ suite('Seguridad de las fases 2 y 3', () => {
     it('portal: con solo "aprobar_disenos" no se leen las aprobaciones de cotizaciones del cliente', async () => {
       const q = await venta(v2, `Cliente aprobación ${sufijo}`)
       const enlace = ok(await v2.rpc('crear_enlace_portal', { p_tipo: 'cotizacion', p_id: q.cotizacionId })) as { token: string }
-      ok(await anon.rpc('portal_aprobar_cotizacion', { p_token: enlace.token, p_nombre: 'Laura Gómez', p_comentario: 'Adelante con el precio acordado' }))
+      const vista = ok(await anon.rpc('portal_obtener', { p_token: enlace.token })) as { cotizacion: { version: string } }
+      ok(await anon.rpc('portal_aprobar_cotizacion', { p_token: enlace.token, p_nombre: 'Laura Gómez', p_comentario: 'Adelante con el precio acordado', p_version: vista.cotizacion.version }))
       // Diseño (aprobar_disenos, sin gestionar cotizaciones) veía nombre, comentario, IP y navegador.
       expect(ok(await d.from('portal_respuestas').select('*').eq('cotizacion_id', q.cotizacionId))).toEqual([])
       // Quien gestiona cotizaciones sí la ve; las respuestas sobre diseños siguen visibles para Diseño.

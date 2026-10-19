@@ -32,7 +32,8 @@ export function Ligar({
     enabled: q.length >= 2 && !valor,
     queryFn: async (): Promise<Ligado[]> =>
       tipo === 'cliente'
-        ? (await api.clientes.buscar(q)).slice(0, 6).map((c) => ({ id: c.id, nombre: c.nombre }))
+        ? // clientes_operacion: Diseño y Producción encuentran a los clientes con pedidos
+          (await api.tareas.buscarClientes(q)).slice(0, 6)
         : (await api.pedidos.listar({ texto: q })).slice(0, 6).map((p) => ({
             id: p.id,
             nombre: `${p.folio} · ${p.titulo} · ${p.cliente}`,

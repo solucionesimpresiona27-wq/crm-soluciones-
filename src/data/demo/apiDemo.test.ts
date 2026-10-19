@@ -6,6 +6,29 @@ import { entrarComo, salir } from './paraPruebas'
 afterEach(salir)
 
 describe('vista previa · núcleo', () => {
+  it('panel de Diseño y Producción: el nombre del cliente de sus tareas solo si es cliente de un pedido (como agenda)', async () => {
+    // Atrasadas (las primeras del panel, que muestra hasta 10)
+    const hoy = '2020-01-01'
+    for (const rol of ['diseno', 'produccion'] as const) {
+      entrarComo(rol)
+      const yo = `demo-${rol}`
+      const sinPedidos = almacen.clientes.find((c) => !almacen.pedidos.some((p) => p.cliente_id === c.id))!
+      const conPedido = almacen.clientes.find((c) => almacen.pedidos.some((p) => p.cliente_id === c.id))!
+      // Tareas que Ventas le asignó (Ventas sí ve todos los clientes)
+      almacen.tareas.push(
+        { ...almacen.tareas[0], id: `t-sin-${rol}`, titulo: 'Prospecto', fecha: hoy, responsable_id: yo, completada: false, cliente_id: sinPedidos.id, pedido_id: null },
+        { ...almacen.tareas[0], id: `t-con-${rol}`, titulo: 'Cliente', fecha: hoy, responsable_id: yo, completada: false, cliente_id: conPedido.id, pedido_id: null },
+      )
+      const r = await apiDemo.dashboard.resumen()
+      const sin = r.tareas_hoy!.find((t) => t.id === `t-sin-${rol}`)!
+      const con = r.tareas_hoy!.find((t) => t.id === `t-con-${rol}`)!
+      expect(sin.cliente, rol).toBeNull()
+      expect(sin.cliente_id, rol).toBeNull()
+      expect(con.cliente, rol).toBe(conPedido.nombre)
+      salir()
+    }
+  })
+
   it('el panel de Administración da exactamente las cifras de la vista previa anterior', async () => {
     entrarComo('admin')
     const r = await apiDemo.dashboard.resumen()
@@ -132,7 +155,8 @@ describe('vista previa · núcleo', () => {
     })
     // Aprobada por el cliente en el portal
     const { token } = await apiDemo.portal.crearEnlace('cotizacion', abierta.id)
-    await apiDemo.portal.aprobarCotizacion(token, 'Cliente de prueba')
+    const vista = await apiDemo.portal.obtener(token)
+    await apiDemo.portal.aprobarCotizacion(token, vista.cotizacion!.version, 'Cliente de prueba')
     const aprobada = almacen.cotizaciones.find((c) => c.id === abierta.id)!
     const totalAntes = aprobada.total
     await expect(apiDemo.cotizaciones.guardar(datos(aprobada) as never)).rejects.toThrow('aprobó esta cotización desde el portal')

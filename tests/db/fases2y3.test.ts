@@ -630,7 +630,8 @@ suite('Fases 2 y 3: permisos, inventario, gastos, caja, reportes y portal', () =
       const { error: largo } = await anon.rpc('portal_aprobar_cotizacion', { p_token: token, p_nombre: 'Juan Pérez', p_comentario: 'x'.repeat(1001) })
       expect(largo?.message).toContain('1000')
 
-      const r = ok(await anon.rpc('portal_aprobar_cotizacion', { p_token: token, p_nombre: '  Juan   Pérez ', p_comentario: 'Adelante con el trabajo' })) as Fila
+      const vista = ok(await anon.rpc('portal_obtener', { p_token: token })) as { cotizacion: { version: string } }
+      const r = ok(await anon.rpc('portal_aprobar_cotizacion', { p_token: token, p_nombre: '  Juan   Pérez ', p_comentario: 'Adelante con el trabajo', p_version: vista.cotizacion.version })) as Fila
       expect(r.estado).toBe('aceptada')
       const q = ok(await v.from('cotizaciones').select('estado, aceptada_at').eq('id', cotPortal).single()) as Fila
       expect(q.estado).toBe('aceptada')

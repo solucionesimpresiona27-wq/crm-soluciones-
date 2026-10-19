@@ -150,6 +150,8 @@ export const pedidosDemo: ApiPedidos = {
           telefono: c?.telefono ?? null,
           email: c?.email ?? null,
           requiere_factura: c?.requiere_factura ?? false,
+          // Como clientes_operacion.contacto_visible
+          contacto_oculto: Boolean(c) && !puedeVerClientes() && !a.pedidos.some((x) => x.cliente_id === p.cliente_id && pedidoEnProceso(x.estado)),
         },
         vendedor: nombrePerfil(a, p.vendedor_id),
         responsable: nombrePerfil(a, p.responsable_id),

@@ -8,9 +8,15 @@
  *   R2. Datos completos de clientes y del equipo solo para quien los necesita.
  *   R3. Una cotización aprobada en el portal, aceptada o convertida ya no se modifica por ningún
  *       camino; duplicar y convertir siguen funcionando.
+ *   Ronda 2 (20261019000300_seguridad_revision_b.sql): panel sin nombres de clientes ajenos, tareas
+ *       ligadas solo a clientes con pedidos, aprobación con control de versión, carreras al aprobar
+ *       o convertir, ON DELETE SET NULL con cotizaciones cerradas y contacto oculto por permiso.
+ *   Ronda 3 (20261019000400_seguridad_revision_c.sql): producto a nulo solo por el borrado del
+ *       catálogo (no a mano) y búsqueda de clientes sin acentos en clientes_operacion.
  *
  *   SUPABASE_URL=... SUPABASE_ANON_KEY=... SUPABASE_SERVICE_ROLE_KEY=... npx vitest run tests/db
  */
+import { execFileSync, spawn } from 'node:child_process'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { beforeAll, describe, expect, it } from 'vitest'
 
@@ -19,6 +25,28 @@ const ANON = process.env.SUPABASE_ANON_KEY ?? ''
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
 const activo = Boolean(URL && ANON && SERVICE)
 const suite = activo ? describe : describe.skip
+const hayPsql = (() => {
+  try {
+    execFileSync('psql', ['--version'], { stdio: 'ignore' })
+    return true
+  } catch {
+    return false
+  }
+})()
+const DB_URL = process.env.DB_URL ?? (URL.includes('127.0.0.1:54321') && hayPsql ? 'postgresql://postgres:postgres@127.0.0.1:54322/postgres' : '')
+const itDb = activo && DB_URL ? it : it.skip
+
+/** Corre SQL en otra conexión (psql) sin esperar: para abrir una transacción que dure. */
+function psqlEnParalelo(sql: string) {
+  return new Promise<{ codigo: number | null; salida: string }>((resolve) => {
+    const p = spawn('psql', [DB_URL, '-q', '-At', '-v', 'ON_ERROR_STOP=1', '-c', sql])
+    let salida = ''
+    p.stdout.on('data', (d) => (salida += d))
+    p.stderr.on('data', (d) => (salida += d))
+    p.on('close', (codigo) => resolve({ codigo, salida }))
+  })
+}
+const pausa = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 const sistema = activo ? createClient(URL, SERVICE, { auth: { persistSession: false } }) : (null as never)
 const PASS = 'Prueba12345'
@@ -232,7 +260,7 @@ suite('Revisión de seguridad: precios, clientes y equipo, cotizaciones aprobada
         expect(de(clienteActivo)).toMatchObject({ nombre: `Cliente activo ${sufijo}`, whatsapp: tel.activo, telefono: tel.activo, email: null, requiere_factura: false })
         expect(de(clienteCerrado)).toMatchObject({ nombre: `Cliente cerrado ${sufijo}`, whatsapp: null, telefono: null, email: null })
         expect(de(clienteSinPedidos), `${rol} no debe ver clientes sin pedidos`).toBeUndefined()
-        expect(Object.keys(filas[0]).sort()).toEqual(['activo', 'email', 'id', 'nombre', 'requiere_factura', 'telefono', 'tipo', 'whatsapp'])
+        expect(Object.keys(filas[0]).sort()).toEqual(['activo', 'busqueda', 'contacto_visible', 'email', 'id', 'nombre', 'requiere_factura', 'telefono', 'tipo', 'whatsapp'])
         // Lo mismo en ordenes_trabajo
         const ot = ok(await c[rol].from('ordenes_trabajo').select('id, cliente_whatsapp').in('id', [pedidoActivo, pedidoCerrado])) as Fila[]
         expect(ot.find((x) => x.id === pedidoActivo)?.cliente_whatsapp).toBe(tel.activo)
@@ -343,7 +371,8 @@ suite('Revisión de seguridad: precios, clientes y equipo, cotizaciones aprobada
       aprobada = q.cotizacionId
       ok(await c.ventas.from('cotizaciones').update({ estado: 'enviada' }).eq('id', aprobada))
       const { token } = ok(await c.ventas.rpc('crear_enlace_portal', { p_tipo: 'cotizacion', p_id: aprobada })) as { token: string }
-      ok(await anon.rpc('portal_aprobar_cotizacion', { p_token: token, p_nombre: 'Cliente que aprueba', p_comentario: null }))
+      const vista = ok(await anon.rpc('portal_obtener', { p_token: token })) as { cotizacion: { version: string } }
+      ok(await anon.rpc('portal_aprobar_cotizacion', { p_token: token, p_nombre: 'Cliente que aprueba', p_comentario: null, p_version: vista.cotizacion.version }))
       const fila = ok(await c.ventas.from('cotizaciones').select('estado, total, partidas(id)').eq('id', aprobada).single()) as { estado: string; total: number; partidas: Array<{ id: string }> }
       expect(fila.estado).toBe('aceptada')
       totalAntes = Number(fila.total)
@@ -421,5 +450,237 @@ suite('Revisión de seguridad: precios, clientes y equipo, cotizaciones aprobada
       ok(await c.ventas.from('cotizaciones').update({ titulo: 'Se puede editar' }).eq('id', abierta.cotizacionId).select('id').single())
       ok(await c.ventas.from('partidas').update({ cantidad: 2 }).eq('cotizacion_id', abierta.cotizacionId).select('id'))
     })
+  })
+  // ===================================================================
+  // Ronda 2 (20261019000300_seguridad_revision_b.sql)
+  // ===================================================================
+  describe('Ronda 2 · ajustes de la revisión', () => {
+    const hoy = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
+
+    async function cotizacionConEnlace(nombre: string, telefono: string, precio = 100) {
+      const q = await venta(`${nombre} ${sufijo}`, telefono, precio)
+      ok(await c.ventas.from('cotizaciones').update({ estado: 'enviada' }).eq('id', q.cotizacionId))
+      const { token } = ok(await c.ventas.rpc('crear_enlace_portal', { p_tipo: 'cotizacion', p_id: q.cotizacionId })) as { token: string }
+      return { ...q, token }
+    }
+    const version = async (token: string) => ((ok(await anon.rpc('portal_obtener', { p_token: token })) as { cotizacion: { version: string; total: number } }).cotizacion)
+
+    it('panel: tareas_hoy no da el nombre de un cliente sin pedidos a diseño y producción (como agenda)', async () => {
+      // Ventas les asigna tareas (Ventas sí puede ligar cualquier cliente)
+      for (const rol of ['diseno', 'produccion'] as const) {
+        ok(await c.ventas.from('tareas').insert([
+          { titulo: `Panel prospecto ${rol} ${sufijo}`, fecha: hoy(), cliente_id: clienteSinPedidos, responsable_id: id[rol] },
+          { titulo: `Panel cliente ${rol} ${sufijo}`, fecha: hoy(), cliente_id: clienteActivo, responsable_id: id[rol] },
+        ]))
+        const panel = ok(await c[rol].rpc('dashboard_resumen')) as { tareas_hoy: Fila[] }
+        const prospecto = panel.tareas_hoy.find((t) => t.titulo === `Panel prospecto ${rol} ${sufijo}`)
+        const cliente = panel.tareas_hoy.find((t) => t.titulo === `Panel cliente ${rol} ${sufijo}`)
+        expect(prospecto, rol).toBeTruthy()
+        expect(prospecto?.cliente, `${rol}: nombre del prospecto`).toBeNull()
+        expect(prospecto?.cliente_id, `${rol}: id del prospecto`).toBeNull()
+        expect(cliente?.cliente, rol).toBe(`Cliente activo ${sufijo}`)
+      }
+      ok(await c.ventas.from('tareas').insert({ titulo: `Panel ventas ${sufijo}`, fecha: hoy(), cliente_id: clienteSinPedidos, responsable_id: id.ventas }))
+      const ventas = ok(await c.ventas.rpc('dashboard_resumen')) as { tareas_hoy: Fila[] }
+      expect(ventas.tareas_hoy.find((t) => t.titulo === `Panel ventas ${sufijo}`)?.cliente).toBe(`Cliente sin pedidos ${sufijo}`)
+    })
+
+    it('tareas: diseño y producción solo ligan clientes con pedidos (y los encuentran en clientes_operacion)', async () => {
+      for (const rol of ['diseno', 'produccion'] as const) {
+        // El buscador de la agenda: encuentra a los clientes de pedidos, no a los prospectos
+        const encontrados = ok(await c[rol].from('clientes_operacion').select('id').eq('activo', true).ilike('nombre', `%${sufijo}%`)) as Fila[]
+        expect(encontrados.map((x) => x.id), rol).toEqual(expect.arrayContaining([clienteActivo, clienteCerrado]))
+        expect(encontrados.map((x) => x.id), rol).not.toContain(clienteSinPedidos)
+        // Ligar a un cliente con pedido sí; a uno sin pedidos (que no ve), no
+        const propia = ok(await c[rol].from('tareas').insert({ titulo: `Ligar ${rol} ${sufijo}`, fecha: hoy(), cliente_id: clienteActivo, responsable_id: id[rol] }).select('id').single()) as { id: string }
+        const sin = await c[rol].from('tareas').insert({ titulo: `Espiar ${rol} ${sufijo}`, fecha: hoy(), cliente_id: clienteSinPedidos, responsable_id: id[rol] })
+        expect(sin.error?.code, `${rol}: insertar con prospecto`).toBe('42501')
+        expect(sin.error?.message).toContain('clientes con pedidos')
+        const cambio = await c[rol].from('tareas').update({ cliente_id: clienteSinPedidos }).eq('id', propia.id)
+        expect(cambio.error?.code, `${rol}: cambiar a prospecto`).toBe('42501')
+        // Una tarea que Ventas ligó a un prospecto se puede completar y editar sin perder la liga
+        const ajena = ok(await c.ventas.from('tareas').insert({ titulo: `Ajena ${rol} ${sufijo}`, fecha: hoy(), cliente_id: clienteSinPedidos, responsable_id: id[rol] }).select('id').single()) as { id: string }
+        ok(await c[rol].from('tareas').update({ completada: true, titulo: `Ajena hecha ${rol} ${sufijo}` }).eq('id', ajena.id).select('id').single())
+        const fila = ok(await sistema.from('tareas').select('cliente_id, completada').eq('id', ajena.id).single()) as Fila
+        expect(fila).toEqual({ cliente_id: clienteSinPedidos, completada: true })
+      }
+    })
+
+    it('pedido cerrado: clientes_operacion dice que el contacto está oculto por permiso, no que falta', async () => {
+      for (const rol of ROLES) {
+        const completo = rol === 'admin' || rol === 'ventas'
+        const filas = ok(await c[rol].from('clientes_operacion').select('id, whatsapp, contacto_visible').in('id', [clienteActivo, clienteCerrado])) as Fila[]
+        const cerrado = filas.find((x) => x.id === clienteCerrado)!
+        const activo = filas.find((x) => x.id === clienteActivo)!
+        expect(activo.contacto_visible, rol).toBe(true)
+        expect(activo.whatsapp, rol).toBe(tel.activo)
+        expect(cerrado.contacto_visible, rol).toBe(completo)
+        expect(cerrado.whatsapp, rol).toBe(completo ? tel.cerrado : null)
+      }
+    })
+
+    it('portal: el cliente aprueba la versión que vio; si el asesor la cambió, se rechaza', async () => {
+      const q = await cotizacionConEnlace('Cliente versión', '3355544444')
+      const vista = await version(q.token)
+      expect(vista.version).toMatch(/^[0-9a-f]{32}$/)
+      expect(Number(vista.total)).toBe(116)
+      // Ventas cambia el precio mientras el cliente la revisa
+      ok(await c.ventas.rpc('guardar_cotizacion', {
+        p_datos: { id: q.cotizacionId, cliente_id: q.clienteId, titulo: `Cliente versión ${sufijo}`, partidas: [{ concepto: 'Lona', metodo_calculo: 'pieza', unidad: 'pza', cantidad: 1, precio_unitario: 9000 }] },
+      }))
+      const vieja = await anon.rpc('portal_aprobar_cotizacion', { p_token: q.token, p_nombre: 'Cliente Ficticio', p_version: vista.version })
+      expect(vieja.error?.message).toContain('actualizó esta cotización mientras la revisabas')
+      const sinVersion = await anon.rpc('portal_aprobar_cotizacion', { p_token: q.token, p_nombre: 'Cliente Ficticio' })
+      expect(sinVersion.error?.message).toContain('actualizó esta cotización')
+      let fila = ok(await c.ventas.from('cotizaciones').select('estado').eq('id', q.cotizacionId).single()) as Fila
+      expect(fila.estado).toBe('enviada')
+      expect(ok(await c.ventas.from('portal_respuestas').select('id').eq('cotizacion_id', q.cotizacionId))).toEqual([])
+      // Lo interno (notas internas, PDF) no cambia la versión
+      const actual = await version(q.token)
+      expect(Number(actual.total)).toBe(10440)
+      ok(await c.ventas.from('cotizaciones').update({ notas_internas: 'Cliente pidió factura', pdf_path: `cotizaciones/${q.cotizacionId}/v2.pdf` }).eq('id', q.cotizacionId))
+      expect((await version(q.token)).version).toBe(actual.version)
+      ok(await anon.rpc('portal_aprobar_cotizacion', { p_token: q.token, p_nombre: 'Cliente Ficticio', p_version: actual.version }))
+      fila = ok(await c.ventas.from('cotizaciones').select('estado, total').eq('id', q.cotizacionId).single()) as Fila
+      expect(fila.estado).toBe('aceptada')
+      expect(Number(fila.total)).toBe(10440)
+      // La huella no se expone como función suelta
+      expect((await anon.rpc('portal_version_cotizacion', { p_cotizacion: q.cotizacionId })).error).toBeTruthy()
+      expect((await c.ventas.rpc('portal_version_cotizacion', { p_cotizacion: q.cotizacionId })).error).toBeTruthy()
+    })
+
+    itDb('carrera: un concepto insertado mientras se aprueba o se convierte espera y se rechaza', async () => {
+      // Aprobación desde el portal en una transacción que tarda en confirmar
+      const q = await cotizacionConEnlace('Cliente carrera', '3355533333')
+      const vista = await version(q.token)
+      const aprobar = psqlEnParalelo(
+        `begin; select public.portal_aprobar_cotizacion('${q.token}', 'Cliente Ficticio', null, '${vista.version}'); select pg_sleep(2); commit;`,
+      )
+      await pausa(800)
+      const colada = await c.ventas.from('partidas').insert({ cotizacion_id: q.cotizacionId, concepto: 'Colada', cantidad: 1, precio_unitario: 5000, tipo: 'concepto', metodo_calculo: 'pieza', unidad: 'pza' })
+      const r = await aprobar
+      expect(r.codigo, r.salida).toBe(0)
+      expect(r.salida).toContain('"ok": true')
+      expect(colada.error?.message).toContain('aprobó esta cotización desde el portal')
+      const fila = ok(await c.ventas.from('cotizaciones').select('estado, total, partidas(concepto)').eq('id', q.cotizacionId).single()) as { estado: string; total: number; partidas: Fila[] }
+      expect(fila.estado).toBe('aceptada')
+      expect(Number(fila.total)).toBe(116)
+      expect(fila.partidas.map((p) => p.concepto)).toEqual(['Lona'])
+
+      // Conversión en pedido en una transacción que tarda en confirmar
+      const p = await venta(`Cliente conversión ${sufijo}`, '3355522222')
+      const claims = JSON.stringify({ sub: id.ventas, role: 'authenticated' })
+      const convertir = psqlEnParalelo(
+        `begin; set local role authenticated; select set_config('request.jwt.claims', '${claims}', true); select public.convertir_cotizacion_a_pedido('${p.cotizacionId}'); select pg_sleep(2); commit;`,
+      )
+      await pausa(800)
+      const otra = await c.ventas.from('partidas').insert({ cotizacion_id: p.cotizacionId, concepto: 'Colada', cantidad: 1, precio_unitario: 5000, tipo: 'concepto', metodo_calculo: 'pieza', unidad: 'pza' })
+      const rc = await convertir
+      expect(rc.codigo, rc.salida).toBe(0)
+      expect(otra.error?.message).toContain('ya se convirtió en el pedido')
+      const cot = ok(await c.ventas.from('cotizaciones').select('total, pedido_id, partidas(concepto)').eq('id', p.cotizacionId).single()) as { total: number; pedido_id: string; partidas: Fila[] }
+      const ped = ok(await c.ventas.from('pedidos').select('total').eq('id', cot.pedido_id).single()) as Fila
+      expect(cot.partidas.map((x) => x.concepto)).toEqual(['Lona'])
+      expect(Number(ped.total)).toBe(Number(cot.total))
+    })
+
+    it('borrar un usuario, un contacto o un producto ligados a una cotización cerrada sigue funcionando', async () => {
+      const email = `rev-borrar-${sufijo}@prueba.local`
+      const vendedorId = await crearUsuario(email, { rol: 'ventas', activo: true, nombre: 'Vendedor que se va' })
+      const vendedor = await sesion(email)
+      const cl = ok(await vendedor.from('clientes').insert({ nombre: `Cliente borrar ${sufijo}` }).select('id').single()) as { id: string }
+      const ct = ok(await vendedor.from('contactos').insert({ cliente_id: cl.id, nombre: 'Contacto que se borra' }).select('id').single()) as { id: string }
+      const otroContacto = ok(await vendedor.from('contactos').insert({ cliente_id: cl.id, nombre: 'Otro contacto' }).select('id').single()) as { id: string }
+      const prod = ok(await c.admin.from('productos').insert({ nombre: `Producto que se borra ${sufijo}`, metodo_calculo: 'pieza', unidad: 'pza', precio_venta: 50 }).select('id').single()) as { id: string }
+      // Con costo de catálogo: la partida recibe su costo estimado (partida_costos)
+      ok(await c.admin.from('producto_costos').insert({ producto_id: prod.id, costo_material: 10 }))
+      const q = ok(await vendedor.rpc('guardar_cotizacion', {
+        p_datos: { cliente_id: cl.id, contacto_id: ct.id, partidas: [{ producto_id: prod.id, concepto: 'Tarjetas', metodo_calculo: 'pieza', unidad: 'pza', cantidad: 1, precio_unitario: 50 }] },
+      })) as { id: string }
+      ok(await sistema.from('cotizaciones').update({ contacto_id: ct.id }).eq('id', q.id))
+      ok(await vendedor.from('cotizaciones').update({ estado: 'aceptada' }).eq('id', q.id))
+      const antes = ok(await sistema.from('cotizaciones').select('created_by, contacto_id, total').eq('id', q.id).single()) as Fila
+      expect(antes.created_by).toBe(vendedorId)
+      expect(antes.contacto_id).toBe(ct.id)
+      const partida = (ok(await sistema.from('partidas').select('id').eq('cotizacion_id', q.id).single()) as { id: string }).id
+      expect(ok(await sistema.from('partida_costos').select('partida_id').eq('partida_id', partida))).toHaveLength(1)
+
+      // Cambiar el contacto por otro sigue rechazado; pasarlo a nulo por el borrado, no
+      expect((await c.ventas.from('cotizaciones').update({ contacto_id: otroContacto.id }).eq('id', q.id)).error?.message).toContain('ya fue aceptada')
+      ok(await c.ventas.from('contactos').delete().eq('id', ct.id).select('id').single())
+      ok(await c.admin.from('productos').delete().eq('id', prod.id).select('id').single())
+      const { error } = await sistema.auth.admin.deleteUser(vendedorId)
+      expect(error).toBeNull()
+
+      const despues = ok(await sistema.from('cotizaciones').select('created_by, contacto_id, estado, total, partidas(producto_id, concepto, precio_unitario)').eq('id', q.id).single()) as Fila & { partidas: Fila[] }
+      expect(despues.created_by).toBeNull()
+      expect(despues.contacto_id).toBeNull()
+      expect(despues.estado).toBe('aceptada')
+      expect(Number(despues.total)).toBe(Number(antes.total))
+      expect(despues.partidas.map((p) => ({ ...p, precio_unitario: Number(p.precio_unitario) }))).toEqual([{ producto_id: null, concepto: 'Tarjetas', precio_unitario: 50 }])
+      // El costo que venía del producto borrado se quita, como en una cotización abierta
+      expect(ok(await sistema.from('partida_costos').select('partida_id').eq('partida_id', partida))).toHaveLength(0)
+      // Y el resto de la partida sigue congelado
+      expect((await c.ventas.from('partidas').update({ concepto: 'Otra cosa' }).eq('cotizacion_id', q.id)).error?.message).toContain('ya fue aceptada')
+    })
+  })
+
+  describe('Ronda 3 · ajustes de la revisión', () => {
+    it('cotización cerrada: nadie pasa producto_id a nulo a mano (borraría sus costos); el pedido conserva el costo', async () => {
+      const prod = ok(await c.admin.from('productos').insert({ nombre: `Producto con costo ${sufijo}`, metodo_calculo: 'pieza', unidad: 'pza', precio_venta: 80 }).select('id').single()) as { id: string }
+      ok(await c.admin.from('producto_costos').insert({ producto_id: prod.id, costo_material: 25 }))
+      const cl = ok(await c.ventas.from('clientes').insert({ nombre: `Cliente costo ${sufijo}` }).select('id').single()) as { id: string }
+      const q = ok(await c.ventas.rpc('guardar_cotizacion', {
+        p_datos: { cliente_id: cl.id, titulo: 'Con costo', partidas: [{ producto_id: prod.id, concepto: 'Volantes', metodo_calculo: 'pieza', unidad: 'pza', cantidad: 1, precio_unitario: 80 }] },
+      })) as { id: string }
+      ok(await c.ventas.from('cotizaciones').update({ estado: 'enviada' }).eq('id', q.id))
+      const { token } = ok(await c.ventas.rpc('crear_enlace_portal', { p_tipo: 'cotizacion', p_id: q.id })) as { token: string }
+      const vista = ok(await anon.rpc('portal_obtener', { p_token: token })) as { cotizacion: { version: string } }
+      ok(await anon.rpc('portal_aprobar_cotizacion', { p_token: token, p_nombre: 'Cliente', p_comentario: null, p_version: vista.cotizacion.version }))
+      const partida = (ok(await sistema.from('partidas').select('id').eq('cotizacion_id', q.id).single()) as { id: string }).id
+      const costos = async () => ok(await sistema.from('partida_costos').select('costo_total, calculo').eq('partida_id', partida)) as Fila[]
+      expect(await costos()).toHaveLength(1)
+      const intentar = async (motivo: string) => {
+        for (const rol of ROLES) {
+          const r = await c[rol].from('partidas').update({ producto_id: null }).eq('cotizacion_id', q.id).select('id')
+          expect(rechazada(r), `${rol}: producto a nulo (${motivo})`).toBe(true)
+          if (rol === 'admin' || rol === 'ventas') expect(r.error, `${rol}: ${motivo}`).toBeTruthy()
+        }
+        const fila = ok(await sistema.from('partidas').select('producto_id').eq('id', partida).single()) as Fila
+        expect(fila.producto_id, motivo).toBe(prod.id)
+        expect(await costos(), motivo).toHaveLength(1)
+      }
+      await intentar('aprobada')
+      const pedido = ok(await c.ventas.rpc('convertir_cotizacion_a_pedido', { p_cotizacion: q.id })) as string
+      await intentar('convertida')
+      const enPedido = ok(await sistema.from('partidas').select('producto_id, partida_costos(costo_total)').eq('pedido_id', pedido)) as Array<Fila & { partida_costos: Fila | Fila[] | null }>
+      expect(enPedido).toHaveLength(1)
+      expect(enPedido[0].producto_id).toBe(prod.id)
+      const pc = enPedido[0].partida_costos
+      expect(Array.isArray(pc) ? pc.length : pc ? 1 : 0).toBe(1)
+      // En una cotización abierta sigue siendo una edición normal
+      const abierta = await venta(`Cliente abierta ${sufijo}`, '3355500001')
+      ok(await c.ventas.from('partidas').update({ producto_id: productoId }).eq('cotizacion_id', abierta.cotizacionId).select('id'))
+      expect(ok(await c.ventas.from('partidas').update({ producto_id: null }).eq('cotizacion_id', abierta.cotizacionId).select('id'))).toHaveLength(1)
+    }, 30_000)
+
+    it('clientes_operacion.busqueda: sin acentos para todos; correo y RFC solo con permiso de clientes; contacto solo si se ve', async () => {
+      const tq = await venta(`Taquería El Güero ${sufijo}`, '3355577777')
+      ok(await c.ventas.rpc('convertir_cotizacion_a_pedido', { p_cotizacion: tq.cotizacionId }))
+      const buscar = async (rol: Rol, texto: string) =>
+        (ok(await c[rol].from('clientes_operacion').select('id').eq('activo', true).ilike('busqueda', `%${texto}%`).limit(200)) as Fila[]).map((x) => x.id)
+      for (const rol of ROLES) {
+        const completo = rol === 'admin' || rol === 'ventas'
+        expect(await buscar(rol, `taqueria el guero ${sufijo}`), `${rol}: sin acentos`).toContain(tq.clienteId)
+        expect(await buscar(rol, '3355577777'), `${rol}: teléfono con pedido en proceso`).toContain(tq.clienteId)
+        expect(await buscar(rol, `${sufijo}-3355577777@cliente.local`), `${rol}: correo`).toEqual(completo ? [tq.clienteId] : [])
+        expect((await buscar(rol, `cliente cerrado ${sufijo}`)), `${rol}: nombre de pedido cerrado`).toContain(clienteCerrado)
+        expect(await buscar(rol, tel.cerrado), `${rol}: teléfono de pedido cerrado`).toSatisfy((ids: unknown[]) => ids.includes(clienteCerrado) === completo)
+        expect(await buscar(rol, `cliente sin pedidos ${sufijo}`), `${rol}: prospecto`).toEqual(completo ? [clienteSinPedidos] : [])
+      }
+      // Igual que clientes.busqueda para quien ve clientes (el buscador de antes)
+      const viejo = (ok(await c.ventas.from('clientes').select('id').ilike('busqueda', `%taqueria el guero ${sufijo}%`)) as Fila[]).map((x) => x.id)
+      expect(await buscar('ventas', `taqueria el guero ${sufijo}`)).toEqual(viejo)
+    }, 30_000)
   })
 })

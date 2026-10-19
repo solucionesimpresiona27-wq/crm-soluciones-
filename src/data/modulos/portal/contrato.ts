@@ -21,6 +21,10 @@ export type TipoEnlace = 'cotizacion' | 'pedido'
 /** Mensaje único para enlaces inválidos, vencidos o revocados. */
 export const ENLACE_NO_VALIDO = 'Este enlace ya no está disponible. Pide uno nuevo a Soluciones Impresiona.'
 
+/** La cotización cambió entre que el cliente la abrió y la aprobó (mismo texto que la base). */
+export const COTIZACION_ACTUALIZADA =
+  'Tu asesor actualizó esta cotización mientras la revisabas. Revisa la versión actual y vuelve a aprobarla.'
+
 export interface EnlacePortal {
   id: string
   tipo: TipoEnlace
@@ -131,6 +135,8 @@ export interface VistaPortal {
     puede_aprobar: boolean
     aprobacion: { nombre: string; fecha: string } | null
     partidas: PartidaPortal[]
+    /** Huella de lo que ve el cliente (conceptos, precios, totales, condiciones). Se manda al aprobar. */
+    version: string
   }
   pedido?: {
     folio: string
@@ -183,8 +189,11 @@ export interface ApiPortal {
     urlPublica(token: string): string
     // ---- Público (sin sesión) ----
     obtener(token: string): Promise<VistaPortal>
-    /** Nombre de 2 a 120 caracteres; comentario hasta 1000. */
-    aprobarCotizacion(token: string, nombre: string, comentario?: string): Promise<{ ok: true; folio: string; estado: EstadoCotizacion }>
+    /**
+     * Aprueba la versión que vio el cliente (`version` de `obtener`). Si el asesor la cambió
+     * mientras tanto, falla con `COTIZACION_ACTUALIZADA`. Nombre de 2 a 120 caracteres; comentario hasta 1000.
+     */
+    aprobarCotizacion(token: string, version: string, nombre: string, comentario?: string): Promise<{ ok: true; folio: string; estado: EstadoCotizacion }>
     /** Pedir cambios exige comentario. */
     responderDiseno(
       token: string,

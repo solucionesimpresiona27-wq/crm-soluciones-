@@ -111,8 +111,13 @@ export const portalSupabase: ApiPortal = {
       return r.data as unknown as VistaPortal
     },
 
-    async aprobarCotizacion(token, nombre, comentario) {
-      const r = await clientePublico().rpc('portal_aprobar_cotizacion', { p_token: token, p_nombre: nombre, ...(comentario?.trim() ? { p_comentario: comentario.trim() } : {}) })
+    async aprobarCotizacion(token, version, nombre, comentario) {
+      const r = await clientePublico().rpc('portal_aprobar_cotizacion', {
+        p_token: token,
+        p_nombre: nombre,
+        p_version: version,
+        ...(comentario?.trim() ? { p_comentario: comentario.trim() } : {}),
+      })
       if (r.error) errorPortal(r.error)
       return r.data as unknown as { ok: true; folio: string; estado: 'aceptada' }
     },

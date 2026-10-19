@@ -1118,7 +1118,7 @@ isOneToOne: false
           Views: {
             "clientes_operacion": {
                   Row: {
-                    "activo": boolean | null,"email": string | null,"id": string | null,"nombre": string | null,"requiere_factura": boolean | null,"telefono": string | null,"tipo": string | null,"whatsapp": string | null
+                    "activo": boolean | null,"busqueda": string | null,"contacto_visible": boolean | null,"email": string | null,"id": string | null,"nombre": string | null,"requiere_factura": boolean | null,"telefono": string | null,"tipo": string | null,"whatsapp": string | null
                   }
                   ComputedFields: never
                   Relationships: [
@@ -1344,7 +1344,7 @@ isOneToOne: false
 { Args: { "p_permiso": string,"p_rol": Database["public"]['Enums']["rol_usuario"] }; Returns: boolean
                            },
 "portal_aprobar_cotizacion":
-{ Args: { "p_comentario"?: string,"p_nombre": string,"p_token": string }; Returns: Json
+{ Args: { "p_comentario"?: string,"p_nombre": string,"p_token": string,"p_version"?: string }; Returns: Json
                            },
 "portal_archivos_firmables":
 { Args: { "p_archivo_id"?: string,"p_token": string }; Returns: {
@@ -1390,6 +1390,9 @@ isOneToOne: false
                            },
 "portal_texto_cliente":
 { Args: { "p_comentario": string,"p_nombre": string }; Returns: (string)[]
+                           },
+"portal_version_cotizacion":
+{ Args: { "p_cotizacion": string }; Returns: string
                            },
 "puede_ver_caja":
 { Args: Record<PropertyKey, never>; Returns: boolean

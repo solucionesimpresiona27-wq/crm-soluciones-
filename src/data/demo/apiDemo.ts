@@ -23,7 +23,7 @@ import { produccionDemo } from '../modulos/produccion/demo'
 import { reportesDemo } from '../modulos/reportes/demo'
 import type { CotizacionCompleta, CotizacionLista, DashboardResumen, EntregaProxima, EstadoCotizacion } from '../tipos'
 import { almacen as a, copia, type PedidoFila } from './almacen'
-import { ahoraISO, etapasOmitidas, eventoPedido, fechaLocal, recalcularPedido, redondear2, registrarBitacora, siguienteFolio } from './reglas'
+import { ahoraISO, clienteOperacion, etapasOmitidas, eventoPedido, fechaLocal, recalcularPedido, redondear2, registrarBitacora, siguienteFolio } from './reglas'
 import { alCambiarSesion, cambiarRol, espera, exigir, puedeVerClientes, sesionDemo, usuario } from './sesion'
 
 const CERRADOS = ['entregado', 'finalizado', 'cancelado']
@@ -266,8 +266,9 @@ const nucleo: ApiNucleo = {
         fecha: t.fecha,
         hora: t.hora,
         prioridad: t.prioridad,
-        cliente_id: t.cliente_id,
-        cliente: a.clientes.find((c) => c.id === t.cliente_id)?.nombre ?? null,
+        // Como agenda(): sin permiso de clientes, solo clientes con pedidos (clientes_operacion)
+        cliente_id: clienteOperacion(a, t.cliente_id, puedeVerClientes()) ? t.cliente_id : null,
+        cliente: clienteOperacion(a, t.cliente_id, puedeVerClientes())?.nombre ?? null,
         pedido_id: t.pedido_id,
         vencida: t.fecha < hoy,
       }))

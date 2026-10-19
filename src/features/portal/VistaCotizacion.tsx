@@ -2,9 +2,10 @@ import { useQueryClient } from '@tanstack/react-query'
 import { CalendarClock, CheckCircle2, Clock, PackageCheck } from 'lucide-react'
 import { motion, useReducedMotion } from 'motion/react'
 import { useRef, useState } from 'react'
+import { toast } from 'sonner'
 import { AnimatedNumber, Campo, GlassButton, GlassInput, GlassModal, GlassPanel, GlassTextarea, Pildora } from '@/components/glass'
 import { api } from '@/data/api'
-import type { VistaPortal } from '@/data/modulos/portal/contrato'
+import { COTIZACION_ACTUALIZADA, type VistaPortal } from '@/data/modulos/portal/contrato'
 import { ESTADO_COTIZACION } from '@/lib/estados'
 import { cantidad, dinero, fecha, fechaLarga } from '@/lib/format'
 import { resorte } from '@/lib/motion'
@@ -154,7 +155,7 @@ function AprobarModal({ token, c, abierto, onCambio }: { token: string; c: Cot; 
     setEnviando(true)
     setError(null)
     try {
-      const r = await api.portal.aprobarCotizacion(token, nombreLimpio.slice(0, LIMITE_NOMBRE), comentario.trim().slice(0, LIMITE_COMENTARIO) || undefined)
+      const r = await api.portal.aprobarCotizacion(token, c.version, nombreLimpio.slice(0, LIMITE_NOMBRE), comentario.trim().slice(0, LIMITE_COMENTARIO) || undefined)
       qc.setQueryData<VistaPortal>(clavePortal(token), (v) =>
         v?.cotizacion
           ? { ...v, cotizacion: { ...v.cotizacion, estado: r.estado, puede_aprobar: false, aprobacion: { nombre: nombreLimpio, fecha: new Date().toISOString() } } }
@@ -162,7 +163,15 @@ function AprobarModal({ token, c, abierto, onCambio }: { token: string; c: Cot; 
       )
       onCambio(false)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No pudimos registrar tu aprobación. Intenta de nuevo en un momento.')
+      const mensaje = err instanceof Error ? err.message : 'No pudimos registrar tu aprobación. Intenta de nuevo en un momento.'
+      if (mensaje === COTIZACION_ACTUALIZADA) {
+        // Trae la versión actual; el diálogo se cierra para que el cliente la revise antes de aprobar
+        await qc.invalidateQueries({ queryKey: clavePortal(token) })
+        toast.warning('La cotización cambió', { description: COTIZACION_ACTUALIZADA })
+        onCambio(false)
+        return
+      }
+      setError(mensaje)
     } finally {
       enCurso.current = false
       setEnviando(false)

@@ -60,6 +60,42 @@ test('el cliente abre su cotización sin sesión, la aprueba y no puede aprobarl
   sinErrores()
 })
 
+// Revisión de seguridad (ronda 2): el cliente aprueba la versión que vio, no la que el asesor dejó después
+test('si el asesor cambia la cotización mientras el cliente la revisa, la aprobación pide revisar la versión nueva', async ({ page }) => {
+  const sinErrores = vigilarErrores(page)
+  const c = await enlaceDeCotizacion()
+  await page.goto(`/portal/${c.token}`)
+  await expect(page.getByText('$1,113.60').first()).toBeVisible()
+
+  // Ventas cambia un precio con el portal abierto
+  const ventas = await clienteComo('ventas')
+  const cambio = await ventas.from('partidas').update({ precio_unitario: 1000 }).eq('cotizacion_id', c.id).eq('concepto', 'Instalación en sitio').select('id')
+  expect(cambio.error).toBeNull()
+  const { data: nueva } = await ventas.from('cotizaciones').select('total').eq('id', c.id).single()
+  const totalNuevo = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(Number((nueva as { total: number }).total))
+
+  await page.getByRole('button', { name: 'Aprobar cotización' }).click()
+  const dialogo = page.getByRole('dialog', { name: 'Aprobar cotización' })
+  await dialogo.getByLabel('Tu nombre').fill('Cliente de Prueba')
+  await dialogo.getByRole('button', { name: 'Sí, aprobar cotización' }).click()
+  await expect(page.getByText('La cotización cambió')).toBeVisible()
+  await expect(dialogo).toBeHidden()
+  await expect(page.getByText(totalNuevo).first()).toBeVisible()
+  const db = await clienteComo('admin')
+  const { data: sigue } = await db.from('cotizaciones').select('estado').eq('id', c.id).single()
+  expect((sigue as { estado: string }).estado).toBe('enviada')
+
+  // Ya con la versión actual a la vista, la aprobación sí queda
+  await page.getByRole('button', { name: 'Aprobar cotización' }).click()
+  await dialogo.getByLabel('Tu nombre').fill('Cliente de Prueba')
+  await dialogo.getByRole('button', { name: 'Sí, aprobar cotización' }).click()
+  await expect(page.getByText('Cotización aprobada')).toBeVisible()
+  const { data: fin } = await db.from('cotizaciones').select('estado, total').eq('id', c.id).single()
+  expect(fin).toMatchObject({ estado: 'aceptada' })
+  expect(Number((fin as { total: number }).total)).toBe(Number((nueva as { total: number }).total))
+  sinErrores()
+})
+
 test('un token inventado muestra el mensaje genérico', async ({ page }) => {
   await page.goto('/portal/token-inventado-que-no-existe-0123456789abcdef')
   await expect(page.getByText('Este enlace ya no está disponible. Pide uno nuevo a Soluciones Impresiona.')).toBeVisible()

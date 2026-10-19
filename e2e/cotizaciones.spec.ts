@@ -79,7 +79,10 @@ test('una cotización aprobada por el cliente en el portal ya no se edita y se d
   const db = await clienteComo('ventas')
   const enlace = await db.rpc('crear_enlace_portal', { p_tipo: 'cotizacion', p_id: cot.id })
   expect(enlace.error).toBeNull()
-  const aprobacion = await db.rpc('portal_aprobar_cotizacion', { p_token: (enlace.data as { token: string }).token, p_nombre: 'Cliente de Prueba' })
+  const token = (enlace.data as { token: string }).token
+  const vista = await db.rpc('portal_obtener', { p_token: token })
+  expect(vista.error).toBeNull()
+  const aprobacion = await db.rpc('portal_aprobar_cotizacion', { p_token: token, p_nombre: 'Cliente de Prueba', p_version: (vista.data as { cotizacion: { version: string } }).cotizacion.version })
   expect(aprobacion.error).toBeNull()
 
   await entrar(page, 'ventas')

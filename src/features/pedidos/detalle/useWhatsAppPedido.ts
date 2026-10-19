@@ -59,7 +59,11 @@ export function useWhatsAppPedido(p: PedidoDetalle | undefined) {
       const telefono = p.cliente_datos.whatsapp ?? p.cliente_datos.telefono
       window.open(enlaceWhatsApp(telefono, texto), '_blank', 'noopener,noreferrer')
       if (!telefonoWhatsApp(telefono)) {
-        toast(`${p.cliente_datos.nombre} no tiene WhatsApp registrado`, { description: 'El mensaje ya está escrito: elige el contacto en WhatsApp para enviarlo.' })
+        if (p.cliente_datos.contacto_oculto)
+          toast(`El WhatsApp de ${p.cliente_datos.nombre} solo se muestra mientras tiene un pedido en proceso`, {
+            description: 'El mensaje ya está escrito: elige el contacto en WhatsApp o pide el número a Ventas.',
+          })
+        else toast(`${p.cliente_datos.nombre} no tiene WhatsApp registrado`, { description: 'El mensaje ya está escrito: elige el contacto en WhatsApp para enviarlo.' })
       }
     },
     [p, plantillas.data, config.data],

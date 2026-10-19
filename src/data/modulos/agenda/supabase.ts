@@ -1,5 +1,5 @@
 /** MÓDULO AGENDA · implementación real (Supabase). */
-import { hoyLocal, limpio, mensajeError, revisar, supabase } from '@/data/comun/real'
+import { hoyLocal, limpio, mensajeError, revisar, supabase, textoBusqueda } from '@/data/comun/real'
 import type { TablesUpdate } from '@/lib/database.types'
 import type { ApiAgenda, DatosTarea, EventoAgenda, Tarea } from './contrato'
 
@@ -96,6 +96,15 @@ export const agendaSupabase: ApiAgenda = {
       const r = await supabase().from('tareas').delete().eq('id', id).select('id')
       if (r.error) throw new Error(mensajeError(r.error))
       if (!r.data?.length) throw new Error('Solo quien creó la tarea o administración pueden eliminarla')
+    },
+
+    async buscarClientes(texto) {
+      // busqueda: sin acentos y en minúsculas (normalizar), solo con los datos que el rol ve.
+      const t = textoBusqueda(texto).replace(/\\/g, ' ').trim()
+      let q = supabase().from('clientes_operacion').select('id, nombre').eq('activo', true)
+      if (t) q = q.ilike('busqueda', `%${t}%`)
+      const filas = revisar(await q.order('nombre').limit(20))
+      return filas.map((c) => ({ id: c.id as string, nombre: c.nombre as string }))
     },
   },
 

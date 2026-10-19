@@ -2,6 +2,7 @@
 import { almacen as a, copia, nuevoId } from '@/data/demo/almacen'
 import { ahoraISO, clienteOperacion, fechaLocal, nombreCliente, nombrePerfil, registrarBitacora } from '@/data/demo/reglas'
 import { esAdmin, espera, puede, puedeVerClientes, usuario } from '@/data/demo/sesion'
+import { normalizar } from '@/lib/utils'
 import type { ApiAgenda, DatosTarea, EventoAgenda, Tarea } from './contrato'
 
 type TareaFila = (typeof a.tareas)[number]
@@ -33,6 +34,7 @@ function completarCliente(t: TareaFila) {
 }
 
 function aplicar(t: TareaFila, d: Partial<DatosTarea>) {
+  const clienteAntes = t.cliente_id
   if (d.titulo !== undefined) {
     const titulo = d.titulo.trim()
     if (!titulo || titulo.length > 200) throw new Error('Escribe la tarea (hasta 200 caracteres)')
@@ -46,6 +48,9 @@ function aplicar(t: TareaFila, d: Partial<DatosTarea>) {
   if (d.prioridad !== undefined) t.prioridad = d.prioridad
   for (const k of ['cliente_id', 'pedido_id', 'oportunidad_id', 'cotizacion_id'] as const) if (d[k] !== undefined) t[k] = d[k] ?? null
   completarCliente(t)
+  // Igual que tg_tareas_antes(): sin permiso de clientes, solo clientes con pedidos
+  if (t.cliente_id && t.cliente_id !== clienteAntes && !clienteOperacion(a, t.cliente_id, puedeVerClientes()))
+    throw new Error('Solo puedes ligar la tarea a clientes con pedidos. Pide a Ventas que la ligue si hace falta.')
   t.updated_at = ahoraISO()
 }
 
@@ -142,6 +147,29 @@ export const agendaDemo: ApiAgenda = {
       if (t.created_by !== s.id && !esAdmin()) throw new Error('Solo quien creó la tarea o administración pueden eliminarla')
       a.tareas.splice(a.tareas.indexOf(t), 1)
       registrarBitacora(a, { tabla: 'tareas', registro_id: id, accion: 'eliminar', etiqueta: t.titulo, usuario_id: s.id })
+    },
+
+    async buscarClientes(texto) {
+      usuario()
+      await espera(120)
+      const q = normalizar(texto)
+      const completo = puedeVerClientes()
+      // Igual que clientes_operacion.busqueda: con permiso de clientes, la de clientes (nombre,
+      // teléfonos, correo, RFC, razón social); sin él, nombre y los teléfonos que el rol ve.
+      const busqueda = (c: (typeof a.clientes)[number], op: NonNullable<ReturnType<typeof clienteOperacion>>) =>
+        normalizar(
+          (completo ? [c.nombre, c.telefono, c.whatsapp, c.email, c.rfc, c.razon_social] : [op.nombre, op.telefono, op.whatsapp])
+            .map((x) => x ?? '')
+            .join(' '),
+        )
+      return a.clientes
+        .map((c) => ({ c, op: clienteOperacion(a, c.id, completo) }))
+        .filter((x): x is { c: (typeof a.clientes)[number]; op: NonNullable<ReturnType<typeof clienteOperacion>> } => Boolean(x.op?.activo))
+        .filter(({ c, op }) => !q || busqueda(c, op).includes(q))
+        .map(({ op }) => op)
+        .sort((x, y) => x.nombre.localeCompare(y.nombre, 'es'))
+        .slice(0, 20)
+        .map((c) => ({ id: c.id, nombre: c.nombre }))
     },
   },
 

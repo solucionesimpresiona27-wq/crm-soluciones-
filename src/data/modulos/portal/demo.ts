@@ -7,7 +7,7 @@ import { almacen as a, copia, nuevoId, type EnlacePortalFila } from '@/data/demo
 import { ahoraISO, fechaLocal, nombrePerfil, redondear2, registrarBitacora, responderArchivo, vistaPreviaArchivo } from '@/data/demo/reglas'
 import { espera, exigir, usuario } from '@/data/demo/sesion'
 import { FLUJO_PEDIDO } from '@/lib/estados'
-import { ENLACE_NO_VALIDO, type ApiPortal, type EnlacePortal, type PartidaPortal, type VistaPortal } from './contrato'
+import { COTIZACION_ACTUALIZADA, ENLACE_NO_VALIDO, type ApiPortal, type EnlacePortal, type PartidaPortal, type VistaPortal } from './contrato'
 
 const urlPublica = (token: string) =>
   typeof window === 'undefined' ? `/#/portal/${token}` : `${window.location.origin}${window.location.pathname}#/portal/${encodeURIComponent(token)}`
@@ -38,6 +38,44 @@ function aEnlace(e: EnlacePortalFila): EnlacePortal {
 }
 
 /** Igual que portal_enlace_vigente(): cualquier problema da el mismo error. */
+type CotizacionDemo = (typeof a.cotizaciones)[number]
+
+function partidasPortal(q: CotizacionDemo): PartidaPortal[] {
+  return q.partidas.map((p) => ({
+    orden: p.orden,
+    tipo: p.tipo,
+    concepto: p.concepto,
+    descripcion: p.descripcion,
+    metodo_calculo: p.metodo_calculo,
+    unidad: p.unidad,
+    ancho: p.ancho,
+    alto: p.alto,
+    largo: p.largo,
+    cantidad: p.cantidad,
+    precio_unitario: p.precio_unitario,
+    descuento_pct: p.descuento_pct,
+    importe: p.importe,
+  }))
+}
+
+/**
+ * Huella de lo que ve el cliente, como portal_version_cotizacion() en la base: cambia si cambian
+ * los conceptos, precios, totales, condiciones o notas (no el estado ni el vencimiento).
+ */
+function versionCotizacion(q: CotizacionDemo): string {
+  const texto = JSON.stringify([
+    q.titulo, q.cliente.id, q.tiempo_entrega, q.anticipo_pct, q.aplica_iva, q.iva_pct, q.subtotal, q.descuento,
+    q.recargo_pct, q.recargo_concepto, q.recargo, q.iva, q.total, q.condiciones, q.notas, partidasPortal(q),
+  ])
+  // FNV-1a de 32 bits: basta para detectar cambios en memoria
+  let h = 0x811c9dc5
+  for (let i = 0; i < texto.length; i++) {
+    h ^= texto.charCodeAt(i)
+    h = Math.imul(h, 0x01000193)
+  }
+  return (h >>> 0).toString(16).padStart(8, '0')
+}
+
 function vigente(token: string) {
   const e = a.portal_enlaces.find((x) => x.token === token)
   if (!e || e.revocado || new Date(e.expira_at).getTime() <= Date.now()) throw new Error(ENLACE_NO_VALIDO)
@@ -210,23 +248,8 @@ export const portalDemo: ApiPortal = {
           aceptada_at: q.aceptada_at,
           puede_aprobar: ['borrador', 'enviada'].includes(q.estado) && !q.pedido_id && q.fecha_vencimiento >= hoy,
           aprobacion: aprobacion ? { nombre: aprobacion.nombre, fecha: aprobacion.created_at } : null,
-          partidas: q.partidas.map(
-            (p): PartidaPortal => ({
-              orden: p.orden,
-              tipo: p.tipo,
-              concepto: p.concepto,
-              descripcion: p.descripcion,
-              metodo_calculo: p.metodo_calculo,
-              unidad: p.unidad,
-              ancho: p.ancho,
-              alto: p.alto,
-              largo: p.largo,
-              cantidad: p.cantidad,
-              precio_unitario: p.precio_unitario,
-              descuento_pct: p.descuento_pct,
-              importe: p.importe,
-            }),
-          ),
+          partidas: partidasPortal(q),
+          version: versionCotizacion(q),
         }
       }
 
@@ -297,7 +320,7 @@ export const portalDemo: ApiPortal = {
       return copia(r)
     },
 
-    async aprobarCotizacion(token, nombre, comentario) {
+    async aprobarCotizacion(token, version, nombre, comentario) {
       await espera(400)
       const e = vigente(token)
       if (e.tipo !== 'cotizacion') throw new Error('Este enlace no es de una cotización')
@@ -309,6 +332,7 @@ export const portalDemo: ApiPortal = {
         const [y, m, d] = q.fecha_vencimiento.split('-')
         throw new Error(`Esta cotización venció el ${d}/${m}/${y}. Pide a tu asesor una cotización actualizada.`)
       }
+      if (!version || version !== versionCotizacion(q)) throw new Error(COTIZACION_ACTUALIZADA)
       const ahora = ahoraISO()
       q.estado = 'aceptada'
       q.aceptada_at ??= ahora

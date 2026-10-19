@@ -3,7 +3,8 @@
  * Espacios: `api.tareas` (tareas y recordatorios, "Mis pendientes de hoy") y `api.agenda`
  * (calendario combinado).
  *
- * Permisos: todo el equipo activo ve y crea tareas. Editar o completar: responsable, autor o
+ * Permisos: todo el equipo activo ve y crea tareas. Sin permiso de clientes, una tarea solo se liga
+ * a clientes con pedidos (tg_tareas_antes). Editar o completar: responsable, autor o
  * administración. Eliminar: autor o administración. En el calendario, los seguimientos del
  * embudo requieren `gestionar_clientes` y las cotizaciones por vencer `ver_precios` (sin montos).
  */
@@ -97,6 +98,13 @@ export interface ApiAgenda {
     /** Marca o desmarca como hecha (guarda quién y cuándo). */
     completar(id: string, completada?: boolean): Promise<Tarea>
     eliminar(id: string): Promise<void>
+    /**
+     * Clientes activos para ligar a una tarea (máximo 20), sin importar acentos ni mayúsculas. Sale
+     * de `clientes_operacion.busqueda`: con permiso de clientes busca como `clientes.buscar` (nombre,
+     * teléfonos, correo, RFC, razón social); Diseño y Producción solo encuentran clientes con
+     * pedidos (los únicos que la base les deja ligar), por nombre y por los teléfonos que ven.
+     */
+    buscarClientes(texto: string): Promise<Array<{ id: string; nombre: string }>>
   }
   agenda: {
     /** Tareas, entregas, instalaciones, seguimientos y cotizaciones por vencer (máximo 366 días). */

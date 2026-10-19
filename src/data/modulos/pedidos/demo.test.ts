@@ -43,11 +43,15 @@ describe('pedidos · vista previa', () => {
       expect(d.cliente_datos.whatsapp).toBeNull()
       expect(d.cliente_datos.telefono).toBeNull()
       expect(d.cliente_whatsapp).toBeNull()
+      // El contacto existe pero se oculta por permiso (la interfaz no debe decir "no tiene WhatsApp")
+      expect(d.cliente_datos.contacto_oculto).toBe(true)
+      expect(activo.cliente_datos.contacto_oculto).toBe(false)
       // Con permiso de clientes (Ventas) sí
       cambiarA('ventas')
       const v = await api.pedidos.obtener(cerrado.id)
       expect(v.cliente_whatsapp).toBe(cliente.whatsapp ?? cliente.telefono)
       expect(v.cliente_datos.email).toBe(cliente.email)
+      expect(v.cliente_datos.contacto_oculto).toBe(false)
       salir()
     }
   })

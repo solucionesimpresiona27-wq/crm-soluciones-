@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
+import { almacen } from '@/data/demo/almacen'
 import { cambiarA, entrarComo, salir } from '@/data/demo/paraPruebas'
 import { agendaDemo as api } from './demo'
 
@@ -22,6 +23,47 @@ describe('agenda · vista previa', () => {
     expect(hecha.completada_por).toBe('demo-diseno')
     cambiarA('produccion')
     await expect(api.tareas.eliminar(t.id)).rejects.toThrow('Solo quien creó')
+  })
+
+  it('diseño y producción ligan tareas solo a clientes con pedidos (los que encuentran en el buscador)', async () => {
+    const conPedidos = (id: string) => almacen.pedidos.some((p) => p.cliente_id === id)
+    const sinPedidos = almacen.clientes.find((c) => c.activo && !conPedidos(c.id))!
+    const conPedido = almacen.clientes.find((c) => c.activo && conPedidos(c.id))!
+    for (const rol of ['diseno', 'produccion'] as const) {
+      entrarComo(rol)
+      expect((await api.tareas.buscarClientes(conPedido.nombre.slice(0, 6))).map((c) => c.id), rol).toContain(conPedido.id)
+      expect((await api.tareas.buscarClientes(sinPedidos.nombre)).map((c) => c.id), rol).not.toContain(sinPedidos.id)
+      const t = await api.tareas.crear({ titulo: 'Llevar muestras', cliente_id: conPedido.id })
+      expect(t.cliente).toBe(conPedido.nombre)
+      await expect(api.tareas.crear({ titulo: 'Preguntar por un cliente', cliente_id: sinPedidos.id })).rejects.toThrow('clientes con pedidos')
+      await expect(api.tareas.actualizar(t.id, { cliente_id: sinPedidos.id })).rejects.toThrow('clientes con pedidos')
+      salir()
+    }
+    // Ventas encuentra y liga a cualquier cliente; quien no lo ve puede completar la tarea sin perder la liga
+    entrarComo('ventas')
+    expect((await api.tareas.buscarClientes(sinPedidos.nombre)).map((c) => c.id)).toContain(sinPedidos.id)
+    const ajena = await api.tareas.crear({ titulo: 'Llamar al prospecto', cliente_id: sinPedidos.id, responsable_id: 'demo-produccion' })
+    cambiarA('produccion')
+    const hecha = await api.tareas.completar(ajena.id)
+    expect(hecha.cliente).toBeNull()
+    expect(almacen.tareas.find((x) => x.id === ajena.id)?.cliente_id).toBe(sinPedidos.id)
+    await api.tareas.actualizar(ajena.id, { titulo: 'Llamar al prospecto (hecho)' })
+    expect(almacen.tareas.find((x) => x.id === ajena.id)?.cliente_id).toBe(sinPedidos.id)
+  })
+
+  it('buscador para ligar clientes: sin acentos; correo solo con permiso de clientes (como clientes_operacion.busqueda)', async () => {
+    const conPedidos = (id: string) => almacen.pedidos.some((p) => p.cliente_id === id)
+    const acentuado = almacen.clientes.find((c) => c.activo && conPedidos(c.id) && c.nombre !== c.nombre.normalize('NFD').replace(/[\u0300-\u036f]/g, ''))!
+    const sinAcentos = acentuado.nombre.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    const conCorreo = almacen.clientes.find((c) => c.activo && c.email && conPedidos(c.id))!
+    for (const rol of ['admin', 'ventas', 'diseno', 'produccion'] as const) {
+      entrarComo(rol)
+      expect((await api.tareas.buscarClientes(sinAcentos)).map((c) => c.id), rol).toContain(acentuado.id)
+      const porCorreo = (await api.tareas.buscarClientes(conCorreo.email!)).map((c) => c.id)
+      if (rol === 'admin' || rol === 'ventas') expect(porCorreo, rol).toContain(conCorreo.id)
+      else expect(porCorreo, rol).not.toContain(conCorreo.id)
+      salir()
+    }
   })
 
   it('calendario combinado según permisos', async () => {

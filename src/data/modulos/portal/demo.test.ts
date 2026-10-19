@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { almacen } from '@/data/demo/almacen'
 import { cambiarA, entrarComo, salir } from '@/data/demo/paraPruebas'
-import { ENLACE_NO_VALIDO } from './contrato'
+import { COTIZACION_ACTUALIZADA, ENLACE_NO_VALIDO } from './contrato'
 import { portalDemo as api } from './demo'
 
 afterEach(salir)
@@ -14,11 +14,29 @@ describe('portal · vista previa', () => {
     expect(v.cotizacion?.puede_aprobar).toBe(true)
     expect(v.empresa.rfc).toBeUndefined()
     expect(v.pedido).toBeUndefined()
-    await expect(api.portal.aprobarCotizacion('vista-previa-COT-0001-enlace-ficticio-7Hq2', 'A')).rejects.toThrow('2 a 120')
-    const r = await api.portal.aprobarCotizacion('vista-previa-COT-0001-enlace-ficticio-7Hq2', 'Mariana Pérez', 'Adelante')
+    await expect(api.portal.aprobarCotizacion('vista-previa-COT-0001-enlace-ficticio-7Hq2', v.cotizacion!.version, 'A')).rejects.toThrow('2 a 120')
+    const r = await api.portal.aprobarCotizacion('vista-previa-COT-0001-enlace-ficticio-7Hq2', v.cotizacion!.version, 'Mariana Pérez', 'Adelante')
     expect(r).toEqual({ ok: true, folio: 'COT-0001', estado: 'aceptada' })
-    await expect(api.portal.aprobarCotizacion('vista-previa-COT-0001-enlace-ficticio-7Hq2', 'Mariana Pérez')).rejects.toThrow('ya fue aprobada')
+    await expect(api.portal.aprobarCotizacion('vista-previa-COT-0001-enlace-ficticio-7Hq2', v.cotizacion!.version, 'Mariana Pérez')).rejects.toThrow('ya fue aprobada')
     expect(almacen.oportunidades.find((o) => o.id === 'o12')?.etapa).toBe('ganado')
+  })
+
+  it('el cliente aprueba la versión que vio: si el asesor la cambió, se rechaza y debe revisarla', async () => {
+    entrarComo(null)
+    const token = 'vista-previa-COT-0001-enlace-ficticio-7Hq2'
+    const vista = await api.portal.obtener(token)
+    // El asesor cambia un precio mientras el cliente la revisa
+    const q = almacen.cotizaciones.find((x) => x.folio === 'COT-0001')!
+    q.partidas[0].precio_unitario += 100
+    q.total += 116
+    await expect(api.portal.aprobarCotizacion(token, vista.cotizacion!.version, 'Mariana Pérez')).rejects.toThrow(COTIZACION_ACTUALIZADA)
+    await expect(api.portal.aprobarCotizacion(token, '', 'Mariana Pérez')).rejects.toThrow(COTIZACION_ACTUALIZADA)
+    expect(q.estado).not.toBe('aceptada')
+    const actual = await api.portal.obtener(token)
+    expect(actual.cotizacion!.version).not.toBe(vista.cotizacion!.version)
+    expect(actual.cotizacion!.total).toBe(q.total)
+    await api.portal.aprobarCotizacion(token, actual.cotizacion!.version, 'Mariana Pérez')
+    expect(q.estado).toBe('aceptada')
   })
 
   it('el cliente aprueba un diseño o pide cambios con comentario', async () => {

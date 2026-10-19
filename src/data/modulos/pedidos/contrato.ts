@@ -100,7 +100,19 @@ export interface PedidoDetalle extends PedidoLista {
   direccion_instalacion: string | null
   contacto_id: string | null
   cotizacion_folio: string | null
-  cliente_datos: { id: string; nombre: string; whatsapp: string | null; telefono: string | null; email: string | null; requiere_factura: boolean }
+  cliente_datos: {
+    id: string
+    nombre: string
+    whatsapp: string | null
+    telefono: string | null
+    email: string | null
+    requiere_factura: boolean
+    /**
+     * true: WhatsApp y teléfono vienen vacíos por permiso, no porque falten (sin permiso de clientes,
+     * el contacto solo llega mientras el cliente tiene un pedido en proceso).
+     */
+    contacto_oculto: boolean
+  }
   vendedor: string | null
   responsable: string | null
   disenador: string | null

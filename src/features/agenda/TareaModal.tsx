@@ -66,7 +66,8 @@ function Formulario({ inicial, onListo, hoy }: { inicial: BorradorTarea; onListo
       hora: b.hora || null,
       responsable_id: b.responsable_id,
       prioridad: b.prioridad,
-      cliente_id: b.cliente?.id ?? null,
+      // Al editar, solo se manda lo que cambió: un cliente que este rol no ve llega vacío y no se borra
+      ...(!b.id || b.cliente?.id !== inicial.cliente?.id ? { cliente_id: b.cliente?.id ?? null } : {}),
       ...(verPedidos ? { pedido_id: b.pedido?.id ?? null } : {}),
     }
     if (b.id) await actualizar.mutateAsync({ id: b.id, cambios: datos })
