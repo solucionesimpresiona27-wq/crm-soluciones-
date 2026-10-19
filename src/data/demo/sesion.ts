@@ -5,7 +5,7 @@
  * Igual que en la base de datos, cada acción exige su permiso: si el rol elegido no lo
  * tiene, se lanza el mismo mensaje que daría la app real.
  */
-import { permisosDeRol } from '@/lib/permisos'
+import { aplicarDependencias, permisosDeRol } from '@/lib/permisos'
 import type { Permiso, Rol, SesionUsuario } from '../tipos'
 import { almacen } from './almacen'
 
@@ -31,7 +31,8 @@ export function sesionDemo(): SesionUsuario | null {
     id: perfil.id,
     email: perfil.email,
     perfil: structuredClone(perfil),
-    permisos: permisosDeRol(rolActual, (perfil.permisos ?? {}) as Partial<Record<Permiso, boolean>>),
+    // Igual que tiene_permiso(): "ver_reportes" y "editar_catalogo" se apagan sin "ver_precios"
+    permisos: aplicarDependencias(permisosDeRol(rolActual, (perfil.permisos ?? {}) as Partial<Record<Permiso, boolean>>)),
   }
 }
 
@@ -44,6 +45,13 @@ export function usuario(): SesionUsuario {
 
 export const puede = (p: Permiso) => Boolean(sesionDemo()?.permisos[p])
 export const esAdmin = () => sesionDemo()?.perfil.rol === 'admin'
+
+/**
+ * Igual que puede_ver_clientes() en la base: los datos completos de clientes y contactos son
+ * de quien vende, cotiza, entrega pedidos o cobra. Diseño y Producción solo ven lo de sus pedidos.
+ */
+export const puedeVerClientes = () =>
+  (['gestionar_clientes', 'ver_precios', 'gestionar_cotizaciones', 'gestionar_pedidos', 'registrar_pagos'] as const).some((p) => puede(p))
 
 /** Exige TODOS los permisos indicados. */
 export function exigir(...permisos: Permiso[]) {

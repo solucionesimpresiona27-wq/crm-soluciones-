@@ -55,8 +55,9 @@ test('admin cambia nombre comercial y vigencia: se usan en la cotización nueva 
 test('admin concede ver_costos a ventas, ventas lo ve tras recargar y luego vuelve a los del rol', async ({ page, browser }) => {
   const sinErrores = vigilarErrores(page)
   const admin = await clienteComo('admin')
-  const ventasId = (await admin.from('perfiles').select('id').eq('email', USUARIOS.ventas.email).single()).data!.id as string
-  const original = (await admin.from('perfiles').select('permisos').eq('id', ventasId).single()).data!.permisos
+  // Correo y permisos ya no se leen de la tabla perfiles: administración los ve en perfiles_detalle
+  const ventasId = (await admin.from('perfiles_detalle').select('id').eq('email', USUARIOS.ventas.email).single()).data!.id as string
+  const original = (await admin.from('perfiles_detalle').select('permisos').eq('id', ventasId).single()).data!.permisos
   await admin.from('perfiles').update({ permisos: {} }).eq('id', ventasId)
 
   const ctxVentas = await browser.newContext()

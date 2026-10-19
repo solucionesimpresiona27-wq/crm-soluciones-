@@ -2,8 +2,9 @@
  * MÓDULO CATÁLOGO · contrato de datos.
  * Espacio: `api.catalogo` (productos, categorías, costos, precios por lista y escalas).
  *
- * Permisos: ver productos y categorías, todo el equipo; precios por lista, `ver_precios`;
- * costos, `ver_costos`. Editar: `editar_catalogo` (los costos además `ver_costos`).
+ * Permisos: ver categorías, todo el equipo; productos (con su precio público y escalas) y
+ * precios por lista, `ver_precios` (sin él la lista llega vacía); costos, `ver_costos`.
+ * Editar: `editar_catalogo`, que solo vale con `ver_precios` (los costos además `ver_costos`).
  * El precio "público" es `precio_venta` del producto; mayoreo y agencia viven aparte y, si un
  * producto no tiene precio en la lista del cliente, se usa el público.
  * Regla del cliente: NO se inventan precios; el catálogo real llega sin precios y los captura el negocio.

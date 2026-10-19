@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils'
 import { useCompartirCotizacion } from './compartir/useCompartirCotizacion'
 import { useCambiarEstadoCotizacion, useCotizacion, useDuplicarCotizacion } from './consultas'
 import { BarraAcciones, type ManejadoresDetalle } from './detalle/BarraAcciones'
+import { ID_AVISO_BLOQUEO, motivoBloqueo } from './bloqueo'
 import { anticipoDe } from './detalle/calculos'
 import { DialogoConvertir, DialogoEliminar, DialogoRechazar } from './detalle/Dialogos'
 import { EsqueletoDetalle } from './detalle/EsqueletoDetalle'
@@ -205,7 +206,7 @@ function Detalle({ id }: { id: string }) {
   )
 }
 
-/** Avisos de estado que piden atención: convertida, vencida o rechazada. */
+/** Avisos de estado que piden atención: convertida, aceptada (ya no se edita), vencida o rechazada. */
 function Avisos({
   c,
   visible,
@@ -234,7 +235,28 @@ function Avisos({
               Convertida en el pedido <span className="num">{c.pedido_folio}</span>
             </>
           }
-          texto={`La producción empieza al confirmar el anticipo de ${dinero(anticipoDe(c))}.`}
+          texto={`La producción empieza al confirmar el anticipo de ${dinero(anticipoDe(c))}. Ya no se edita: los cambios se hacen en el pedido.`}
+          id={ID_AVISO_BLOQUEO}
+        />
+      ),
+    })
+  } else if (c.estado === 'aceptada') {
+    avisos.push({
+      clave: 'aceptada',
+      nodo: (
+        <Aviso
+          tono="luz"
+          icono={<Lock />}
+          titulo={c.aceptada_at ? `Aceptada el ${fechaLarga(new Date(c.aceptada_at))}` : 'Aceptada por el cliente'}
+          texto={motivoBloqueo(c) ?? ''}
+          id={ID_AVISO_BLOQUEO}
+          accion={
+            gestionar ? (
+              <GlassButton variante="cristal" tamano="sm" icono={<CopyPlus />} cargando={duplicando} onClick={onDuplicar} className="h-11 px-4">
+                Duplicar como versión nueva
+              </GlassButton>
+            ) : null
+          }
         />
       ),
     })
@@ -260,7 +282,16 @@ function Avisos({
   } else if (c.estado === 'rechazada') {
     avisos.push({
       clave: 'rechazada',
-      nodo: <Aviso tono="peligro" icono={<XCircle />} titulo="El cliente rechazó esta cotización" texto={c.motivo_rechazo ? `Motivo: ${c.motivo_rechazo}` : 'Sin motivo registrado.'} />,
+      nodo: (
+        <Aviso
+          tono="peligro"
+          icono={<XCircle />}
+          titulo="El cliente rechazó esta cotización"
+          // Si antes se aceptó, sigue sin editarse (la base lo impide): se explica aquí
+          texto={[c.motivo_rechazo ? `Motivo: ${c.motivo_rechazo}.` : 'Sin motivo registrado.', motivoBloqueo(c)].filter(Boolean).join(' ')}
+          id={motivoBloqueo(c) ? ID_AVISO_BLOQUEO : undefined}
+        />
+      ),
     })
   }
 
@@ -287,10 +318,10 @@ const tonosAviso = {
   peligro: { superficie: 'bg-danger-soft/60', pozo: 'bg-danger/15 text-danger' },
 }
 
-function Aviso({ tono, icono, titulo, texto, accion }: { tono: keyof typeof tonosAviso; icono: ReactNode; titulo: ReactNode; texto: string; accion?: ReactNode }) {
+function Aviso({ tono, icono, titulo, texto, accion, id }: { tono: keyof typeof tonosAviso; icono: ReactNode; titulo: ReactNode; texto: string; accion?: ReactNode; id?: string }) {
   const t = tonosAviso[tono]
   return (
-    <GlassSurface role="status" className={cn('flex flex-col gap-3 rounded-module p-3 pr-4 sm:flex-row sm:items-center', t.superficie)}>
+    <GlassSurface id={id} role="status" className={cn('flex flex-col gap-3 rounded-module p-3 pr-4 sm:flex-row sm:items-center', t.superficie)}>
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <span className={cn('grid size-12 shrink-0 place-items-center rounded-full [&_svg]:size-[1.35rem]', t.pozo)} aria-hidden>
           {icono}

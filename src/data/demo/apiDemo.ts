@@ -24,9 +24,22 @@ import { reportesDemo } from '../modulos/reportes/demo'
 import type { CotizacionCompleta, CotizacionLista, DashboardResumen, EntregaProxima, EstadoCotizacion } from '../tipos'
 import { almacen as a, copia, type PedidoFila } from './almacen'
 import { ahoraISO, etapasOmitidas, eventoPedido, fechaLocal, recalcularPedido, redondear2, registrarBitacora, siguienteFolio } from './reglas'
-import { alCambiarSesion, cambiarRol, espera, exigir, sesionDemo, usuario } from './sesion'
+import { alCambiarSesion, cambiarRol, espera, exigir, puedeVerClientes, sesionDemo, usuario } from './sesion'
 
 const CERRADOS = ['entregado', 'finalizado', 'cancelado']
+
+/**
+ * Igual que cotizacion_bloqueo() en la base: una cotización convertida en pedido, aprobada por el
+ * cliente en el portal o aceptada (alguna vez) ya no se modifica. Nulo = se puede editar.
+ */
+export function bloqueoCotizacion(c: CotizacionCompleta): string | null {
+  if (c.pedido_id) return `Esta cotización ya se convirtió en el pedido ${c.pedido_folio ?? ''}; los cambios se hacen en el pedido. Si necesitas otra versión, duplícala.`
+  if (a.portal_respuestas.some((r) => r.cotizacion_id === c.id && r.accion === 'aprobar_cotizacion')) {
+    return 'El cliente aprobó esta cotización desde el portal y ya no se puede modificar. Duplícala para hacer una versión nueva.'
+  }
+  if (c.estado === 'aceptada' || c.aceptada_at) return 'Esta cotización ya fue aceptada y no se puede modificar. Duplícala para hacer una versión nueva.'
+  return null
+}
 
 /** La cotización con los datos actuales del cliente (pudo editarse en Clientes). */
 function conCliente(c: CotizacionCompleta): CotizacionCompleta {
@@ -270,16 +283,22 @@ const nucleo: ApiNucleo = {
   },
 
   busqueda: {
-    /** Igual que busqueda_global(): clientes, cotizaciones (con `ver_precios`) y pedidos. */
+    /**
+     * Igual que busqueda_global(): clientes (con permiso de clientes), cotizaciones (con
+     * `ver_precios`) y pedidos. Sin permiso de clientes, los pedidos se buscan por folio, título o
+     * nombre del cliente (no por su teléfono, correo o RFC).
+     */
     async global(texto) {
       const s = usuario()
       const q = normalizar(texto)
       if (texto.trim().length < 2) return { clientes: [], cotizaciones: [], pedidos: [] }
       const folio = texto.trim().toUpperCase()
       const clientePorId = (id: string) => a.clientes.find((c) => c.id === id)
+      const verClientes = puedeVerClientes()
+      const textoCliente = (id: string) => (verClientes ? (clientePorId(id)?.busqueda ?? '') : normalizar(clientePorId(id)?.nombre ?? ''))
       return copia({
         clientes: a.clientes
-          .filter((c) => (c.busqueda ?? '').includes(q))
+          .filter((c) => verClientes && (c.busqueda ?? '').includes(q))
           .sort((x, y) => Number(y.activo) - Number(x.activo) || x.nombre.localeCompare(y.nombre, 'es'))
           .slice(0, 6)
           .map((c) => ({ id: c.id, nombre: c.nombre, telefono: c.whatsapp ?? c.telefono, email: c.email })),
@@ -292,7 +311,7 @@ const nucleo: ApiNucleo = {
               .map((c) => ({ id: c.id, folio: c.folio, titulo: c.titulo, estado: c.estado, total: c.total, cliente: c.cliente.nombre }))
           : [],
         pedidos: a.pedidos
-          .filter((p) => p.folio.toUpperCase().includes(folio) || normalizar(p.titulo).includes(q) || (clientePorId(p.cliente_id)?.busqueda ?? '').includes(q))
+          .filter((p) => p.folio.toUpperCase().includes(folio) || normalizar(p.titulo).includes(q) || textoCliente(p.cliente_id).includes(q))
           .sort((x, y) => y.created_at.localeCompare(x.created_at))
           .slice(0, 6)
           .map((p) => ({ id: p.id, folio: p.folio, titulo: p.titulo, estado: p.estado, cliente: clientePorId(p.cliente_id)?.nombre ?? '' })),
@@ -318,7 +337,8 @@ const nucleo: ApiNucleo = {
       const cliente = a.clientes.find((c) => c.id === b.cliente_id)
       if (!cliente) throw new Error('Selecciona un cliente')
       const existente = b.id ? a.cotizaciones.find((c) => c.id === b.id) : undefined
-      if (existente?.pedido_id) throw new Error(`Esta cotización ya se convirtió en el pedido ${existente.pedido_folio}`)
+      const bloqueo = existente ? bloqueoCotizacion(existente) : null
+      if (bloqueo) throw new Error(bloqueo)
       const ahora = ahoraISO()
       const base: CotizacionCompleta =
         existente ??
@@ -381,6 +401,10 @@ const nucleo: ApiNucleo = {
       await espera(200)
       const c = buscarCotizacion(id)
       const antes = c.estado
+      // Cerrada (aceptada, aprobada o pedido): no regresa a borrador ni a enviada; sí se puede
+      // dejar aceptada o, si no es pedido, rechazarla o cancelarla (tg_cotizaciones_proteger_aceptada)
+      const bloqueo = bloqueoCotizacion(c)
+      if (bloqueo && estado !== antes && !(estado === 'aceptada' || (['rechazada', 'cancelada'].includes(estado) && !c.pedido_id))) throw new Error(bloqueo)
       c.estado = estado
       c.motivo_rechazo = estado === 'rechazada' ? (motivo ?? null) : null
       if (estado === 'enviada') c.enviada_at ??= ahoraISO()

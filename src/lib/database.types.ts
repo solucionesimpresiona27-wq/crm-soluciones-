@@ -24,6 +24,12 @@ isOneToOne: false
       referencedRelation: "clientes"
       referencedColumns: ["id"]
     },{
+      foreignKeyName: "actividades_cliente_id_fkey"
+      columns: ["cliente_id"]
+isOneToOne: false
+      referencedRelation: "clientes_operacion"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "actividades_oportunidad_id_fkey"
       columns: ["oportunidad_id"]
 isOneToOne: false
@@ -34,6 +40,12 @@ isOneToOne: false
       columns: ["usuario_id"]
 isOneToOne: false
       referencedRelation: "perfiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "actividades_usuario_id_fkey"
+      columns: ["usuario_id"]
+isOneToOne: false
+      referencedRelation: "perfiles_detalle"
       referencedColumns: ["id"]
     }
                   ]
@@ -56,10 +68,22 @@ isOneToOne: false
       referencedRelation: "perfiles"
       referencedColumns: ["id"]
     },{
+      foreignKeyName: "archivos_aprobacion_registrada_por_fkey"
+      columns: ["aprobacion_registrada_por"]
+isOneToOne: false
+      referencedRelation: "perfiles_detalle"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "archivos_cliente_id_fkey"
       columns: ["cliente_id"]
 isOneToOne: false
       referencedRelation: "clientes"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "archivos_cliente_id_fkey"
+      columns: ["cliente_id"]
+isOneToOne: false
+      referencedRelation: "clientes_operacion"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "archivos_pedido_id_fkey"
@@ -78,6 +102,12 @@ isOneToOne: false
       columns: ["subido_por"]
 isOneToOne: false
       referencedRelation: "perfiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "archivos_subido_por_fkey"
+      columns: ["subido_por"]
+isOneToOne: false
+      referencedRelation: "perfiles_detalle"
       referencedColumns: ["id"]
     }
                   ]
@@ -98,6 +128,12 @@ isOneToOne: false
       columns: ["usuario_id"]
 isOneToOne: false
       referencedRelation: "perfiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "bitacora_usuario_id_fkey"
+      columns: ["usuario_id"]
+isOneToOne: false
+      referencedRelation: "perfiles_detalle"
       referencedColumns: ["id"]
     }
                   ]
@@ -134,10 +170,22 @@ isOneToOne: false
       referencedRelation: "perfiles"
       referencedColumns: ["id"]
     },{
+      foreignKeyName: "clientes_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "perfiles_detalle"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "clientes_vendedor_id_fkey"
       columns: ["vendedor_id"]
 isOneToOne: false
       referencedRelation: "perfiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "clientes_vendedor_id_fkey"
+      columns: ["vendedor_id"]
+isOneToOne: false
+      referencedRelation: "perfiles_detalle"
       referencedColumns: ["id"]
     }
                   ]
@@ -173,6 +221,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "clientes"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "contactos_cliente_id_fkey"
+      columns: ["cliente_id"]
+isOneToOne: false
+      referencedRelation: "clientes_operacion"
+      referencedColumns: ["id"]
     }
                   ]
                 },"cortes_caja": {
@@ -192,6 +246,12 @@ isOneToOne: false
       columns: ["cerrado_por"]
 isOneToOne: false
       referencedRelation: "perfiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "cortes_caja_cerrado_por_fkey"
+      columns: ["cerrado_por"]
+isOneToOne: false
+      referencedRelation: "perfiles_detalle"
       referencedColumns: ["id"]
     }
                   ]
@@ -214,6 +274,12 @@ isOneToOne: false
       referencedRelation: "clientes"
       referencedColumns: ["id"]
     },{
+      foreignKeyName: "cotizaciones_cliente_id_fkey"
+      columns: ["cliente_id"]
+isOneToOne: false
+      referencedRelation: "clientes_operacion"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "cotizaciones_contacto_id_fkey"
       columns: ["contacto_id"]
 isOneToOne: false
@@ -224,6 +290,12 @@ isOneToOne: false
       columns: ["created_by"]
 isOneToOne: false
       referencedRelation: "perfiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "cotizaciones_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "perfiles_detalle"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "cotizaciones_oportunidad_id_fkey"
@@ -248,6 +320,12 @@ isOneToOne: false
       columns: ["vendedor_id"]
 isOneToOne: false
       referencedRelation: "perfiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "cotizaciones_vendedor_id_fkey"
+      columns: ["vendedor_id"]
+isOneToOne: false
+      referencedRelation: "perfiles_detalle"
       referencedColumns: ["id"]
     }
                   ]
@@ -284,6 +362,12 @@ isOneToOne: false
       referencedRelation: "perfiles"
       referencedColumns: ["id"]
     },{
+      foreignKeyName: "gastos_cancelado_por_fkey"
+      columns: ["cancelado_por"]
+isOneToOne: false
+      referencedRelation: "perfiles_detalle"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "gastos_pedido_id_fkey"
       columns: ["pedido_id"]
 isOneToOne: false
@@ -306,6 +390,12 @@ isOneToOne: false
       columns: ["usuario_id"]
 isOneToOne: false
       referencedRelation: "perfiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "gastos_usuario_id_fkey"
+      columns: ["usuario_id"]
+isOneToOne: false
+      referencedRelation: "perfiles_detalle"
       referencedColumns: ["id"]
     }
                   ]
@@ -346,6 +436,12 @@ isOneToOne: true
       columns: ["created_by"]
 isOneToOne: false
       referencedRelation: "perfiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "materiales_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "perfiles_detalle"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "materiales_proveedor_id_fkey"
@@ -397,6 +493,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "perfiles"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "movimientos_inventario_usuario_id_fkey"
+      columns: ["usuario_id"]
+isOneToOne: false
+      referencedRelation: "perfiles_detalle"
+      referencedColumns: ["id"]
     }
                   ]
                 },"oportunidades": {
@@ -418,8 +520,26 @@ isOneToOne: false
       referencedRelation: "clientes"
       referencedColumns: ["id"]
     },{
+      foreignKeyName: "oportunidades_cliente_id_fkey"
+      columns: ["cliente_id"]
+isOneToOne: false
+      referencedRelation: "clientes_operacion"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "oportunidades_created_by_fkey"
       columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "perfiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "oportunidades_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "perfiles_detalle"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "oportunidades_responsable_id_fkey"
+      columns: ["responsable_id"]
 isOneToOne: false
       referencedRelation: "perfiles"
       referencedColumns: ["id"]
@@ -427,7 +547,7 @@ isOneToOne: false
       foreignKeyName: "oportunidades_responsable_id_fkey"
       columns: ["responsable_id"]
 isOneToOne: false
-      referencedRelation: "perfiles"
+      referencedRelation: "perfiles_detalle"
       referencedColumns: ["id"]
     }
                   ]
@@ -450,10 +570,22 @@ isOneToOne: false
       referencedRelation: "perfiles"
       referencedColumns: ["id"]
     },{
+      foreignKeyName: "pagos_cancelado_por_fkey"
+      columns: ["cancelado_por"]
+isOneToOne: false
+      referencedRelation: "perfiles_detalle"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "pagos_cliente_id_fkey"
       columns: ["cliente_id"]
 isOneToOne: false
       referencedRelation: "clientes"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "pagos_cliente_id_fkey"
+      columns: ["cliente_id"]
+isOneToOne: false
+      referencedRelation: "clientes_operacion"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "pagos_pedido_id_fkey"
@@ -472,6 +604,12 @@ isOneToOne: false
       columns: ["registrado_por"]
 isOneToOne: false
       referencedRelation: "perfiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "pagos_registrado_por_fkey"
+      columns: ["registrado_por"]
+isOneToOne: false
+      referencedRelation: "perfiles_detalle"
       referencedColumns: ["id"]
     }
                   ]
@@ -569,6 +707,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "perfiles"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "pedido_eventos_usuario_id_fkey"
+      columns: ["usuario_id"]
+isOneToOne: false
+      referencedRelation: "perfiles_detalle"
+      referencedColumns: ["id"]
     }
                   ]
                 },"pedidos": {
@@ -590,6 +734,12 @@ isOneToOne: false
       referencedRelation: "clientes"
       referencedColumns: ["id"]
     },{
+      foreignKeyName: "pedidos_cliente_id_fkey"
+      columns: ["cliente_id"]
+isOneToOne: false
+      referencedRelation: "clientes_operacion"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "pedidos_contacto_id_fkey"
       columns: ["contacto_id"]
 isOneToOne: false
@@ -608,10 +758,22 @@ isOneToOne: false
       referencedRelation: "perfiles"
       referencedColumns: ["id"]
     },{
+      foreignKeyName: "pedidos_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "perfiles_detalle"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "pedidos_disenador_id_fkey"
       columns: ["disenador_id"]
 isOneToOne: false
       referencedRelation: "perfiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "pedidos_disenador_id_fkey"
+      columns: ["disenador_id"]
+isOneToOne: false
+      referencedRelation: "perfiles_detalle"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "pedidos_responsable_id_fkey"
@@ -620,10 +782,22 @@ isOneToOne: false
       referencedRelation: "perfiles"
       referencedColumns: ["id"]
     },{
+      foreignKeyName: "pedidos_responsable_id_fkey"
+      columns: ["responsable_id"]
+isOneToOne: false
+      referencedRelation: "perfiles_detalle"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "pedidos_vendedor_id_fkey"
       columns: ["vendedor_id"]
 isOneToOne: false
       referencedRelation: "perfiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "pedidos_vendedor_id_fkey"
+      columns: ["vendedor_id"]
+isOneToOne: false
+      referencedRelation: "perfiles_detalle"
       referencedColumns: ["id"]
     }
                   ]
@@ -680,6 +854,12 @@ isOneToOne: false
       referencedRelation: "perfiles"
       referencedColumns: ["id"]
     },{
+      foreignKeyName: "portal_enlaces_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "perfiles_detalle"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "portal_enlaces_pedido_id_fkey"
       columns: ["pedido_id"]
 isOneToOne: false
@@ -696,6 +876,12 @@ isOneToOne: false
       columns: ["revocado_por"]
 isOneToOne: false
       referencedRelation: "perfiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "portal_enlaces_revocado_por_fkey"
+      columns: ["revocado_por"]
+isOneToOne: false
+      referencedRelation: "perfiles_detalle"
       referencedColumns: ["id"]
     }
                   ]
@@ -807,6 +993,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "perfiles"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "productos_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "perfiles_detalle"
+      referencedColumns: ["id"]
     }
                   ]
                 },"proveedores": {
@@ -826,6 +1018,12 @@ isOneToOne: false
       columns: ["created_by"]
 isOneToOne: false
       referencedRelation: "perfiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "proveedores_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "perfiles_detalle"
       referencedColumns: ["id"]
     }
                   ]
@@ -848,10 +1046,22 @@ isOneToOne: false
       referencedRelation: "clientes"
       referencedColumns: ["id"]
     },{
+      foreignKeyName: "tareas_cliente_id_fkey"
+      columns: ["cliente_id"]
+isOneToOne: false
+      referencedRelation: "clientes_operacion"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "tareas_completada_por_fkey"
       columns: ["completada_por"]
 isOneToOne: false
       referencedRelation: "perfiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "tareas_completada_por_fkey"
+      columns: ["completada_por"]
+isOneToOne: false
+      referencedRelation: "perfiles_detalle"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "tareas_cotizacion_id_fkey"
@@ -864,6 +1074,12 @@ isOneToOne: false
       columns: ["created_by"]
 isOneToOne: false
       referencedRelation: "perfiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "tareas_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "perfiles_detalle"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "tareas_oportunidad_id_fkey"
@@ -889,12 +1105,26 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "perfiles"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "tareas_responsable_id_fkey"
+      columns: ["responsable_id"]
+isOneToOne: false
+      referencedRelation: "perfiles_detalle"
+      referencedColumns: ["id"]
     }
                   ]
                 }
           }
           Views: {
-            "orden_partidas": {
+            "clientes_operacion": {
+                  Row: {
+                    "activo": boolean | null,"email": string | null,"id": string | null,"nombre": string | null,"requiere_factura": boolean | null,"telefono": string | null,"tipo": string | null,"whatsapp": string | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    
+                  ]
+                },"orden_partidas": {
                   Row: {
                     "alto": number | null,"ancho": number | null,"cantidad": number | null,"concepto": string | null,"descripcion": string | null,"descuento_pct": number | null,"id": string | null,"importe": number | null,"largo": number | null,"metodo_calculo": Database["public"]['Enums']["metodo_calculo"] | null,"notas_produccion": string | null,"orden": number | null,"pedido_id": string | null,"precio_unitario": number | null,"producto_id": string | null,"tipo": Database["public"]['Enums']["tipo_partida"] | null,"unidad": string | null
                   }
@@ -939,6 +1169,12 @@ isOneToOne: false
       referencedRelation: "clientes"
       referencedColumns: ["id"]
     },{
+      foreignKeyName: "pedidos_cliente_id_fkey"
+      columns: ["cliente_id"]
+isOneToOne: false
+      referencedRelation: "clientes_operacion"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "pedidos_contacto_id_fkey"
       columns: ["contacto_id"]
 isOneToOne: false
@@ -957,10 +1193,22 @@ isOneToOne: false
       referencedRelation: "perfiles"
       referencedColumns: ["id"]
     },{
+      foreignKeyName: "pedidos_disenador_id_fkey"
+      columns: ["disenador_id"]
+isOneToOne: false
+      referencedRelation: "perfiles_detalle"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "pedidos_responsable_id_fkey"
       columns: ["responsable_id"]
 isOneToOne: false
       referencedRelation: "perfiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "pedidos_responsable_id_fkey"
+      columns: ["responsable_id"]
+isOneToOne: false
+      referencedRelation: "perfiles_detalle"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "pedidos_vendedor_id_fkey"
@@ -968,7 +1216,27 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "perfiles"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "pedidos_vendedor_id_fkey"
+      columns: ["vendedor_id"]
+isOneToOne: false
+      referencedRelation: "perfiles_detalle"
+      referencedColumns: ["id"]
     }
+                  ]
+                },"perfiles_detalle": {
+                  Row: {
+                    "activo": boolean | null,"comision_pct": number | null,"created_at": string | null,"email": string | null,"id": string | null,"nombre": string | null,"permisos": Json | null,"puesto": string | null,"rol": Database["public"]['Enums']["rol_usuario"] | null,"telefono": string | null,"ultimo_acceso": string | null,"updated_at": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                           "activo"?: boolean | null,"comision_pct"?: number | null,"created_at"?: string | null,"email"?: string | null,"id"?: string | null,"nombre"?: string | null,"permisos"?: Json | null,"puesto"?: string | null,"rol"?: Database["public"]['Enums']["rol_usuario"] | null,"telefono"?: string | null,"ultimo_acceso"?: string | null,"updated_at"?: string | null
+                         }
+                        Update: {
+                           "activo"?: boolean | null,"comision_pct"?: number | null,"created_at"?: string | null,"email"?: string | null,"id"?: string | null,"nombre"?: string | null,"permisos"?: Json | null,"puesto"?: string | null,"rol"?: Database["public"]['Enums']["rol_usuario"] | null,"telefono"?: string | null,"ultimo_acceso"?: string | null,"updated_at"?: string | null
+                         }
+                        Relationships: [
+                    
                   ]
                 }
           }
@@ -1014,6 +1282,11 @@ isOneToOne: false
               "base_comision": number,"cliente": string,"cobrado": number,"comision": number,"comision_pct": number,"folio": string,"pagos": number,"pedido_id": string,"vendedor": string,"vendedor_id": string
             }[]
                            },
+"contacto_vendedor":
+{ Args: { "p_cotizacion": string }; Returns: {
+              "email": string,"id": string,"nombre": string,"telefono": string
+            }[]
+                           },
 "convertir_cotizacion_a_pedido":
 { Args: { "p_cotizacion": string,"p_fecha_entrega"?: string,"p_responsable"?: string,"p_titulo"?: string }; Returns: string
                            },
@@ -1025,6 +1298,9 @@ isOneToOne: false
                            },
 "corte_caja_resumen":
 { Args: { "p_efectivo_inicial"?: number,"p_fecha"?: string }; Returns: Json
+                           },
+"cotizacion_bloqueo":
+{ Args: { "p_cotizacion": string }; Returns: string
                            },
 "crear_enlace_portal":
 { Args: { "p_dias"?: number,"p_id": string,"p_nuevo"?: boolean,"p_tipo": string }; Returns: Json
@@ -1060,6 +1336,9 @@ isOneToOne: false
                            },
 "normalizar":
 { Args: { "t": string }; Returns: string
+                           },
+"pedido_en_proceso":
+{ Args: { "p_estado": Database["public"]['Enums']["estado_pedido"] }; Returns: boolean
                            },
 "permiso_por_defecto":
 { Args: { "p_permiso": string,"p_rol": Database["public"]['Enums']["rol_usuario"] }; Returns: boolean
@@ -1113,6 +1392,9 @@ isOneToOne: false
 { Args: { "p_comentario": string,"p_nombre": string }; Returns: (string)[]
                            },
 "puede_ver_caja":
+{ Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"puede_ver_clientes":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
 "reabrir_caja":

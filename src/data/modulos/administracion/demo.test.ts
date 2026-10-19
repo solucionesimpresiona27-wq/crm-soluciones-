@@ -36,6 +36,20 @@ describe('administración · vista previa', () => {
     await expect(api.usuarios.actualizar('demo-admin', { rol: 'ventas' })).rejects.toThrow('al menos un administrador')
   })
 
+  it('equipo: cualquiera ve nombre, rol y puesto; correo, teléfono y comisión solo administración', async () => {
+    for (const rol of ['ventas', 'diseno', 'produccion'] as const) {
+      entrarComo(rol)
+      const equipo = await api.usuarios.equipo()
+      expect(equipo.length).toBeGreaterThan(1)
+      for (const u of equipo) expect(Object.keys(u).sort()).toEqual(['id', 'nombre', 'puesto', 'rol'])
+      await expect(api.usuarios.listar()).rejects.toThrow('Solo un administrador')
+      salir()
+    }
+    entrarComo('admin')
+    const todos = await api.usuarios.listar()
+    expect(todos.some((u) => u.email && 'comision_pct' in u)).toBe(true)
+  })
+
   it('bitácora solo para administración', async () => {
     entrarComo('admin')
     const b = await api.bitacora.listar({ limite: 5 })

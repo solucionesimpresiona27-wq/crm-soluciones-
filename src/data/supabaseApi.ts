@@ -3,7 +3,7 @@
  * cotizaciones) más los módulos de `src/data/modulos/<modulo>/supabase.ts`.
  * La elige el alias `@/data/implementacion` cuando VITE_DEMO no es "true" (ver vite.config.ts).
  */
-import type { Json } from '@/lib/database.types'
+import type { Json, Tables } from '@/lib/database.types'
 import type { Api, ApiNucleo } from './api'
 import { componer } from './comun/componer'
 import { mensajeError, n, nn, revisar, supabase } from './comun/real'
@@ -63,7 +63,8 @@ const nucleo: ApiNucleo = {
       const user = data.session?.user
       if (!user) return null
       const [perfil, permisos] = await Promise.all([
-        sb.from('perfiles').select('*').eq('id', user.id).maybeSingle(),
+        // El perfil completo (correo, teléfono, comisión…) solo se lee por la vista perfiles_detalle
+        sb.from('perfiles_detalle').select('*').eq('id', user.id).maybeSingle(),
         sb.rpc('mis_permisos'),
       ])
       if (perfil.error) throw new Error(mensajeError(perfil.error))
@@ -72,7 +73,7 @@ const nucleo: ApiNucleo = {
       return {
         id: user.id,
         email: user.email ?? '',
-        perfil: perfil.data,
+        perfil: perfil.data as Tables<'perfiles'>,
         permisos: Object.fromEntries(PERMISOS.map((k) => [k, Boolean(p[k])])) as Permisos,
       }
     },
@@ -134,12 +135,18 @@ const nucleo: ApiNucleo = {
         await sb
           .from('cotizaciones')
           .select(
-            '*, cliente:clientes(id, nombre, whatsapp, telefono, email, rfc, razon_social, direccion, ciudad, requiere_factura), vendedor:perfiles!vendedor_id(id, nombre, email, telefono), pedido:pedidos!cotizaciones_pedido_fk(folio), partidas(*, partida_costos(*))',
+            '*, cliente:clientes(id, nombre, whatsapp, telefono, email, rfc, razon_social, direccion, ciudad, requiere_factura), vendedor:perfiles!vendedor_id(id, nombre), pedido:pedidos!cotizaciones_pedido_fk(folio), partidas(*, partida_costos(*))',
           )
           .eq('id', id)
           .order('orden', { referencedTable: 'partidas' })
           .single(),
       ) as unknown as Record<string, unknown>
+      // Correo y teléfono del vendedor (van en el PDF): solo por contacto_vendedor(), no de su perfil
+      if (c.vendedor) {
+        const contacto = await sb.rpc('contacto_vendedor', { p_cotizacion: id }).maybeSingle()
+        if (contacto.error) throw new Error(mensajeError(contacto.error))
+        c.vendedor = { ...(c.vendedor as Record<string, unknown>), email: contacto.data?.email ?? '', telefono: contacto.data?.telefono ?? null }
+      }
       const numericos = ['vigencia_dias', 'anticipo_pct', 'iva_pct', 'descuento_valor', 'recargo_pct', 'subtotal', 'descuento', 'recargo', 'iva', 'total']
       const r = { ...c } as Record<string, unknown>
       for (const k of numericos) r[k] = n(c[k])

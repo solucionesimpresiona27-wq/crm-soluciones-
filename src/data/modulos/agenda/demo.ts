@@ -1,7 +1,7 @@
 /** MÓDULO AGENDA · implementación de la vista previa (almacén en memoria, datos ficticios). */
 import { almacen as a, copia, nuevoId } from '@/data/demo/almacen'
-import { ahoraISO, fechaLocal, nombreCliente, nombrePerfil, registrarBitacora } from '@/data/demo/reglas'
-import { esAdmin, espera, puede, usuario } from '@/data/demo/sesion'
+import { ahoraISO, clienteOperacion, fechaLocal, nombreCliente, nombrePerfil, registrarBitacora } from '@/data/demo/reglas'
+import { esAdmin, espera, puede, puedeVerClientes, usuario } from '@/data/demo/sesion'
 import type { ApiAgenda, DatosTarea, EventoAgenda, Tarea } from './contrato'
 
 type TareaFila = (typeof a.tareas)[number]
@@ -11,7 +11,8 @@ function aTarea(t: TareaFila): Tarea {
   return copia({
     ...t,
     responsable: nombrePerfil(a, t.responsable_id),
-    cliente: nombreCliente(a, t.cliente_id),
+    // Como la vista clientes_operacion: sin permiso de clientes, solo clientes con pedidos
+    cliente: clienteOperacion(a, t.cliente_id, puedeVerClientes())?.nombre ?? null,
     folio_pedido: puede('ver_precios') ? (a.pedidos.find((p) => p.id === t.pedido_id)?.folio ?? null) : null,
     vencida: !t.completada && t.fecha < fechaLocal(),
   })
@@ -166,8 +167,9 @@ export const agendaDemo: ApiAgenda = {
             prioridad: t.prioridad,
             completada: t.completada,
             responsable_id: t.responsable_id,
-            cliente_id: t.cliente_id,
-            cliente: cliente(t.cliente_id),
+            // Igual que agenda(): sin permiso de clientes, solo los que son clientes de algún pedido
+            cliente_id: clienteOperacion(a, t.cliente_id, puedeVerClientes()) ? t.cliente_id : null,
+            cliente: clienteOperacion(a, t.cliente_id, puedeVerClientes())?.nombre ?? null,
             pedido_id: t.pedido_id,
             cotizacion_id: t.cotizacion_id,
             oportunidad_id: t.oportunidad_id,

@@ -24,6 +24,34 @@ describe('pedidos · vista previa', () => {
     expect(sinPrecios.partidas[0].costos).toBeNull()
   })
 
+  it('diseño y producción: contacto del cliente solo mientras el pedido sigue en proceso, nunca su correo', async () => {
+    const enProceso = (estado: string) => !['entregado', 'finalizado', 'cancelado'].includes(estado)
+    for (const rol of ['diseno', 'produccion'] as const) {
+      entrarComo(rol)
+      const c5 = almacen.clientes.find((c) => c.id === 'c5')!
+      const activo = await api.pedidos.obtener('demo-ped-5')
+      expect(activo.cliente_datos.nombre).toBe(c5.nombre)
+      expect(activo.cliente_datos.whatsapp).toBe(c5.whatsapp)
+      expect(activo.cliente_datos.email).toBeNull()
+      expect(activo.cliente_datos.requiere_factura).toBe(false)
+      // Un pedido cerrado de un cliente sin trabajos en proceso: nombre sí, contacto no
+      const cerrado = almacen.pedidos.find((p) => p.estado === 'finalizado' && !almacen.pedidos.some((x) => x.cliente_id === p.cliente_id && enProceso(x.estado)))!
+      const cliente = almacen.clientes.find((c) => c.id === cerrado.cliente_id)!
+      expect(cliente.whatsapp ?? cliente.telefono).toBeTruthy()
+      const d = await api.pedidos.obtener(cerrado.id)
+      expect(d.cliente_datos.nombre).toBe(cliente.nombre)
+      expect(d.cliente_datos.whatsapp).toBeNull()
+      expect(d.cliente_datos.telefono).toBeNull()
+      expect(d.cliente_whatsapp).toBeNull()
+      // Con permiso de clientes (Ventas) sí
+      cambiarA('ventas')
+      const v = await api.pedidos.obtener(cerrado.id)
+      expect(v.cliente_whatsapp).toBe(cliente.whatsapp ?? cliente.telefono)
+      expect(v.cliente_datos.email).toBe(cliente.email)
+      salir()
+    }
+  })
+
   it('crear pedido directo y cambiar de etapa con su línea de tiempo', async () => {
     entrarComo('ventas')
     const { id, folio } = await api.pedidos.crear({

@@ -50,8 +50,10 @@ export interface Modulo {
 export const MODULOS: Modulo[] = [
   { ruta: '/', titulo: 'Inicio', icono: LayoutDashboard, grupo: 'Principal', descripcion: 'Panel de control' },
   {
-    // Producción solo ve el nombre del cliente dentro de su orden de trabajo (PLAN.md §3)
-    ruta: '/clientes', titulo: 'Clientes', icono: Users, grupo: 'Principal', permisos: ['gestionar_clientes', 'aprobar_disenos'],
+    // Los mismos permisos con los que la base entrega clientes completos (puede_ver_clientes()).
+    // Diseño y Producción ven nombre y contacto de los clientes de sus pedidos dentro del pedido.
+    ruta: '/clientes', titulo: 'Clientes', icono: Users, grupo: 'Principal',
+    permisos: ['gestionar_clientes', 'ver_precios', 'gestionar_cotizaciones', 'gestionar_pedidos', 'registrar_pagos'],
     descripcion: 'Clientes, contactos e historial completo',
     incluye: ['Ficha con datos de contacto y fiscales', 'Historial de cotizaciones, pedidos y pagos', 'Notas y seguimientos', 'Exportar a Excel'],
   },

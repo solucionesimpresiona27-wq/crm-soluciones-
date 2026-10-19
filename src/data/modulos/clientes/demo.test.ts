@@ -28,7 +28,28 @@ describe('clientes · vista previa', () => {
     expect(h.cotizaciones).toEqual([])
     expect(h.pagos).toEqual([])
     expect(h.pedidos.every((p) => p.total === null)).toBe(true)
-    expect((await api.clientes.resumen('c5')).total_comprado).toBeUndefined()
+    // La ficha (resumen) ya no es de Diseño: igual que resumen_cliente() en la base
+    await expect(api.clientes.resumen('c5')).rejects.toThrow('No tienes permiso')
+  })
+
+  it('diseño y producción no leen clientes ni contactos; ventas y administración, sí', async () => {
+    for (const rol of ['diseno', 'produccion'] as const) {
+      entrarComo(rol)
+      expect(await api.clientes.listar()).toEqual([])
+      expect(await api.clientes.buscar('a')).toEqual([])
+      expect(await api.clientes.etiquetas()).toEqual([])
+      expect(await api.contactos.listar('c5')).toEqual([])
+      await expect(api.clientes.obtener('c5')).rejects.toThrow('no encontrado')
+      await expect(api.clientes.actualizar('c5', { telefono: '3300000000' })).rejects.toThrow('No tienes permiso')
+      salir()
+    }
+    for (const rol of ['ventas', 'admin'] as const) {
+      entrarComo(rol)
+      const c5 = await api.clientes.obtener('c5')
+      expect(c5.nombre).toBeTruthy()
+      expect((await api.clientes.listar()).length).toBe(17)
+      salir()
+    }
   })
 
   it('crear, editar, lista de precios, contactos y actividades', async () => {

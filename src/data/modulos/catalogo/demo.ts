@@ -63,6 +63,8 @@ export const catalogoDemo: ApiCatalogo = {
   catalogo: {
     async productos() {
       const conCostos = Boolean(sesionDemo()?.permisos.ver_costos)
+      // Igual que la regla "productos: ver" de la base: el catálogo (con precios) es de "ver_precios"
+      if (!puede('ver_precios')) return []
       return a.productos
         .filter((p) => p.activo)
         .map((p): ProductoCatalogo => {
@@ -85,6 +87,7 @@ export const catalogoDemo: ApiCatalogo = {
     async listar(filtros = {}) {
       usuario()
       await espera(200)
+      if (!puede('ver_precios')) return []
       const t = normalizar(filtros.texto ?? '')
       return a.productos
         .filter((p) => filtros.incluirInactivos || p.activo)
@@ -96,6 +99,7 @@ export const catalogoDemo: ApiCatalogo = {
 
     async obtener(id) {
       usuario()
+      if (!puede('ver_precios')) throw new Error('Producto no encontrado')
       return aFicha(producto(id))
     },
 

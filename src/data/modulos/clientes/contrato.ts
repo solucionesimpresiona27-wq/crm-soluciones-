@@ -3,7 +3,10 @@
  * Espacios: `api.clientes`, `api.contactos`, `api.actividades`.
  *
  * Permisos (los aplica la base de datos; la vista previa los imita):
- *   * Ver clientes y contactos: cualquier usuario activo.
+ *   * Ver clientes y contactos (completos): quien vende, cotiza, entrega pedidos o cobra
+ *     (`gestionar_clientes`, `ver_precios`, `gestionar_cotizaciones`, `gestionar_pedidos` o
+ *     `registrar_pagos`). Diseño y Producción no: ven nombre y contacto de los clientes de sus
+ *     pedidos por Pedidos (vista `clientes_operacion`). `resumen` también exige ese permiso.
  *   * Crear o editar clientes y contactos, ver y registrar actividades: `gestionar_clientes`.
  *   * Eliminar un cliente: `eliminar_registros` (si tiene cotizaciones o pedidos, mejor desactivarlo).
  *   * Montos del historial y del resumen: solo con `ver_precios`.

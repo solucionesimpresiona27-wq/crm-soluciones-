@@ -114,7 +114,8 @@ const { count: materiales } = await sistema
 if (!materiales) {
   const produccion = await sesion(USUARIOS.produccion)
   const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
-  const perfiles = ok(await admin.from('perfiles').select('id, email'))
+  // El correo del equipo solo lo da la vista perfiles_detalle (a administración)
+  const perfiles = ok(await admin.from('perfiles_detalle').select('id, email'))
   const idDe = (rol) => perfiles.find((p) => p.email === USUARIOS[rol].email)?.id
 
   const provs = ok(await admin.from('proveedores').insert([

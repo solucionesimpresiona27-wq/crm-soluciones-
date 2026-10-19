@@ -14,6 +14,7 @@ import { ESTADO_COTIZACION, estadoVisibleCotizacion } from '@/lib/estados'
 import { hoyISO } from '@/lib/format'
 import { DEMO } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
+import { motivoBloqueo } from './bloqueo'
 import { useCotizacion, useGuardarCotizacion, useProductos } from './consultas'
 import { aBorrador, estadoDesdeCotizacion, estadoNuevo, partidaDesdeCalculadora, primerError, type Errores, type EstadoEditor } from './editor/modelo'
 import { BarraGuardar, Resumen } from './editor/Resumen'
@@ -117,6 +118,24 @@ function Cargador({ id }: { id?: string }) {
           icono={<PackageCheck />}
           titulo={`${c.folio} ya es el pedido ${c.pedido_folio ?? ''}`.trim()}
           descripcion="Para respetar lo que se acordó con el cliente, una cotización convertida ya no se edita. Los cambios se hacen en el pedido o en una copia de la cotización."
+          accion={
+            <GlassButton variante="cristal" icono={<ArrowLeft />} onClick={() => navegar(`/cotizaciones/${c.id}`, { replace: true, state: { lista } })}>
+              Volver a la cotización
+            </GlassButton>
+          }
+        />
+      </GlassPanel>
+    )
+  }
+
+  // Aceptada o aprobada por el cliente en el portal: la base rechaza cualquier cambio
+  if (c && motivoBloqueo(c)) {
+    return (
+      <GlassPanel className="mt-2">
+        <EstadoVacio
+          icono={<Lock />}
+          titulo={`${c.folio} ya fue aceptada`}
+          descripcion="Para respetar lo que aprobó el cliente, una cotización aceptada ya no se edita. Duplícala desde la cotización para hacer una versión nueva."
           accion={
             <GlassButton variante="cristal" icono={<ArrowLeft />} onClick={() => navegar(`/cotizaciones/${c.id}`, { replace: true, state: { lista } })}>
               Volver a la cotización

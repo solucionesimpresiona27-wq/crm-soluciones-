@@ -16,7 +16,11 @@ export type { Configuracion, Plantilla }
 /** Lo que la administración puede editar de la configuración (sin id ni fechas). */
 export type CambiosConfiguracion = Partial<Omit<Configuracion, 'id' | 'updated_at'>>
 
-export type MiembroEquipo = Pick<Perfil, 'id' | 'nombre' | 'rol' | 'email' | 'telefono'>
+/**
+ * Lo que cualquier usuario activo ve de sus compañeros (para elegir responsables).
+ * Correo, teléfono, permisos, comisión y último acceso solo los ve administración o la propia persona.
+ */
+export type MiembroEquipo = Pick<Perfil, 'id' | 'nombre' | 'rol' | 'puesto'>
 
 /** Usuario del CRM con sus permisos personalizados (solo los que difieren del rol). */
 export type Usuario = Perfil & { permisos_personalizados: Partial<Record<Permiso, boolean>> }

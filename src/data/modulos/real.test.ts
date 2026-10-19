@@ -131,7 +131,9 @@ suite('Capa de datos real por módulos', () => {
     expect((await api.catalogo.categorias()).length).toBeGreaterThan(10)
     await como('produccion')
     await expect(api.catalogo.precios(p.id)).resolves.toEqual([])
-    expect((await api.catalogo.obtener(p.id)).costos).toBeNull()
+    // Revisión de seguridad (R1): sin "ver_precios" no hay catálogo (antes llegaba el producto con su precio)
+    await expect(api.catalogo.obtener(p.id)).rejects.toThrow('Producto no encontrado')
+    expect(await api.catalogo.productos()).toEqual([])
   })
 
   it('pedidos, archivos, producción, pagos y cobranza', async () => {
@@ -257,7 +259,7 @@ suite('Capa de datos real por módulos', () => {
     expect(vista.pedido?.titulo).toBe('Pedido de módulos')
     expect(vista.empresa.rfc).toBeUndefined()
     await api.portal.revocarEnlace(e.id)
-    await expect(api.portal.obtener(e.token)).rejects.toThrow('no es válido')
-    await expect(api.portal.obtener('token-inventado-que-no-existe-0123456789')).rejects.toThrow('no es válido')
+    await expect(api.portal.obtener(e.token)).rejects.toThrow('ya no está disponible')
+    await expect(api.portal.obtener('token-inventado-que-no-existe-0123456789')).rejects.toThrow('ya no está disponible')
   })
 })

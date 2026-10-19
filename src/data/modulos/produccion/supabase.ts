@@ -6,21 +6,34 @@ import type { ApiProduccion, HojaOrden, OrdenTrabajo } from './contrato'
 const COLUMNAS =
   'id, folio, titulo, descripcion, cliente_id, cliente_nombre, estado, estado_anterior, motivo_estado, etapas_omitidas, prioridad, fecha_entrega, atrasado, requiere_instalacion, direccion_instalacion, responsable_id, disenador_id, anticipo_recibido, num_partidas, num_disenos, created_at, updated_at'
 
+/**
+ * Los filtros `in` viajan en la URL: con cientos de ids la petición pasa del límite del servidor
+ * ("URI too long"). Se piden por tandas.
+ */
+const TANDA = 80
+function tandas<T>(xs: T[]) {
+  const r: T[][] = []
+  for (let i = 0; i < xs.length; i += TANDA) r.push(xs.slice(i, i + TANDA))
+  return r
+}
+
 async function nombres(ids: Array<string | null>) {
   const unicos = [...new Set(ids.filter(Boolean))] as string[]
   if (!unicos.length) return new Map<string, string>()
-  const filas = revisar(await supabase().from('perfiles').select('id, nombre').in('id', unicos))
-  return new Map(filas.map((p) => [p.id, p.nombre]))
+  const grupos = await Promise.all(tandas(unicos).map(async (t) => revisar(await supabase().from('perfiles').select('id, nombre').in('id', t))))
+  return new Map(grupos.flat().map((p) => [p.id, p.nombre]))
 }
 
-/** Diseños pendientes de aprobación por pedido (una sola consulta para todo el tablero). */
+/** Diseños pendientes de aprobación por pedido (pocas consultas para todo el tablero). */
 async function pendientes(ids: string[]) {
   const conteo = new Map<string, number>()
   if (!ids.length) return conteo
-  const filas = revisar(
-    await supabase().from('archivos').select('pedido_id').in('pedido_id', ids).eq('categoria', 'diseno').eq('estado_aprobacion', 'pendiente'),
+  const grupos = await Promise.all(
+    tandas(ids).map(async (t) =>
+      revisar(await supabase().from('archivos').select('pedido_id').in('pedido_id', t).eq('categoria', 'diseno').eq('estado_aprobacion', 'pendiente')),
+    ),
   )
-  for (const f of filas) if (f.pedido_id) conteo.set(f.pedido_id, (conteo.get(f.pedido_id) ?? 0) + 1)
+  for (const f of grupos.flat()) if (f.pedido_id) conteo.set(f.pedido_id, (conteo.get(f.pedido_id) ?? 0) + 1)
   return conteo
 }
 

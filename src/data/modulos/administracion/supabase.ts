@@ -28,8 +28,12 @@ function aUsuario(p: Perfil): Usuario {
   return { ...p, permisos_personalizados: { ...permisos } }
 }
 
+/**
+ * Correo, teléfono, permisos, comisión y último acceso no se leen de la tabla `perfiles`
+ * (privilegio por columna): la vista `perfiles_detalle` da el propio perfil o, a administración, todos.
+ */
 async function obtenerUsuario(id: string) {
-  return aUsuario(revisar(await supabase().from('perfiles').select('*').eq('id', id).single()))
+  return aUsuario(revisar(await supabase().from('perfiles_detalle').select('*').eq('id', id).single()) as Perfil)
 }
 
 export const administracionSupabase: ApiAdministracion = {
@@ -91,11 +95,12 @@ export const administracionSupabase: ApiAdministracion = {
 
   usuarios: {
     async equipo() {
-      return revisar(await supabase().from('perfiles').select('id, nombre, rol, email, telefono').eq('activo', true).order('nombre'))
+      // Solo lo que cualquiera del equipo puede ver de los demás
+      return revisar(await supabase().from('perfiles').select('id, nombre, rol, puesto').eq('activo', true).order('nombre'))
     },
     async listar() {
-      const filas = revisar(await supabase().from('perfiles').select('*').order('activo', { ascending: false }).order('nombre'))
-      return filas.map(aUsuario)
+      const filas = revisar(await supabase().from('perfiles_detalle').select('*').order('activo', { ascending: false }).order('nombre'))
+      return filas.map((f) => aUsuario(f as Perfil))
     },
     async crear(datos) {
       return invocarAdmin<{ id: string }>({
@@ -121,7 +126,8 @@ export const administracionSupabase: ApiAdministracion = {
         if (cambios.comision_pct < 0 || cambios.comision_pct > 100) throw new Error('La comisión debe estar entre 0 y 100 %')
         f.comision_pct = cambios.comision_pct
       }
-      return aUsuario(revisar(await supabase().from('perfiles').update(f).eq('id', id).select('*').single()))
+      revisar(await supabase().from('perfiles').update(f).eq('id', id).select('id').single())
+      return obtenerUsuario(id)
     },
     async cambiarPermisos(id, permisos) {
       const actual = await obtenerUsuario(id)
@@ -130,7 +136,8 @@ export const administracionSupabase: ApiAdministracion = {
         if (v === null || v === undefined) delete nuevos[k]
         else nuevos[k] = v
       }
-      return aUsuario(revisar(await supabase().from('perfiles').update({ permisos: nuevos as NonNullable<Json> }).eq('id', id).select('*').single()))
+      revisar(await supabase().from('perfiles').update({ permisos: nuevos as NonNullable<Json> }).eq('id', id).select('id').single())
+      return obtenerUsuario(id)
     },
     async activar(id, activo) {
       await invocarAdmin({ accion: activo ? 'activar' : 'desactivar', id })

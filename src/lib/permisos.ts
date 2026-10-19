@@ -14,6 +14,20 @@ export function permisosDeRol(rol: Rol, personalizados: Partial<Record<Permiso, 
   ) as Permisos
 }
 
+/**
+ * Permisos que solo valen con "ver_precios" (igual que tiene_permiso() en la base): las métricas
+ * financieras y la edición del catálogo muestran precios de venta.
+ */
+export const REQUIEREN_VER_PRECIOS: readonly Permiso[] = ['ver_reportes', 'editar_catalogo']
+
+/** Permisos efectivos: apaga los que dependen de "ver_precios" cuando falta. */
+export function aplicarDependencias(p: Permisos): Permisos {
+  if (p.ver_precios) return p
+  const r = { ...p }
+  for (const k of REQUIEREN_VER_PRECIOS) r[k] = false
+  return r
+}
+
 export const NOMBRE_ROL: Record<Rol, string> = {
   admin: 'Administración',
   ventas: 'Ventas',

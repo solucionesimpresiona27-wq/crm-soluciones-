@@ -102,7 +102,8 @@ export const administracionDemo: ApiAdministracion = {
       return a.perfiles
         .filter((p) => p.activo)
         .sort((x, y) => x.nombre.localeCompare(y.nombre, 'es'))
-        .map(({ id, nombre, rol, email, telefono }) => ({ id, nombre, rol, email, telefono }))
+        // Igual que la base: de los compañeros solo se ve id, nombre, rol y puesto
+        .map(({ id, nombre, rol, puesto }) => ({ id, nombre, rol, puesto }))
     },
     async listar() {
       exigirAdmin()

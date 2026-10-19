@@ -34,6 +34,31 @@ export function nombrePerfil(a: Almacen, id: string | null | undefined) {
   return id ? (a.perfiles.find((p) => p.id === id)?.nombre ?? null) : null
 }
 
+/** Igual que pedido_en_proceso(): todavía hay que avisar, aprobar, entregar o instalar. */
+export const pedidoEnProceso = (estado: EstadoPedido) => !['entregado', 'finalizado', 'cancelado'].includes(estado)
+
+/**
+ * Igual que la vista clientes_operacion. Con permiso de clientes (`completo`): cualquier cliente.
+ * Sin él: solo clientes con pedidos, su contacto mientras alguno siga en proceso y nunca el correo.
+ */
+export function clienteOperacion(a: Almacen, id: string | null | undefined, completo: boolean) {
+  const c = id ? a.clientes.find((x) => x.id === id) : undefined
+  if (!c) return null
+  const pedidos = a.pedidos.filter((p) => p.cliente_id === c.id)
+  if (!completo && !pedidos.length) return null
+  const contacto = completo || pedidos.some((p) => pedidoEnProceso(p.estado))
+  return {
+    id: c.id,
+    nombre: c.nombre,
+    tipo: c.tipo,
+    whatsapp: contacto ? c.whatsapp : null,
+    telefono: contacto ? c.telefono : null,
+    email: completo ? c.email : null,
+    requiere_factura: completo ? c.requiere_factura : false,
+    activo: c.activo,
+  }
+}
+
 export function nombreCliente(a: Almacen, id: string | null | undefined) {
   return id ? (a.clientes.find((c) => c.id === id)?.nombre ?? null) : null
 }

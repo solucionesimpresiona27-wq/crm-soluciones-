@@ -3,7 +3,9 @@ import { hoyLocal, limpio, mensajeError, revisar, supabase } from '@/data/comun/
 import type { TablesUpdate } from '@/lib/database.types'
 import type { ApiAgenda, DatosTarea, EventoAgenda, Tarea } from './contrato'
 
-const CAMPOS = '*, responsable:perfiles!responsable_id(nombre), cliente:clientes(nombre), pedido:pedidos(folio)'
+// El cliente sale de clientes_operacion: Diseño y Producción (sin permiso de clientes) solo ven el
+// nombre de los clientes que tienen pedidos; quien ve clientes, el de todos.
+const CAMPOS = '*, responsable:perfiles!responsable_id(nombre), cliente:clientes_operacion(nombre), pedido:pedidos(folio)'
 
 function aTarea(f: Record<string, unknown>): Tarea {
   const { responsable, cliente, pedido, ...t } = f as Record<string, unknown> & {

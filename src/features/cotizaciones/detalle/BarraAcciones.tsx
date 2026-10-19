@@ -7,6 +7,7 @@ import type { CotizacionCompleta, EstadoCotizacion } from '@/data/tipos'
 import type { EstadoCotizacionVisible } from '@/lib/estados'
 import { escalonado, resorte } from '@/lib/motion'
 import { cn } from '@/lib/utils'
+import { ID_AVISO_BLOQUEO, motivoBloqueo } from '../bloqueo'
 
 export interface PermisosDetalle {
   gestionar: boolean
@@ -36,6 +37,8 @@ interface Accion {
   destacado?: boolean
   tono?: 'luz' | 'acento'
   desactivado?: boolean
+  /** id del texto que explica por qué está desactivado */
+  explicacion?: string
   menu?: boolean
 }
 
@@ -59,6 +62,8 @@ export function BarraAcciones({
   const reducir = useReducedMotion()
   const [menuAbierto, setMenuAbierto] = useState(false)
   const esPedido = Boolean(c.pedido_id)
+  // Aceptada, aprobada en el portal o convertida: la base ya no deja editarla (se duplica)
+  const bloqueada = motivoBloqueo(c) !== null
   const cerrada = c.estado === 'rechazada' || c.estado === 'cancelada'
   const carga = <Loader2 className="animate-spin" />
 
@@ -78,7 +83,7 @@ export function BarraAcciones({
   }
   acciones.push({ id: 'pdf', etiqueta: 'Descargar PDF', icono: ocupado.pdf ? carga : <FileDown />, onClick: en.pdf, desactivado: ocupado.bloqueado })
   if (permisos.gestionar) {
-    acciones.push({ id: 'editar', etiqueta: 'Editar', icono: <PencilLine />, onClick: en.editar, desactivado: esPedido })
+    acciones.push({ id: 'editar', etiqueta: 'Editar', icono: <PencilLine />, onClick: en.editar, desactivado: bloqueada, explicacion: bloqueada ? ID_AVISO_BLOQUEO : undefined })
     acciones.push({ id: 'duplicar', etiqueta: 'Duplicar', icono: ocupado.duplicar ? carga : <CopyPlus />, onClick: en.duplicar, desactivado: ocupado.duplicar })
   }
   if (permisos.convertir) {
@@ -115,6 +120,7 @@ export function BarraAcciones({
           <GlassIconButton
             etiqueta={a.etiqueta}
             {...(a.nombre ? { 'aria-label': a.nombre } : {})}
+            {...(a.explicacion ? { 'aria-describedby': a.explicacion } : {})}
             mostrarEtiqueta
             icono={a.icono}
             destacado={a.destacado}

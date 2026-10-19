@@ -10,7 +10,8 @@
  *   * Caja: consultar con `registrar_pagos` o `ver_reportes`; cerrar con `registrar_pagos`;
  *     reabrir solo administración. Con la caja del día cerrada, nadie salvo administración
  *     registra o cambia movimientos EN EFECTIVO de ese día (las transferencias sí se permiten).
- *   * Comisiones: cada quien ve las suyas; con `ver_reportes`, las de todos.
+ *   * Comisiones (lo cobrado es un monto de venta): con `ver_precios`, cada quien ve las suyas;
+ *     con `ver_reportes` (que solo vale con `ver_precios`), las de todos.
  */
 import type { MetodoPago } from '@/data/tipos'
 import type { Database, Tables } from '@/lib/database.types'

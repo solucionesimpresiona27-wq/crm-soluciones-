@@ -102,5 +102,58 @@ describe('vista previa · núcleo', () => {
     expect(r.pedidos.length).toBeGreaterThan(0)
     entrarComo('produccion')
     expect((await apiDemo.busqueda.global('fachada')).cotizaciones).toEqual([])
+    // Sin permiso de clientes: ni la sección de clientes ni pedidos encontrados por su teléfono
+    expect((await apiDemo.busqueda.global('rueda')).clientes).toEqual([])
+    const tel = almacen.clientes.find((c) => c.nombre === 'Taller Mecánico Rueda')!.whatsapp!
+    expect((await apiDemo.busqueda.global(tel)).pedidos).toEqual([])
+  })
+
+  it('una cotización aceptada, aprobada en el portal o convertida ya no se edita; se duplica y se convierte', async () => {
+    entrarComo('ventas')
+    const abierta = almacen.cotizaciones.find((c) => ['borrador', 'enviada'].includes(c.estado) && !c.pedido_id && c.fecha_vencimiento >= '2026-10-13')!
+    const datos = (c: (typeof almacen.cotizaciones)[number]) => ({
+      id: c.id,
+      cliente_id: c.cliente.id,
+      titulo: `${c.titulo ?? ''} cambiada`,
+      fecha: c.fecha,
+      vigencia_dias: c.vigencia_dias,
+      tiempo_entrega: c.tiempo_entrega,
+      anticipo_pct: c.anticipo_pct,
+      aplica_iva: c.aplica_iva,
+      iva_pct: c.iva_pct,
+      descuento_tipo: c.descuento_tipo,
+      descuento_valor: c.descuento_valor,
+      recargo_pct: c.recargo_pct,
+      recargo_concepto: c.recargo_concepto,
+      condiciones: c.condiciones ?? '',
+      notas: c.notas,
+      notas_internas: c.notas_internas,
+      partidas: c.partidas.map((p) => ({ ...p, precio_unitario: 1 })),
+    })
+    // Aprobada por el cliente en el portal
+    const { token } = await apiDemo.portal.crearEnlace('cotizacion', abierta.id)
+    await apiDemo.portal.aprobarCotizacion(token, 'Cliente de prueba')
+    const aprobada = almacen.cotizaciones.find((c) => c.id === abierta.id)!
+    const totalAntes = aprobada.total
+    await expect(apiDemo.cotizaciones.guardar(datos(aprobada) as never)).rejects.toThrow('aprobó esta cotización desde el portal')
+    await expect(apiDemo.cotizaciones.cambiarEstado(aprobada.id, 'borrador')).rejects.toThrow('Duplícala')
+    await expect(apiDemo.cotizaciones.cambiarEstado(aprobada.id, 'enviada')).rejects.toThrow('Duplícala')
+    expect(almacen.cotizaciones.find((c) => c.id === abierta.id)!.total).toBe(totalAntes)
+    // Duplicar sí: la copia es un borrador editable
+    const copiaId = await apiDemo.cotizaciones.duplicar(aprobada.id)
+    const copia = almacen.cotizaciones.find((c) => c.id === copiaId)!
+    expect(copia.estado).toBe('borrador')
+    await apiDemo.cotizaciones.guardar(datos(copia) as never)
+    // Convertir también
+    const { pedidoId } = await apiDemo.cotizaciones.convertir(aprobada.id, {})
+    expect(pedidoId).toBeTruthy()
+    await expect(apiDemo.cotizaciones.guardar(datos(aprobada) as never)).rejects.toThrow('ya se convirtió en el pedido')
+    await expect(apiDemo.cotizaciones.cambiarEstado(aprobada.id, 'cancelada')).rejects.toThrow('ya se convirtió')
+    // Aceptada a mano (sin portal): tampoco; rechazarla sí
+    const otra = almacen.cotizaciones.find((c) => ['borrador', 'enviada'].includes(c.estado) && !c.pedido_id && c.id !== abierta.id && c.id !== copiaId)!
+    await apiDemo.cotizaciones.cambiarEstado(otra.id, 'aceptada')
+    await expect(apiDemo.cotizaciones.guardar(datos(otra) as never)).rejects.toThrow('ya fue aceptada')
+    await apiDemo.cotizaciones.cambiarEstado(otra.id, 'rechazada', 'El cliente se arrepintió')
+    await expect(apiDemo.cotizaciones.cambiarEstado(otra.id, 'borrador')).rejects.toThrow('ya fue aceptada')
   })
 })

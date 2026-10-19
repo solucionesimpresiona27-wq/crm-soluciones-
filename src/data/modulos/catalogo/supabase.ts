@@ -51,7 +51,11 @@ function filaProducto(d: Partial<DatosProducto>): TablesUpdate<'productos'> {
 }
 
 async function obtenerFicha(id: string) {
-  return aFicha(revisar(await supabase().from('productos').select(CAMPOS_FICHA).eq('id', id).single()) as unknown as Record<string, unknown>)
+  // Sin "ver_precios" la base no entrega productos (llevan el precio público): igual que si no existiera
+  const r = await supabase().from('productos').select(CAMPOS_FICHA).eq('id', id).maybeSingle()
+  if (r.error) throw new Error(mensajeError(r.error))
+  if (!r.data) throw new Error('Producto no encontrado')
+  return aFicha(r.data as unknown as Record<string, unknown>)
 }
 
 export const catalogoSupabase: ApiCatalogo = {

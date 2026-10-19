@@ -83,19 +83,22 @@ test('la ficha muestra el historial de una cotización creada por API', async ({
   sinErrores()
 })
 
-test('diseño ve la ficha sin montos y producción ve el aviso de acceso', async ({ page }) => {
+// Revisión de seguridad (R2): los datos completos de clientes ya no son de Diseño ni de Producción
+// (antes Diseño abría la ficha de cualquier cliente con teléfono, correo y RFC). La base tampoco se los da.
+test('diseño y producción ven el aviso de acceso y la base no les da los datos del cliente', async ({ page }) => {
   const cot = await crearCotizacion('ventas')
   const db = await clienteComo('ventas')
   const { data: cliente } = await db.from('clientes').select('id').eq('nombre', cot.cliente).single()
-  await entrar(page, 'diseno')
-  await page.goto(`/clientes/${cliente!.id}`)
-  await expect(page.getByRole('heading', { name: cot.cliente })).toBeVisible()
-  await expect(page.getByText('$1,113.60')).toHaveCount(0)
-  await expect(page.getByRole('button', { name: 'Editar datos del cliente' })).toHaveCount(0)
-
-  await page.context().clearCookies()
-  await page.evaluate(() => localStorage.clear())
-  await entrar(page, 'produccion')
-  await page.goto('/clientes')
-  await expect(page.getByText('Esta sección no está disponible para tu rol')).toBeVisible()
+  for (const rol of ['diseno', 'produccion'] as const) {
+    await page.context().clearCookies()
+    await page.goto('/login')
+    await page.evaluate(() => localStorage.clear())
+    await entrar(page, rol)
+    await page.goto(`/clientes/${cliente!.id}`)
+    await expect(page.getByText('Esta sección no está disponible para tu rol')).toBeVisible()
+    await expect(page.getByText('$1,113.60')).toHaveCount(0)
+    const directo = await clienteComo(rol)
+    const { data } = await directo.from('clientes').select('id, telefono, rfc').eq('id', cliente!.id)
+    expect(data).toEqual([])
+  }
 })

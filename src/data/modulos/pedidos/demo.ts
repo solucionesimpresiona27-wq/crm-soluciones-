@@ -8,6 +8,8 @@ import {
   eventoPedido,
   fechaLocal,
   nombrePerfil,
+  pedidoEnProceso,
+  clienteOperacion,
   recalcularPedido,
   registrarArchivo,
   registrarBitacora,
@@ -15,7 +17,7 @@ import {
   siguienteFolio,
   vistaPreviaArchivo,
 } from '@/data/demo/reglas'
-import { esAdmin, espera, exigir, exigirAlguno, puede, usuario } from '@/data/demo/sesion'
+import { esAdmin, espera, exigir, exigirAlguno, puede, puedeVerClientes, usuario } from '@/data/demo/sesion'
 import { importePartida } from '@/lib/calculadora'
 import { normalizar } from '@/lib/utils'
 import type { ApiPedidos, Archivo, CambiosPartida, CambiosPedido, PartidaPedido, PedidoDetalle, PedidoLista } from './contrato'
@@ -26,7 +28,10 @@ const CERRADOS = ['entregado', 'finalizado', 'cancelado']
 /** Archivos subidos en esta sesión (solo en memoria del navegador). */
 const blobs = new Map<string, string>()
 
-/** Igual que la vista ordenes_trabajo: montos nulos sin `ver_precios`. */
+/**
+ * Igual que la vista ordenes_trabajo: montos nulos sin `ver_precios`; el contacto del cliente,
+ * sin permiso de clientes, solo mientras el pedido sigue en proceso.
+ */
 function aLista(p: PedidoFila): PedidoLista {
   const precios = puede('ver_precios')
   const c = a.clientes.find((x) => x.id === p.cliente_id)
@@ -38,7 +43,7 @@ function aLista(p: PedidoFila): PedidoLista {
     cotizacion_id: p.cotizacion_id,
     cliente_id: p.cliente_id,
     cliente: c?.nombre ?? '',
-    cliente_whatsapp: c?.whatsapp ?? c?.telefono ?? null,
+    cliente_whatsapp: puedeVerClientes() || pedidoEnProceso(p.estado) ? (c?.whatsapp ?? c?.telefono ?? null) : null,
     estado: p.estado,
     estado_anterior: p.estado_anterior,
     motivo_estado: p.motivo_estado,
@@ -130,7 +135,8 @@ export const pedidosDemo: ApiPedidos = {
       const p = buscar(id)
       const precios = puede('ver_precios')
       const costos = puede('ver_costos')
-      const c = a.clientes.find((x) => x.id === p.cliente_id)
+      // Como clientes_operacion: Diseño y Producción no reciben correo ni datos fiscales
+      const c = clienteOperacion(a, p.cliente_id, puedeVerClientes())
       const detalle: PedidoDetalle = {
         ...aLista(p),
         descripcion: p.descripcion,

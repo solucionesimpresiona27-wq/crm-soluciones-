@@ -1,7 +1,7 @@
 /** MÓDULO CLIENTES · implementación de la vista previa (almacén en memoria, datos ficticios). */
 import { almacen as a, copia, nuevoId, type ClienteFila } from '@/data/demo/almacen'
 import { ahoraISO, busquedaDe, diferencias, fechaLocal, nombrePerfil, registrarBitacora } from '@/data/demo/reglas'
-import { espera, esAdmin, exigir, puede, usuario } from '@/data/demo/sesion'
+import { espera, esAdmin, exigir, puede, puedeVerClientes, usuario } from '@/data/demo/sesion'
 import type { ClienteBreve } from '@/data/tipos'
 import { normalizar } from '@/lib/utils'
 import type { Actividad, ApiClientes, Cliente, ClienteLista, DatosCliente, DatosContacto, HistorialCliente, ResumenCliente } from './contrato'
@@ -63,6 +63,8 @@ export const clientesDemo: ApiClientes = {
     async buscar(texto) {
       usuario()
       await espera(120)
+      // Igual que la regla "clientes: ver" de la base: sin permiso de clientes no hay renglones
+      if (!puedeVerClientes()) return []
       const q = normalizar(texto)
       return a.clientes
         .filter((c) => c.activo && (!q || (c.busqueda ?? '').includes(q)))
@@ -113,6 +115,7 @@ export const clientesDemo: ApiClientes = {
     async listar(filtros = {}) {
       usuario()
       await espera(200)
+      if (!puedeVerClientes()) return []
       const q = normalizar(filtros.texto ?? '')
       return a.clientes
         .filter((c) => filtros.incluirInactivos || c.activo)
@@ -149,6 +152,7 @@ export const clientesDemo: ApiClientes = {
     async obtener(id) {
       usuario()
       await espera(150)
+      if (!puedeVerClientes()) throw new Error('Cliente no encontrado')
       return ficha(buscarCliente(id))
     },
 
@@ -188,6 +192,7 @@ export const clientesDemo: ApiClientes = {
     async resumen(id) {
       usuario()
       await espera(150)
+      if (!puedeVerClientes()) throw new Error('No tienes permiso para ver la ficha de los clientes')
       const pedidos = a.pedidos.filter((p) => p.cliente_id === id && p.estado !== 'cancelado')
       const r: ResumenCliente = {
         pedidos: pedidos.length,
@@ -246,6 +251,7 @@ export const clientesDemo: ApiClientes = {
 
     async etiquetas() {
       usuario()
+      if (!puedeVerClientes()) return []
       return [...new Set(a.clientes.filter((c) => c.activo).flatMap((c) => c.etiquetas))].sort((x, y) => x.localeCompare(y, 'es'))
     },
 
@@ -312,6 +318,7 @@ export const clientesDemo: ApiClientes = {
     async listar(clienteId) {
       usuario()
       await espera(120)
+      if (!puedeVerClientes()) return []
       return copia(a.contactos.filter((x) => x.cliente_id === clienteId).sort((x, y) => Number(y.principal) - Number(x.principal) || porNombre(x, y)))
     },
     async crear(clienteId, datos) {

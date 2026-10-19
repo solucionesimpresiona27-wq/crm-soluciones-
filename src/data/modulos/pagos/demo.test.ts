@@ -57,4 +57,15 @@ describe('pagos · vista previa', () => {
     await expect(api.pagos.listar()).rejects.toThrow('No tienes permiso')
     await expect(api.caja.resumen()).rejects.toThrow('No tienes permiso')
   })
+
+  it('sin ver_precios tampoco hay comisiones (lo cobrado es un monto de venta)', async () => {
+    for (const rol of ['diseno', 'produccion'] as const) {
+      entrarComo(rol)
+      await expect(api.comisiones.resumen('2026-10-01', '2026-10-31')).rejects.toThrow('ver precios')
+      await expect(api.comisiones.detalle('2026-10-01', '2026-10-31')).rejects.toThrow('ver precios')
+      salir()
+    }
+    entrarComo('ventas')
+    expect(Array.isArray(await api.comisiones.resumen('2026-10-01', '2026-10-31'))).toBe(true)
+  })
 })

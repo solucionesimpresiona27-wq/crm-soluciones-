@@ -119,10 +119,14 @@ export const pedidosSupabase: ApiPedidos = {
       if (!orden.data) throw new Error('Pedido no encontrado')
       const base = aLista(orden.data as unknown as Record<string, unknown>)
       const o = orden.data
+      // clientes_operacion: lo mínimo del cliente para trabajar el pedido. Sin permiso de clientes
+      // (Diseño, Producción) la base solo da el contacto mientras el pedido está en proceso y nunca el correo.
       const [cliente, mapa] = await Promise.all([
-        sb.from('clientes').select('id, nombre, whatsapp, telefono, email, requiere_factura').eq('id', base.cliente_id).single(),
+        sb.from('clientes_operacion').select('id, nombre, whatsapp, telefono, email, requiere_factura').eq('id', base.cliente_id).maybeSingle(),
         nombres([o.vendedor_id, o.responsable_id, o.disenador_id]),
       ])
+      if (cliente.error) throw new Error(mensajeError(cliente.error))
+      const cd = cliente.data
       const m = montos.data as Record<string, unknown> | null
       const mapaCostos = new Map((costos.data ?? []).map((c) => [c.partida_id, c]))
       const detalle: PedidoDetalle = {
@@ -131,7 +135,14 @@ export const pedidosSupabase: ApiPedidos = {
         direccion_instalacion: o.direccion_instalacion,
         contacto_id: o.contacto_id,
         cotizacion_folio: (m?.cotizacion as { folio: string } | null)?.folio ?? null,
-        cliente_datos: revisar(cliente),
+        cliente_datos: {
+          id: base.cliente_id,
+          nombre: cd?.nombre ?? base.cliente,
+          whatsapp: cd?.whatsapp ?? null,
+          telefono: cd?.telefono ?? null,
+          email: cd?.email ?? null,
+          requiere_factura: Boolean(cd?.requiere_factura),
+        },
         vendedor: mapa.get(o.vendedor_id ?? '') ?? null,
         responsable: mapa.get(o.responsable_id ?? '') ?? null,
         disenador: mapa.get(o.disenador_id ?? '') ?? null,

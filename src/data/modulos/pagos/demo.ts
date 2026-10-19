@@ -50,6 +50,8 @@ function corteConNombre(c: (typeof a.cortes_caja)[number]): CorteCaja {
 /** Igual que comisiones_detalle(): cobrado del periodo por pedido; sin "ver_reportes", solo lo propio. */
 function detalleComisiones(desde: string, hasta: string, vendedorId?: string): ComisionDetalle[] {
   const s = usuario()
+  // Lo cobrado es un monto de venta: igual que la base, sin "ver_precios" no hay comisiones
+  if (!s.permisos.ver_precios) throw new Error('Para ver comisiones necesitas el permiso para ver precios y pagos')
   if (!desde || !hasta) throw new Error('Indica las fechas del reporte')
   if (hasta < desde) throw new Error('La fecha final debe ser posterior a la inicial')
   const vendedor = s.permisos.ver_reportes ? vendedorId : s.id

@@ -15,6 +15,26 @@ describe('catálogo · vista previa', () => {
     expect((await api.catalogo.productos())[0].costos?.costo_material).toBe(62)
   })
 
+  it('sin ver_precios no hay catálogo ni precios (diseño y producción)', async () => {
+    for (const rol of ['diseno', 'produccion'] as const) {
+      entrarComo(rol)
+      expect(await api.catalogo.productos()).toEqual([])
+      expect(await api.catalogo.listar({ incluirInactivos: true })).toEqual([])
+      await expect(api.catalogo.obtener('pr1')).rejects.toThrow('no encontrado')
+      await expect(api.catalogo.preciosPara('mayoreo')).rejects.toThrow('No tienes permiso')
+      await expect(api.catalogo.precios('pr1')).rejects.toThrow('No tienes permiso')
+      await expect(api.catalogo.actualizarProducto('pr1', { precio_venta: 1 })).rejects.toThrow('No tienes permiso')
+      // Las categorías (sin montos) sí
+      expect((await api.catalogo.categorias()).length).toBeGreaterThan(0)
+      salir()
+    }
+    for (const rol of ['ventas', 'admin'] as const) {
+      entrarComo(rol)
+      expect((await api.catalogo.obtener('pr1')).precio_venta).toBe(180)
+      salir()
+    }
+  })
+
   it('precios por lista con respaldo al público', async () => {
     entrarComo('ventas')
     const mayoreo = await api.catalogo.preciosPara('mayoreo')
