@@ -332,7 +332,7 @@ suite('Revisión de seguridad: precios, clientes y equipo, cotizaciones aprobada
           const { error } = await c[rol].from('perfiles').select(col).eq('id', id.ventas)
           expect(error?.code, `${rol} no debe leer perfiles.${col}`).toBe('42501')
         }
-        const detalle = ok(await c[rol].from('perfiles_detalle').select('id, email, telefono, comision_pct, permisos')) as Fila[]
+        const detalle = ok(await c[rol].from('perfiles_detalle').select('id, email, telefono, comision_pct, permisos').in('id', [id.ventas, id.produccion, id[rol]])) as Fila[]
         if (rol === 'admin') {
           expect(detalle.find((x) => x.id === id.ventas)).toMatchObject({ telefono: '3312345678' })
           expect(Number(detalle.find((x) => x.id === id.ventas)?.comision_pct)).toBe(5)

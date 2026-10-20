@@ -42,11 +42,13 @@ test('la búsqueda global encuentra módulos y abre el detalle del cliente', asy
   await page.getByRole('option', { name: /Pagos/ }).click()
   await expect(page).toHaveURL(/\/pagos$/)
 
-  await page.keyboard.press('Control+k')
-  await buscar.fill('cliente')
-  const cliente = page.locator('[cmdk-group]', { hasText: 'Clientes' }).getByRole('option').first()
-  await cliente.click()
-  await expect(page).toHaveURL(/\/clientes\/[0-9a-f-]{36}$/)
+  // La búsqueda es asíncrona: se reintenta hasta que el clic cae en un resultado ya estable
+  await expect(async () => {
+    if (!(await buscar.isVisible())) await page.keyboard.press('Control+k')
+    await buscar.fill('cliente')
+    await page.locator('[cmdk-group]', { hasText: 'Clientes' }).getByRole('option').first().click({ timeout: 3000 })
+    await expect(page).toHaveURL(/\/clientes\/[0-9a-f-]{36}$/, { timeout: 3000 })
+  }).toPass({ timeout: 20_000 })
   sinErrores()
 })
 

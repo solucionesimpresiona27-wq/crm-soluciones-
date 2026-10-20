@@ -52,7 +52,7 @@ export function CirculoCompletar({ hecha, titulo, onCambio, deshabilitado }: { h
 function destino(e: EventoAgenda, verPedidos: boolean) {
   if (e.origen === 'entrega' || e.origen === 'instalacion') return verPedidos ? `/pedidos/${e.id}` : `/produccion/${e.id}`
   if (e.origen === 'cotizacion') return `/cotizaciones/${e.id}`
-  if (e.origen === 'seguimiento') return e.cliente_id ? `/clientes/${e.cliente_id}` : '/embudo'
+  if (e.origen === 'seguimiento') return `/embudo?op=${e.id}`
   return null
 }
 

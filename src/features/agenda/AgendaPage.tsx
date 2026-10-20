@@ -354,7 +354,8 @@ function VistaMes({ pasa, fila }: PropsVista) {
   const c = useCalendario(r.desde, r.hasta)
   const cambiarMes = (n: number) => {
     const d = aFecha(ancla)
-    setAncla(`${new Date(d.getFullYear(), d.getMonth() + n, 1).toISOString().slice(0, 8)}15`)
+    const m = new Date(d.getFullYear(), d.getMonth() + n, 15)
+    setAncla(`${m.getFullYear()}-${String(m.getMonth() + 1).padStart(2, '0')}-15`)
   }
   if (c.isError) return <ErrorAgenda mensaje={c.error.message} reintentar={() => void c.refetch()} />
   const eventos = (c.data ?? []).filter(pasa)

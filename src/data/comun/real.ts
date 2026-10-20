@@ -12,7 +12,8 @@ export function mensajeError(error: unknown): string {
   if (!error) return 'Ocurrió un error inesperado'
   const e = error as { message?: string; code?: string; details?: string }
   const msg = e.message ?? String(error)
-  if (/Invalid login credentials/i.test(msg)) return 'Correo o contraseña incorrectos'
+  if (/Invalid login credentials/i.test(msg)) return 'Correo o contraseña incorrectos. Revísalos o usa «¿Olvidaste tu contraseña?».'
+  if (/Auth session missing|JWT expired|invalid.*token/i.test(msg)) return 'Tu sesión o el enlace venció. Vuelve a entrar o pide un enlace nuevo.'
   if (/Email not confirmed/i.test(msg)) return 'Confirma tu correo antes de entrar'
   if (/User is banned/i.test(msg)) return 'Tu cuenta está desactivada. Habla con el administrador.'
   if (/Failed to fetch|NetworkError|network/i.test(msg)) return 'Sin conexión con el servidor. Revisa tu internet.'

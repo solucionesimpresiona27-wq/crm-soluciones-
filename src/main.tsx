@@ -26,6 +26,8 @@ function Avisos() {
           toast: 'glass glass-strong !rounded-full !border-0 !px-5 !py-3.5 !text-fg !shadow-glass-lg font-sans',
           title: '!text-sm !font-semibold',
           description: '!text-xs !text-fg-muted',
+          actionButton: '!rounded-full !bg-accent !text-accent-fg !font-semibold !px-3.5 !h-8 pointer-coarse:!h-11',
+          cancelButton: '!rounded-full !bg-[var(--control-bg)] !text-fg',
         },
       }}
     />

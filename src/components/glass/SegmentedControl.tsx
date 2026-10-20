@@ -73,7 +73,7 @@ export function SegmentedControl<T extends string>({
               onClick={() => onCambio(s.valor)}
               className={cn(
                 'relative z-0 inline-flex shrink-0 items-center gap-1.5 rounded-full font-semibold outline-none transition-colors duration-200',
-                tamano === 'sm' ? 'h-8 px-3 text-xs pointer-coarse:h-10' : 'h-9 px-4 text-sm pointer-coarse:h-11',
+                tamano === 'sm' ? 'h-8 px-3 text-xs pointer-coarse:h-11' : 'h-9 px-4 text-sm pointer-coarse:h-11',
                 activo ? 'text-fg' : 'text-fg-muted hover:text-fg',
               )}
             >
