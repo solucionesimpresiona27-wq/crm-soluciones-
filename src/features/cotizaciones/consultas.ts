@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { type QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { claves } from '@/app/consultas'
 import { api } from '@/data/api'
@@ -12,13 +12,26 @@ export const useCotizacion = (id: string | undefined) =>
 
 export const useProductos = () => useQuery({ queryKey: claves.productos, queryFn: () => api.catalogo.productos(), staleTime: 5 * 60_000 })
 
+/** Claves de otros módulos que cambian con una cotización (sin importar sus archivos). */
+const OPORTUNIDADES = ['oportunidades'] as const
+const PEDIDOS = ['pedidos'] as const
+
+/**
+ * Tras cualquier cambio: la lista, el panel y el embudo (guardar crea o liga una oportunidad y el
+ * estado la adelanta: enviada → cotización enviada, aceptada → ganado). Con `pedido`, también los
+ * pedidos (al convertir nace uno).
+ */
+export function invalidarCotizacion(qc: QueryClient, id?: string, otros: { pedido?: boolean } = {}) {
+  void qc.invalidateQueries({ queryKey: claves.cotizaciones })
+  void qc.invalidateQueries({ queryKey: claves.dashboard })
+  void qc.invalidateQueries({ queryKey: OPORTUNIDADES })
+  if (otros.pedido) void qc.invalidateQueries({ queryKey: PEDIDOS })
+  if (id) void qc.invalidateQueries({ queryKey: claves.cotizacion(id) })
+}
+
 function useInvalidar() {
   const qc = useQueryClient()
-  return (id?: string) => {
-    void qc.invalidateQueries({ queryKey: claves.cotizaciones })
-    void qc.invalidateQueries({ queryKey: claves.dashboard })
-    if (id) void qc.invalidateQueries({ queryKey: claves.cotizacion(id) })
-  }
+  return (id?: string, otros?: { pedido?: boolean }) => invalidarCotizacion(qc, id, otros)
 }
 
 export function useGuardarCotizacion() {
@@ -52,7 +65,7 @@ export function useConvertirCotizacion() {
   return useMutation({
     mutationFn: (v: { id: string; fechaEntrega?: string | null; titulo?: string | null }) =>
       api.cotizaciones.convertir(v.id, { fechaEntrega: v.fechaEntrega, titulo: v.titulo }),
-    onSuccess: (_r, v) => invalidar(v.id),
+    onSuccess: (_r, v) => invalidar(v.id, { pedido: true }),
     onError: (e: Error) => toast.error(e.message),
   })
 }

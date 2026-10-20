@@ -22,6 +22,9 @@ import { PERMISOS, type CotizacionCompleta, type CotizacionLista, type Dashboard
 
 export { mensajeError }
 
+/** Filas por petición al listar cotizaciones (max_rows de supabase/config.toml; si el servidor da menos, se piden más lotes). */
+const LOTE_COTIZACIONES = 1000
+
 function aPartida(p: Record<string, unknown>): PartidaDoc {
   const c = (p.partida_costos ?? null) as Record<string, unknown> | null
   return {
@@ -117,15 +120,27 @@ const nucleo: ApiNucleo = {
 
   cotizaciones: {
     async listar() {
-      const datos = revisar(
-        await supabase()
+      // Todas las cotizaciones visibles, por lotes: un tope fijo (antes 500) dejaba fuera, sin avisar,
+      // las más antiguas. El primer lote pide el conteo (con RLS, solo las visibles) y se sigue pidiendo
+      // hasta completarlo, así no depende del max_rows de PostgREST. El orden incluye el id para que
+      // los lotes no se traslapen cuando dos cotizaciones comparten created_at.
+      const consulta = (conteo = false) =>
+        supabase()
           .from('cotizaciones')
           .select(
             'id, folio, titulo, fecha, fecha_vencimiento, estado, total, pedido_id, enviada_at, created_at, cliente:clientes(id, nombre, whatsapp, telefono), vendedor:perfiles!vendedor_id(nombre)',
+            conteo ? { count: 'exact' } : undefined,
           )
           .order('created_at', { ascending: false })
-          .limit(500),
-      )
+          .order('id', { ascending: false })
+      const primero = await consulta(true).range(0, LOTE_COTIZACIONES - 1)
+      const datos = revisar(primero)
+      const total = primero.count ?? datos.length
+      while (datos.length < total) {
+        const lote = revisar(await consulta().range(datos.length, datos.length + LOTE_COTIZACIONES - 1))
+        if (!lote.length) break
+        datos.push(...lote)
+      }
       return datos.map((c) => ({ ...c, total: n(c.total) })) as unknown as CotizacionLista[]
     },
 

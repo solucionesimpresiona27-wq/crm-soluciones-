@@ -2,7 +2,7 @@ import '@fontsource-variable/figtree'
 import './styles/index.css'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { MotionConfig } from 'motion/react'
-import { StrictMode } from 'react'
+import { StrictMode, type CSSProperties } from 'react'
 import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router-dom'
 import { Toaster } from 'sonner'
@@ -20,7 +20,18 @@ function Avisos() {
     <Toaster
       theme={efectivo === 'oscuro' ? 'dark' : 'light'}
       position="top-center"
-      offset={20}
+      // Debajo de la barra superior (fija, 88 px con su margen) para no tapar la búsqueda ni sus botones
+      offset={{ top: 88 }}
+      mobileOffset={{ top: 88, left: 16, right: 16 }}
+      // Sonner pinta su fondo propio (blanco o negro sólido): se cambia por cristal del tema, casi opaco
+      // porque el aviso flota sobre texto cualquiera y debe conservar contraste AA
+      style={
+        {
+          '--normal-bg': 'color-mix(in srgb, var(--glass-bg-solid) 88%, transparent)',
+          '--normal-border': 'transparent',
+          '--normal-text': 'rgb(var(--fg))',
+        } as CSSProperties
+      }
       toastOptions={{
         classNames: {
           toast: 'glass glass-strong !rounded-full !border-0 !px-5 !py-3.5 !text-fg !shadow-glass-lg font-sans',

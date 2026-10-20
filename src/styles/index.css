@@ -534,6 +534,13 @@
   }
 }
 
+/* El recordatorio de tareas vencidas (RecordatorioTareas) no se queda encima de un diálogo,
+   cajón o paleta abiertos: se oculta mientras estén abiertos y vuelve al cerrarlos */
+body:has([role='dialog'][data-state='open']) [data-sonner-toast].aviso-recordatorio {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 @media print {
   .light-field,
   .no-print {

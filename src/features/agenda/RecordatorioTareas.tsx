@@ -47,7 +47,10 @@ export function RecordatorioTareas() {
     const n = vencidas.length
     toast.warning(n === 1 ? 'Tienes una tarea vencida' : `Tienes ${n} tareas vencidas`, {
       description: n === 1 ? vencidas[0].titulo : `La más antigua: ${vencidas[0].titulo}`,
+      id: 'recordatorio-tareas',
       duration: 9000,
+      // Se oculta mientras haya un diálogo o cajón abierto (ver styles/index.css)
+      className: 'aviso-recordatorio',
       action: { label: 'Ver agenda', onClick: () => navegar('/agenda') },
     })
   }, [avisado, consulta.data, id, navegar])
