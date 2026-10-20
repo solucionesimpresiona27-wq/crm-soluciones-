@@ -18,6 +18,9 @@ import { useCancelarGasto, useGastos, useProveedores, useRegistrarGasto } from '
 import { abrirComprobanteGasto, SelectorPedido, SinAcceso, type PedidoLigado } from '../piezas'
 import { desgloseGastos, leerNumero } from '../util'
 
+/** Tope de gastos por consulta; si se alcanza, el total del periodo podría quedar corto y se avisa. */
+const LIMITE_GASTOS = 1000
+
 const PERIODOS: { valor: Periodo; etiqueta: string }[] = [
   { valor: 'hoy', etiqueta: 'Hoy' },
   { valor: 'semana', etiqueta: 'Semana' },
@@ -42,7 +45,7 @@ function Gastos() {
   const [rango, setRango] = useState({ desde: `${hoy.slice(0, 8)}01`, hasta: hoy })
   const [categoria, setCategoria] = useState<CategoriaGasto | ''>('')
   const { desde, hasta } = rangoPeriodo(periodo, hoy, rango)
-  const consulta = useGastos({ desde, hasta })
+  const consulta = useGastos({ desde, hasta, limite: LIMITE_GASTOS })
   const [nuevo, setNuevo] = useState(false)
   const [cancelando, setCancelando] = useState<Gasto | null>(null)
 
@@ -69,11 +72,11 @@ function Gastos() {
         <SegmentedControl etiqueta="Periodo" segmentos={PERIODOS} valor={periodo} onCambio={setPeriodo} className="w-full shrink-0 sm:w-auto" />
         {periodo === 'rango' ? (
           <div className="flex items-center gap-2">
-            <GlassInput type="date" aria-label="Desde" value={rango.desde} max={hoy} onChange={(e) => setRango((r) => ({ ...r, desde: e.target.value }))} className="h-11 w-[10.5rem] rounded-full" />
+            <GlassInput type="date" aria-label="Desde" value={rango.desde} max={rango.hasta || hoy} onChange={(e) => setRango((r) => ({ ...r, desde: e.target.value }))} className="h-11 w-[10.5rem] rounded-full" />
             <span className="text-fg-subtle" aria-hidden>
               –
             </span>
-            <GlassInput type="date" aria-label="Hasta" value={rango.hasta} max={hoy} onChange={(e) => setRango((r) => ({ ...r, hasta: e.target.value }))} className="h-11 w-[10.5rem] rounded-full" />
+            <GlassInput type="date" aria-label="Hasta" value={rango.hasta} min={rango.desde || undefined} max={hoy} onChange={(e) => setRango((r) => ({ ...r, hasta: e.target.value }))} className="h-11 w-[10.5rem] rounded-full" />
           </div>
         ) : null}
         {registrar ? (
@@ -99,6 +102,12 @@ function Gastos() {
           <Desglose d={d} categoria={categoria} onCategoria={setCategoria} />
         </div>
       )}
+
+      {todos.length >= LIMITE_GASTOS ? (
+        <p role="status" className="text-sm text-fg-muted">
+          Se muestran los {LIMITE_GASTOS.toLocaleString('es-MX')} gastos más recientes del periodo; el total puede quedar corto. Elige un rango más corto para verlos todos.
+        </p>
+      ) : null}
 
       {consulta.isPending ? (
         <TablaCargando />
@@ -203,7 +212,7 @@ function Sub({ g }: { g: Gasto }) {
   return (
     <span className="flex min-w-0 items-baseline gap-1.5 text-xs text-fg-muted">
       {g.folio_pedido && g.pedido_id ? (
-        <Link to={`/pedidos/${g.pedido_id}`} className="num shrink-0 rounded-full font-semibold text-fg outline-none hover:underline">
+        <Link to={`/pedidos/${g.pedido_id}`} className="num shrink-0 rounded-full font-semibold text-fg outline-none hover:underline pointer-coarse:-my-3 pointer-coarse:py-3">
           {g.folio_pedido}
         </Link>
       ) : null}

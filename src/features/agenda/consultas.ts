@@ -16,6 +16,17 @@ export const useCalendario = (desde: string, hasta: string) =>
     placeholderData: keepPreviousData,
   })
 
+/** Une el mensaje del error con la sugerencia sin dejar doble punto. */
+export const frase = (m: string) => (/[.!?]$/.test(m.trim()) ? m.trim() : `${m.trim()}.`)
+
+/** Una tarea con el folio de su pedido (el calendario no lo trae). */
+export const useTarea = (id: string | undefined, activo: boolean) =>
+  useQuery({
+    queryKey: ['agenda', 'tarea', id],
+    queryFn: () => api.tareas.obtener(id!),
+    enabled: Boolean(id) && activo,
+  })
+
 export const useMisPendientes = (activo = true) =>
   useQuery({
     queryKey: clavesAgenda.misPendientes,
@@ -41,7 +52,7 @@ export function useCrearTarea() {
     },
     onError: (e) =>
       toast.error('No se pudo agregar la tarea', {
-        description: `${e.message}. Revisa los datos e inténtalo de nuevo.`,
+        description: `${frase(e.message)} Revisa los datos e inténtalo de nuevo.`,
       }),
   })
 }

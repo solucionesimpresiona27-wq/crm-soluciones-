@@ -34,7 +34,7 @@ const ESTILOS = `
   .oi-tabla th { text-align: left; font-size: 8pt; color: #555; font-weight: 600; border-bottom: 1px solid #111; padding: 4px 6px; }
   .oi-tabla td { border-bottom: 1px solid #bbb; padding: 7px 6px; vertical-align: top; }
   .oi-tabla tr { break-inside: avoid; }
-  .oi-num-col { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .oi-num-col, .oi-tabla .oi-num-col { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
   .oi-sub { font-size: 9pt; color: #444; }
   .oi-caja { display: inline-block; width: 13px; height: 13px; border: 1.5px solid #111; border-radius: 3px; vertical-align: -2px; }
   .oi-lista { list-style: none; padding: 0; margin: 0; columns: 2; column-gap: 24px; }

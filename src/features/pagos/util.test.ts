@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { leerImporte, mesAnterior, rangoPeriodo, tipoSugerido, totalesPagos, validarImporte } from './util'
+import { duracionDias, leerImporte, mesAnterior, rangoPeriodo, tipoSugerido, totalesPagos, validarImporte } from './util'
 
 describe('pagos · utilidades', () => {
   it('periodos', () => {
@@ -40,5 +40,14 @@ describe('pagos · utilidades', () => {
       { tipo: 'abono', importe: 999, metodo: 'transferencia', cancelado: true },
     ])
     expect(t).toMatchObject({ entradas: 1500, devoluciones: 200, neto: 1300, pagos: 3, porMetodo: { efectivo: 800, transferencia: 500 } })
+  })
+
+  it('duración legible', () => {
+    expect(duracionDias(0)).toBe('0 días')
+    expect(duracionDias(1)).toBe('1 día')
+    expect(duracionDias(59)).toBe('59 días')
+    expect(duracionDias(95)).toBe('3 meses')
+    expect(duracionDias(400)).toBe('más de un año')
+    expect(duracionDias(8838)).toBe('24 años')
   })
 })

@@ -25,8 +25,13 @@ export default function ComisionesVista() {
   const { desde, hasta } = periodo === 'mes' ? rangoPeriodo('mes', hoy) : periodo === 'anterior' ? mesAnterior(hoy) : rangoPeriodo('rango', hoy, rango)
   const consulta = useComisiones(desde, hasta)
   const [abierto, setAbierto] = useState<string | null>(null)
+  const [verSinCobros, setVerSinCobros] = useState(false)
 
   const filas = consulta.data ?? []
+  // Quien no cobró nada en el periodo va al final y se oculta hasta pedirlo (la lista de vendedores puede ser larga).
+  const conCobros = filas.filter((f) => f.cobrado !== 0 || f.comision !== 0 || f.pedidos > 0)
+  const sinCobros = filas.length - conCobros.length
+  const visibles = verSinCobros || conCobros.length === 0 ? filas : conCobros
   const totalComision = redondear(filas.reduce((s, f) => s + f.comision, 0))
   const totalBase = redondear(filas.reduce((s, f) => s + f.base_comision, 0))
   const totalCobrado = redondear(filas.reduce((s, f) => s + f.cobrado, 0))
@@ -123,7 +128,7 @@ export default function ComisionesVista() {
               </tr>
             </thead>
             <tbody>
-              {filas.map((f) => (
+              {visibles.map((f) => (
                 <Fragment key={f.vendedor_id}>
                   <tr className="cursor-pointer" onClick={() => setAbierto((a) => (a === f.vendedor_id ? null : f.vendedor_id))}>
                     <td className="pl-5">
@@ -167,7 +172,7 @@ export default function ComisionesVista() {
         </GlassPanel>
       ) : (
         <ul className="grid gap-2.5 md:grid-cols-2" aria-label={`Comisiones del ${textoPeriodo}`}>
-          {filas.map((f) => (
+          {visibles.map((f) => (
             <li key={f.vendedor_id}>
               <GlassSurface variante="fuerte" className="rounded-tile p-4">
                 <div className="flex items-center gap-3">
@@ -195,6 +200,14 @@ export default function ComisionesVista() {
           ))}
         </ul>
       )}
+
+      {!consulta.isPending && !consulta.isError && sinCobros > 0 && conCobros.length > 0 ? (
+        <div className="flex justify-center">
+          <GlassButton variante="cristal" iconoDerecha={<ChevronDown className={cn('transition-transform', verSinCobros && 'rotate-180')} />} aria-expanded={verSinCobros} onClick={() => setVerSinCobros((v) => !v)}>
+            {verSinCobros ? 'Ocultar vendedores sin cobros' : `Mostrar ${sinCobros} ${sinCobros === 1 ? 'vendedor' : 'vendedores'} sin cobros`}
+          </GlassButton>
+        </div>
+      ) : null}
     </div>
   )
 }

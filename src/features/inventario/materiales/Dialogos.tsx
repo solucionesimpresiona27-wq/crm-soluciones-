@@ -1,4 +1,4 @@
-import { ArrowDownToLine, ArrowUpFromLine, Ruler, Save, TriangleAlert } from 'lucide-react'
+import { ArrowDownToLine, ArrowUpFromLine, ReceiptText, Ruler, Save, TriangleAlert } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { useSesion } from '@/app/sesion'
@@ -319,7 +319,7 @@ export function MovimientoModal({ material, tipo, onCerrar }: { material: Materi
             {gastos && costos ? (
               <div className="flex flex-col gap-3">
                 <GlassToggle
-                  icono={<ArrowDownToLine />}
+                  icono={<ReceiptText />}
                   titulo="Registrar también el gasto"
                   subtitulo={total ? `Compra de material por ${dinero(total)}` : 'Escribe el costo para calcular el monto'}
                   activo={conGasto}

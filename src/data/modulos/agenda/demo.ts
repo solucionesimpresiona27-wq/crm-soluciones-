@@ -118,6 +118,14 @@ export const agendaDemo: ApiAgenda = {
       return aTarea(t)
     },
 
+    async obtener(id) {
+      usuario()
+      await espera(120)
+      const t = a.tareas.find((x) => x.id === id)
+      if (!t) throw new Error('No se encontró la tarea; quizá alguien la eliminó. Recarga la agenda')
+      return aTarea(t)
+    },
+
     async actualizar(id, cambios) {
       const t = buscar(id)
       const s = exigirPropia(t)

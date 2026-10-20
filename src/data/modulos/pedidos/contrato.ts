@@ -71,6 +71,7 @@ export interface FiltrosPedidos {
   /** Fecha de alta (AAAA-MM-DD) */
   desde?: string
   hasta?: string
+  /** Máximo de pedidos a devolver; sin él se devuelven todos los que cumplan los filtros. */
   limite?: number
 }
 

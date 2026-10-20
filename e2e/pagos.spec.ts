@@ -30,6 +30,15 @@ test('ventas registra anticipo y liquidación con el diálogo; el corte del día
   const dialogo = page.getByRole('dialog', { name: 'Registrar pago' })
   await expect(dialogo.getByText(p.pedidoFolio)).toBeVisible()
   await expect(dialogo.locator('[data-prueba="saldo-pedido"]')).toHaveText('$1,113.60')
+  // Sin importe no se guarda y el error queda junto al campo
+  await dialogo.getByRole('button', { name: 'Registrar anticipo' }).click()
+  await expect(dialogo.getByLabel('Importe recibido')).toHaveAttribute('aria-invalid', 'true')
+  await expect(dialogo.getByText('Escribe el importe recibido')).toBeVisible()
+  // Escape cierra el diálogo y limpia la URL
+  await page.keyboard.press('Escape')
+  await expect(dialogo).toBeHidden()
+  await expect(page).not.toHaveURL(/pedido=/)
+  await page.goto(`/pagos?pedido=${p.pedidoId}`)
   await dialogo.getByLabel('Importe recibido').fill('500')
   await expect(dialogo.getByRole('tab', { name: 'Anticipo' })).toHaveAttribute('aria-selected', 'true')
   await dialogo.getByRole('radio', { name: 'Transferencia' }).click()
@@ -95,10 +104,11 @@ test('ventas cierra la caja de un día pasado y administración la reabre', asyn
   await contexto.close()
 })
 
-test('producción no entra a pagos ni ve montos', async ({ page }) => {
+for (const rol of ['produccion', 'diseno'] as const)
+test(`${rol} no entra a pagos ni ve montos`, async ({ page }) => {
   const sinErrores = vigilarErrores(page)
-  await entrar(page, 'produccion')
-  for (const ruta of ['/pagos', '/pagos/caja', '/pagos/por-cobrar']) {
+  await entrar(page, rol)
+  for (const ruta of ['/pagos', '/pagos/caja', '/pagos/por-cobrar', '/pagos/comisiones', '/pagos?registrar=1']) {
     await page.goto(ruta)
     await expect(page.getByText(/no está disponible para tu rol|son para ventas y administración/)).toBeVisible()
     await expect(page.locator('main')).not.toContainText('$')

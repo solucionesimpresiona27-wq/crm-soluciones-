@@ -1,16 +1,16 @@
 import { Link2, Lock, Search, X } from 'lucide-react'
 import { motion, useReducedMotion } from 'motion/react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { EstadoVacio, GlassButton, GlassInput, GlassPanel, Pildora, type TonoPildora } from '@/components/glass'
 import { api } from '@/data/api'
-import { TIPOS_MOVIMIENTO, UNIDADES_MATERIAL, type Material, type TipoMovimiento, type UnidadMaterial } from '@/data/modulos/inventario/contrato'
+import { TIPOS_MOVIMIENTO, type Material, type TipoMovimiento, type UnidadMaterial } from '@/data/modulos/inventario/contrato'
 import { cantidad } from '@/lib/format'
 import { resorte } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 import { usePedidosParaLigar } from './consultas'
-import { marcaMinimo, nivelExistencia } from './util'
+import { marcaMinimo, nivelExistencia, nombreUnidad } from './util'
 
 export const TONO_MOVIMIENTO: Record<TipoMovimiento, TonoPildora> = {
   entrada: 'exito',
@@ -23,8 +23,8 @@ export function MovimientoPildora({ tipo }: { tipo: TipoMovimiento }) {
   return <Pildora tono={TONO_MOVIMIENTO[tipo]}>{TIPOS_MOVIMIENTO[tipo]}</Pildora>
 }
 
-/** "12.5 m²" */
-export const conUnidad = (n: number, u: UnidadMaterial) => `${cantidad(n)} ${UNIDADES_MATERIAL[u]}`
+/** "12.5 m²", "780 hojas", "1 pieza" */
+export const conUnidad = (n: number, u: UnidadMaterial) => `${cantidad(n)} ${nombreUnidad(n, u)}`
 
 /**
  * Medidor horizontal de existencia en cápsula (como el deslizador de brillo del Centro de Control).
@@ -57,6 +57,26 @@ export function MedidorExistencia({ m, className }: { m: Pick<Material, 'existen
       {marca !== null ? <span className="absolute inset-y-0 w-0.5 bg-fg/35" style={{ left: `${marca * 100}%` }} aria-hidden /> : null}
     </div>
   )
+}
+
+/**
+ * En celular el selector segmentado se desplaza de lado: centra el segmento activo para que no quede
+ * cortado (p. ej. "Gastos y compras" al entrar directo a esa sección). Envuelve el selector con el ref.
+ */
+export function useSegmentoVisible(valor: string) {
+  const ref = useRef<HTMLDivElement>(null)
+  const reducir = useReducedMotion()
+  const primera = useRef(true)
+  useEffect(() => {
+    const lista = ref.current?.querySelector<HTMLElement>('[role="tablist"]')
+    const activo = lista?.querySelector<HTMLElement>('[aria-selected="true"]')
+    const inicial = primera.current
+    primera.current = false
+    if (!lista || !activo || lista.scrollWidth <= lista.clientWidth) return
+    const destino = activo.offsetLeft - (lista.clientWidth - activo.offsetWidth) / 2
+    lista.scrollTo({ left: Math.max(0, destino), behavior: inicial || reducir ? 'auto' : 'smooth' })
+  }, [valor, reducir])
+  return ref
 }
 
 export function SinAcceso({ titulo, descripcion }: { titulo: string; descripcion: string }) {

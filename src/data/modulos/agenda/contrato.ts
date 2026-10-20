@@ -92,6 +92,8 @@ export interface ApiAgenda {
     listar(filtros?: FiltrosTareas): Promise<Tarea[]>
     /** Mis tareas sin completar con fecha de hoy o anterior ("Mis pendientes de hoy"). */
     misPendientes(): Promise<Tarea[]>
+    /** Una tarea con nombres (cliente, responsable y folio del pedido si el rol ve pedidos). */
+    obtener(id: string): Promise<Tarea>
     /** Si se liga a un pedido, cotización u oportunidad, el cliente se toma de ahí. */
     crear(datos: DatosTarea): Promise<Tarea>
     actualizar(id: string, cambios: Partial<DatosTarea>): Promise<Tarea>

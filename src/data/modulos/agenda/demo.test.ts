@@ -76,4 +76,14 @@ describe('agenda · vista previa', () => {
     expect(prod.some((e) => e.origen === 'seguimiento' || e.origen === 'cotizacion')).toBe(false)
     await expect(api.agenda.calendario('2026-01-01', '2027-06-01')).rejects.toThrow('un año')
   })
+
+  it('obtener: folio del pedido solo para quien ve pedidos', async () => {
+    entrarComo('ventas')
+    const t = await api.tareas.crear({ titulo: 'Confirmar medidas', pedido_id: 'demo-ped-h' })
+    const folio = almacen.pedidos.find((p) => p.id === 'demo-ped-h')!.folio
+    expect((await api.tareas.obtener(t.id)).folio_pedido).toBe(folio)
+    cambiarA('produccion')
+    expect((await api.tareas.obtener(t.id)).folio_pedido).toBeNull()
+    await expect(api.tareas.obtener('no-existe')).rejects.toThrow('No se encontró la tarea')
+  })
 })

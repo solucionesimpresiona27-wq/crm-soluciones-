@@ -164,7 +164,7 @@ function FichaProveedor({
     <GlassModal abierto={Boolean(p)} onCambio={(v) => (v ? null : onCerrar())} titulo={p?.nombre ?? 'Proveedor'} descripcion={p ? [p.categoria, p.activo ? null : 'Inactivo'].filter(Boolean).join(' · ') || undefined : undefined} lateral>
       {p ? (
         <div className="flex flex-col gap-5">
-          <div className="flex flex-wrap justify-center gap-4 sm:justify-start">
+          <div className={cn('grid justify-items-center gap-2 sm:flex sm:flex-wrap sm:justify-start sm:gap-4', onEditar ? 'grid-cols-4' : 'grid-cols-3')}>
             <GlassIconButton etiqueta="WhatsApp" mostrarEtiqueta icono={<MessageCircle />} destacado={Boolean(wa)} tono="luz" disabled={!wa} onClick={() => wa && window.open(enlaceWhatsApp(wa, `Hola ${p.contacto ?? p.nombre}, `), '_blank', 'noopener,noreferrer')} />
             <GlassIconButton etiqueta="Llamar" mostrarEtiqueta icono={<Phone />} disabled={!p.telefono} onClick={() => p.telefono && (window.location.href = `tel:${p.telefono}`)} />
             <GlassIconButton etiqueta="Correo" mostrarEtiqueta icono={<Mail />} disabled={!p.email} onClick={() => p.email && (window.location.href = `mailto:${p.email}`)} />

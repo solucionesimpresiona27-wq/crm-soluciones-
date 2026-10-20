@@ -10,7 +10,7 @@ import { hoyISO, sumarDias } from '@/lib/format'
 import { resorte } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 import { CapturaRapida } from './CapturaRapida'
-import { useCalendario, useCompletarTarea } from './consultas'
+import { frase, useCalendario, useCompletarTarea } from './consultas'
 import { FilaEvento } from './piezas'
 import { TareaModal, type BorradorTarea } from './TareaModal'
 import { ORIGEN, aFecha, atrasado, claveEvento, diaCorto, diaLargo, mesLargo, ordenar, rangoMes, rangoSemana } from './util'
@@ -180,7 +180,7 @@ function ErrorAgenda({ mensaje, reintentar }: { mensaje: string; reintentar: () 
       <EstadoVacio
         icono={<CloudOff />}
         titulo="No se pudo cargar la agenda"
-        descripcion={`${mensaje}. Revisa tu conexión e inténtalo de nuevo.`}
+        descripcion={`${frase(mensaje)} Revisa tu conexión e inténtalo de nuevo.`}
         accion={
           <GlassButton icono={<RotateCcw />} onClick={reintentar}>
             Reintentar

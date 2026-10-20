@@ -6,7 +6,7 @@ import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useSesion } from '@/app/sesion'
 import { Campo, EncabezadoPanel, EstadoVacio, GlassButton, GlassInput, GlassModal, GlassPanel, GlassTextarea, Pildora, Skeleton } from '@/components/glass'
-import { METODOS_PAGO, type ResumenCaja, type TipoPago } from '@/data/modulos/pagos/contrato'
+import { METODOS_PAGO, TIPOS_PAGO, type ResumenCaja, type TipoPago } from '@/data/modulos/pagos/contrato'
 import { dinero, fechaLarga, hoyISO } from '@/lib/format'
 import { cn, redondear } from '@/lib/utils'
 import { useCerrarCaja, useCortes, useReabrirCaja, useResumenCaja } from '../consultas'
@@ -15,8 +15,9 @@ import { fechaCorta, leerImporte } from '../util'
 import { Balanza } from './Balanza'
 
 const hora = (iso: string) => format(parseISO(iso), 'HH:mm')
+/** "Mié 10 jul"; con año si no es del año en curso ("Mié 10 jul 2024"). */
 const diaCorto = (f: string) => {
-  const t = format(parseISO(`${f}T12:00:00`), 'EEE d MMM', { locale: es })
+  const t = format(parseISO(`${f}T12:00:00`), f.slice(0, 4) === hoyISO().slice(0, 4) ? 'EEE d MMM' : 'EEE d MMM yyyy', { locale: es })
   return t.charAt(0).toUpperCase() + t.slice(1)
 }
 
@@ -386,13 +387,19 @@ function PorMetodo({ r }: { r: ResumenCaja }) {
   )
 }
 
+const MAX_PERSONAS = 6
+
 function PorUsuario({ r }: { r: ResumenCaja }) {
+  const [todas, setTodas] = useState(false)
   if (r.por_usuario.length === 0) return null
+  const ordenadas = [...r.por_usuario].sort((a, b) => b.neto - a.neto)
+  const visibles = todas ? ordenadas : ordenadas.slice(0, MAX_PERSONAS)
+  const ocultas = ordenadas.length - MAX_PERSONAS
   return (
     <GlassPanel className="rounded-module p-5">
       <EncabezadoPanel titulo="Por persona" />
       <ul className="mt-3 divide-y divide-[var(--divider)]">
-        {r.por_usuario.map((u) => (
+        {visibles.map((u) => (
           <li key={u.usuario_id ?? u.nombre} className="flex items-center gap-3 py-2.5">
             <Users className="size-4 shrink-0 text-fg-subtle" aria-hidden />
             <span className="min-w-0 flex-1">
@@ -405,6 +412,13 @@ function PorUsuario({ r }: { r: ResumenCaja }) {
           </li>
         ))}
       </ul>
+      {ocultas > 0 ? (
+        <div className="no-print mt-2 flex justify-center">
+          <GlassButton variante="fantasma" tamano="sm" className="pointer-coarse:h-11" aria-expanded={todas} onClick={() => setTodas((v) => !v)}>
+            {todas ? 'Ver menos' : `Ver ${ocultas} ${ocultas === 1 ? 'persona más' : 'personas más'}`}
+          </GlassButton>
+        </div>
+      ) : null}
     </GlassPanel>
   )
 }
@@ -447,8 +461,8 @@ function PagosDelDia({ r }: { r: ResumenCaja }) {
               <tr>
                 <th scope="col" className="pl-5">Hora</th>
                 <th scope="col">Pedido</th>
-                <th scope="col">Tipo</th>
-                <th scope="col">Método</th>
+                <th scope="col" className="max-sm:hidden">Tipo</th>
+                <th scope="col" className="max-sm:hidden">Método</th>
                 <th scope="col" className="max-md:hidden">Registró</th>
                 <th scope="col" className="pr-5 text-right">Importe</th>
               </tr>
@@ -458,13 +472,16 @@ function PagosDelDia({ r }: { r: ResumenCaja }) {
                 <tr key={p.id}>
                   <td className="num whitespace-nowrap pl-5 text-fg-muted">{hora(p.created_at)}</td>
                   <td className="w-full max-w-0">
-                    <span className="num font-semibold text-fg">{p.folio}</span>
+                    <span className="num whitespace-nowrap font-semibold text-fg">{p.folio}</span>
                     <span className="block truncate text-xs text-fg-muted">{p.cliente ?? '—'}</span>
+                    <span className="block truncate text-xs text-fg-subtle sm:hidden">
+                      {TIPOS_PAGO[p.tipo as TipoPago]} · {METODOS_PAGO[p.metodo]}
+                    </span>
                   </td>
-                  <td>
+                  <td className="max-sm:hidden">
                     <TipoPildora tipo={p.tipo as TipoPago} />
                   </td>
-                  <td className="whitespace-nowrap text-fg">
+                  <td className="whitespace-nowrap text-fg max-sm:hidden">
                     {METODOS_PAGO[p.metodo]}
                     {p.referencia ? <span className="block max-w-[10rem] truncate text-xs text-fg-subtle">{p.referencia}</span> : null}
                   </td>

@@ -8,7 +8,7 @@ import { useEsEscritorio } from '@/hooks/useMediaQuery'
 import { fechaRelativa, hoyISO } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { useMateriales, useMovimientos } from '../consultas'
-import { conUnidad, MovimientoPildora, SelectorPedido, type PedidoLigado } from '../piezas'
+import { conUnidad, MovimientoPildora, SelectorPedido, useSegmentoVisible, type PedidoLigado } from '../piezas'
 
 type FiltroTipo = TipoMovimiento | 'todos'
 const TIPOS: { valor: FiltroTipo; etiqueta: string }[] = [
@@ -42,6 +42,7 @@ export default function MovimientosVista() {
     limite,
   })
   const lista = consulta.data ?? []
+  const selectorTipo = useSegmentoVisible(tipo)
   const hayFiltros = Boolean(materialId || tipo !== 'todos' || pedido || desde || hasta)
   const material = materiales.data?.find((m) => m.id === materialId)
   const descripcion = `Movimientos${material ? ` de ${material.nombre}` : ''}`
@@ -64,7 +65,9 @@ export default function MovimientosVista() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end gap-x-3 gap-y-2.5">
-        <SegmentedControl etiqueta="Tipo de movimiento" segmentos={TIPOS} valor={tipo} onCambio={setTipo} className="w-full shrink-0 overflow-x-auto sm:w-auto" />
+        <div ref={selectorTipo} className="contents">
+          <SegmentedControl etiqueta="Tipo de movimiento" segmentos={TIPOS} valor={tipo} onCambio={setTipo} className="w-full shrink-0 overflow-x-auto sm:w-auto" />
+        </div>
         <div className="w-full sm:w-64">
           <GlassSelect aria-label="Filtrar por material" value={materialId} onChange={(e) => cambiarMaterial(e.target.value)} className="rounded-full">
             <option value="">Todos los materiales</option>
@@ -218,7 +221,7 @@ function Detalle({ m }: { m: Movimiento }) {
   return (
     <span className="flex min-w-0 items-baseline gap-2">
       {m.folio_pedido && m.pedido_id ? (
-        <Link to={`/pedidos/${m.pedido_id}`} className="num shrink-0 rounded-full font-semibold text-fg outline-none hover:underline">
+        <Link to={`/pedidos/${m.pedido_id}`} className="num shrink-0 rounded-full font-semibold text-fg outline-none hover:underline pointer-coarse:-my-3 pointer-coarse:py-3">
           {m.folio_pedido}
         </Link>
       ) : null}

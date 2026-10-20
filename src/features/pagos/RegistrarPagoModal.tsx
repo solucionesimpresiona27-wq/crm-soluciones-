@@ -383,13 +383,13 @@ function Captura({
             </p>
           </div>
 
-          <Campo
-            etiqueta={tipo === 'devolucion' ? 'Importe a devolver' : 'Importe recibido'}
-            error={intento ? errorImporte : null}
-            ayuda={nuevoSaldo !== null ? `Saldo después de este pago: ${dinero(Math.max(0, nuevoSaldo))}` : undefined}
-          >
-            {(id, a11y) => (
-              <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2">
+            <Campo
+              etiqueta={tipo === 'devolucion' ? 'Importe a devolver' : 'Importe recibido'}
+              error={intento ? errorImporte : null}
+              ayuda={nuevoSaldo !== null ? `Saldo después de este pago: ${dinero(Math.max(0, nuevoSaldo))}` : undefined}
+            >
+              {(id, a11y) => (
                 <GlassInput
                   id={id}
                   {...a11y}
@@ -402,21 +402,21 @@ function Captura({
                   sufijo="MXN"
                   className="num text-lg font-semibold"
                 />
-                {tipo !== 'devolucion' && pedido.saldo > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    <GlassButton tamano="sm" variante="cristal" className="pointer-coarse:h-11" onClick={() => setTextoImporte(pedido.saldo.toFixed(2))}>
-                      Todo el saldo · <span className="num">{dinero(pedido.saldo)}</span>
-                    </GlassButton>
-                    {pedido.pagado <= 0 && montoAnticipo > 0 && montoAnticipo < pedido.saldo ? (
-                      <GlassButton tamano="sm" variante="cristal" className="pointer-coarse:h-11" onClick={() => setTextoImporte(montoAnticipo.toFixed(2))}>
-                        Anticipo {anticipoPct} % · <span className="num">{dinero(montoAnticipo)}</span>
-                      </GlassButton>
-                    ) : null}
-                  </div>
+              )}
+            </Campo>
+            {tipo !== 'devolucion' && pedido.saldo > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                <GlassButton tamano="sm" variante="cristal" className="pointer-coarse:h-11" onClick={() => setTextoImporte(pedido.saldo.toFixed(2))}>
+                  Todo el saldo · <span className="num">{dinero(pedido.saldo)}</span>
+                </GlassButton>
+                {pedido.pagado <= 0 && montoAnticipo > 0 && montoAnticipo < pedido.saldo ? (
+                  <GlassButton tamano="sm" variante="cristal" className="pointer-coarse:h-11" onClick={() => setTextoImporte(montoAnticipo.toFixed(2))}>
+                    Anticipo {anticipoPct} % · <span className="num">{dinero(montoAnticipo)}</span>
+                  </GlassButton>
                 ) : null}
               </div>
-            )}
-          </Campo>
+            ) : null}
+          </div>
 
           <fieldset className="flex flex-col gap-1.5">
             <legend className="mb-1.5 text-sm font-medium text-fg-muted">Método</legend>

@@ -12,7 +12,7 @@ import { resorte } from '@/lib/motion'
 import { cn, iniciales, normalizar, redondear } from '@/lib/utils'
 import { useCuentasPorCobrar } from '../consultas'
 import { AccionFila, useAbrirCobro, useMensajePago } from '../piezas'
-import { dineroAsentado, fechaCorta } from '../util'
+import { dineroAsentado, duracionDias, fechaCorta } from '../util'
 
 type Filtro = 'todos' | 'vencidos'
 
@@ -187,10 +187,10 @@ export default function PorCobrarVista() {
                     {iniciales(g.nombre)}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <Link to={`/clientes/${g.id}`} className="block truncate text-md font-semibold text-fg outline-none hover:underline">
+                    <Link to={`/clientes/${g.id}`} className="line-clamp-2 break-words text-md font-semibold leading-snug text-fg outline-none hover:underline sm:block sm:truncate">
                       {g.nombre}
                     </Link>
-                    <p className="truncate text-xs text-fg-muted">
+                    <p className="text-xs text-fg-muted sm:truncate">
                       {g.cuentas.length} {g.cuentas.length === 1 ? 'pedido' : 'pedidos'}
                       {g.vencido > 0 ? ` · ${dinero(g.vencido)} vencido` : ''}
                     </p>
@@ -212,12 +212,12 @@ export default function PorCobrarVista() {
                           {c.vencido ? (
                             <Pildora tono="aviso" punto={false}>
                               <AlarmClock className="size-3" aria-hidden />
-                              Vencido {c.dias_vencido === 0 ? 'hoy' : `hace ${c.dias_vencido} ${c.dias_vencido === 1 ? 'día' : 'días'}`}
+                              Vencido {c.dias_vencido === 0 ? 'hoy' : `hace ${duracionDias(c.dias_vencido)}`}
                             </Pildora>
                           ) : null}
                         </div>
                         <p className="truncate text-xs text-fg-subtle">
-                          {c.titulo} · {c.dias_transcurridos} {c.dias_transcurridos === 1 ? 'día' : 'días'}
+                          {c.titulo} · {duracionDias(c.dias_transcurridos)}
                           {c.fecha_limite && !c.vencido ? ` · límite ${fechaCorta(c.fecha_limite, hoy)}` : ''}
                         </p>
                       </div>

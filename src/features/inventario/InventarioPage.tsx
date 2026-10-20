@@ -5,6 +5,7 @@ import { useSeccionesVisibles } from '@/components/shell/usarModulos'
 import GastosVista from './gastos/GastosVista'
 import MaterialesVista from './materiales/MaterialesVista'
 import MovimientosVista from './movimientos/MovimientosVista'
+import { useSegmentoVisible } from './piezas'
 import ProveedoresVista from './proveedores/ProveedoresVista'
 
 /**
@@ -18,17 +19,21 @@ export default function InventarioPage() {
   const secciones = useSeccionesVisibles('/inventario')
   const actual = [...secciones].sort((a, b) => b.ruta.length - a.ruta.length).find((s) => pathname === s.ruta || pathname.startsWith(`${s.ruta}/`))?.ruta ?? '/inventario'
 
+  const selector = useSegmentoVisible(actual)
+
   return (
     <Tooltip.Provider delayDuration={350}>
       <div className="flex flex-col gap-4 pt-1">
         {secciones.length > 1 ? (
-          <SegmentedControl
-            etiqueta="Secciones de inventario"
-            segmentos={secciones.map((s) => ({ valor: s.ruta, etiqueta: s.titulo }))}
-            valor={actual}
-            onCambio={(r) => navegar(r)}
-            className="w-full overflow-x-auto sm:w-auto sm:self-start"
-          />
+          <div ref={selector} className="contents">
+            <SegmentedControl
+              etiqueta="Secciones de inventario"
+              segmentos={secciones.map((s) => ({ valor: s.ruta, etiqueta: s.titulo }))}
+              valor={actual}
+              onCambio={(r) => navegar(r)}
+              className="w-full overflow-x-auto sm:w-auto sm:self-start"
+            />
+          </div>
         ) : null}
         <Routes>
           <Route index element={<MaterialesVista />} />

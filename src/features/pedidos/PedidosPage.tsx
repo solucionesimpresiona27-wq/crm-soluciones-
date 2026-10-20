@@ -193,7 +193,7 @@ export default function PedidosPage({ nuevo = false }: { nuevo?: boolean }) {
                   setBusqueda('')
                 }
               }}
-              placeholder="Folio, cliente o título"
+              placeholder="Buscar pedido"
               aria-label="Buscar pedidos por folio, cliente o título"
               icono={<Search />}
               className="rounded-full"

@@ -95,6 +95,18 @@ export function leerImporte(texto: string): number | null {
   return Number.isFinite(n) ? n : NaN
 }
 
+/** Duración legible a partir de días: "1 día", "18 días", "3 meses", "2 años". */
+export function duracionDias(dias: number) {
+  const d = Math.max(0, Math.floor(dias))
+  if (d < 60) return `${d} ${d === 1 ? 'día' : 'días'}`
+  if (d < 365) {
+    const m = Math.floor(d / 30)
+    return `${m} meses`
+  }
+  const a = Math.floor(d / 365)
+  return `${a === 1 ? 'más de un año' : `${a} años`}`
+}
+
 /** CSV con BOM para que Excel respete los acentos. */
 export function descargarCsv(nombre: string, filas: (string | number | null)[][]) {
   const celda = (v: string | number | null) => {

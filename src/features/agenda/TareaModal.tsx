@@ -4,7 +4,7 @@ import { useEquipo } from '@/app/consultas'
 import { useSesion } from '@/app/sesion'
 import { Campo, GlassButton, GlassInput, GlassModal, GlassSelect, GlassTextarea } from '@/components/glass'
 import { TIPOS_TAREA, type DatosTarea, type Prioridad, type TipoTarea } from '@/data/modulos/agenda/contrato'
-import { useActualizarTarea, useCrearTarea, useEliminarTarea } from './consultas'
+import { useActualizarTarea, useCrearTarea, useEliminarTarea, useTarea } from './consultas'
 import { Ligar, type Ligado } from './Ligar'
 import { Atajos } from './CapturaRapida'
 
@@ -51,6 +51,10 @@ function Formulario({ inicial, onListo, hoy }: { inicial: BorradorTarea; onListo
   // La base exige autor o administración; si no, el aviso de error lo explica
   const puedeEliminar = Boolean(inicial.id)
   const verPedidos = puede('ver_precios')
+  // El calendario no trae el folio de la tarea: se pide aparte para mostrar "PED-0001" y no "Pedido ligado"
+  const tarea = useTarea(inicial.id, verPedidos && Boolean(inicial.pedido))
+  const folio = tarea.data?.folio_pedido
+  const pedido = b.pedido && folio && b.pedido.id === inicial.pedido?.id ? { ...b.pedido, nombre: folio } : (b.pedido ?? null)
   const set = <K extends keyof BorradorTarea>(k: K, v: BorradorTarea[K]) => setB((x) => ({ ...x, [k]: v }))
 
   const enviar = async (ev: FormEvent) => {
@@ -128,7 +132,7 @@ function Formulario({ inicial, onListo, hoy }: { inicial: BorradorTarea; onListo
       </Campo>
       {verPedidos ? (
         <Campo etiqueta="Pedido" opcional ayuda="Si eliges un pedido, el cliente se toma de ahí.">
-          {(id, p) => <Ligar id={id} {...p} tipo="pedido" etiqueta="Pedido" valor={b.pedido ?? null} onCambio={(v) => set('pedido', v)} />}
+          {(id, p) => <Ligar id={id} {...p} tipo="pedido" etiqueta="Pedido" valor={pedido} onCambio={(v) => set('pedido', v)} />}
         </Campo>
       ) : null}
       <Campo etiqueta="Notas" opcional>

@@ -80,25 +80,41 @@ async function conNombre(filas: Array<Record<string, unknown>>): Promise<Archivo
   return filas.map((f) => ({ ...(f as unknown as Archivo), subido_por_nombre: mapa.get(f.subido_por as string) ?? null }))
 }
 
+/** Filas por petición (el servidor entrega hasta 1000) y tope de seguridad de la lista. */
+const PAGINA = 1000
+const MAX_PEDIDOS = 10000
+
 export const pedidosSupabase: ApiPedidos = {
   pedidos: {
     async listar(filtros = {}) {
-      let q = supabase().from('ordenes_trabajo').select('*')
-      if (filtros.estados?.length) q = q.in('estado', filtros.estados)
-      else if (!filtros.incluirCerrados) q = q.not('estado', 'in', '(finalizado,cancelado)')
-      if (filtros.clienteId) q = q.eq('cliente_id', filtros.clienteId)
-      if (filtros.responsableId) q = q.eq('responsable_id', filtros.responsableId)
-      if (filtros.vendedorId) q = q.eq('vendedor_id', filtros.vendedorId)
-      if (filtros.soloAtrasados) q = q.eq('atrasado', true)
-      if (filtros.desde) q = q.gte('created_at', `${filtros.desde}T00:00:00`)
-      if (filtros.hasta) q = q.lte('created_at', `${filtros.hasta}T23:59:59`)
-      const filas = revisar(await q.order('fecha_entrega', { ascending: true, nullsFirst: false }).order('folio').limit(filtros.texto ? 2000 : (filtros.limite ?? 500)))
+      const consulta = () => {
+        let q = supabase().from('ordenes_trabajo').select('*')
+        if (filtros.estados?.length) q = q.in('estado', filtros.estados)
+        else if (!filtros.incluirCerrados) q = q.not('estado', 'in', '(finalizado,cancelado)')
+        if (filtros.clienteId) q = q.eq('cliente_id', filtros.clienteId)
+        if (filtros.responsableId) q = q.eq('responsable_id', filtros.responsableId)
+        if (filtros.vendedorId) q = q.eq('vendedor_id', filtros.vendedorId)
+        if (filtros.soloAtrasados) q = q.eq('atrasado', true)
+        if (filtros.desde) q = q.gte('created_at', `${filtros.desde}T00:00:00`)
+        if (filtros.hasta) q = q.lte('created_at', `${filtros.hasta}T23:59:59`)
+        return q.order('fecha_entrega', { ascending: true, nullsFirst: false }).order('folio').order('id')
+      }
+      // Con límite explícito (y sin texto) basta una petición; si no, se piden todas por páginas:
+      // un tope fijo dejaba fuera, sin avisar, los pedidos más nuevos y descuadraba los conteos
+      const filas: Array<Record<string, unknown>> = []
+      if (filtros.limite && !filtros.texto) filas.push(...(revisar(await consulta().limit(filtros.limite)) as unknown as Array<Record<string, unknown>>))
+      else
+        for (let desde = 0; desde < MAX_PEDIDOS; desde += PAGINA) {
+          const pagina = revisar(await consulta().range(desde, desde + PAGINA - 1)) as unknown as Array<Record<string, unknown>>
+          filas.push(...pagina)
+          if (pagina.length < PAGINA) break
+        }
       const t = textoBusqueda(filtros.texto ?? '')
       // El texto se filtra aquí (incluye el nombre del cliente), así que el límite va después
       return filas
         .map((f) => aLista(f as unknown as Record<string, unknown>))
         .filter((p) => !t || textoBusqueda(`${p.folio} ${p.titulo} ${p.cliente}`).includes(t))
-        .slice(0, filtros.limite ?? 500)
+        .slice(0, filtros.limite)
     },
 
     async obtener(id) {

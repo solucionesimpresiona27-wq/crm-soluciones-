@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useSesion } from '@/app/sesion'
 import { useMisPendientes } from './consultas'
@@ -28,9 +28,16 @@ function marcarAvisado(id: string) {
 export function RecordatorioTareas() {
   const { sesion } = useSesion()
   const navegar = useNavigate()
+  // En la agenda las vencidas ya están a la vista: el aviso solo taparía la captura y las hojas
+  const enAgenda = useLocation().pathname.startsWith('/agenda')
   const id = sesion?.perfil.id ?? ''
-  const avisado = !id || yaAvisado(id)
+  const avisado = !id || enAgenda || yaAvisado(id)
   const consulta = useMisPendientes(!avisado)
+
+  // Entrar a la agenda cuenta como aviso visto
+  useEffect(() => {
+    if (enAgenda && id) marcarAvisado(id)
+  }, [enAgenda, id])
 
   useEffect(() => {
     if (avisado || !consulta.data) return

@@ -9,6 +9,14 @@ import { fechaRelativa } from '@/lib/format'
 import { cn, iniciales } from '@/lib/utils'
 import { diasParaEntrega } from './etapas'
 
+/** Atraso corto que cabe en la tarjeta: días hasta 45, luego meses y años (la fecha completa va en el título). */
+export function textoAtraso(dias: number) {
+  if (dias <= 45) return `Atrasado ${dias === 1 ? '1 día' : `${dias} días`}`
+  if (dias < 365) return `Atrasado ${Math.round(dias / 30)} meses`
+  const anios = Math.floor(dias / 365)
+  return `Atrasado ${anios === 1 ? '1 año' : `${anios} años`}`
+}
+
 /** Fecha de entrega con el aviso que importa: atrasada (rojo), hoy o mañana (luz) o la fecha corta. */
 export function Entrega({
   o,
@@ -27,9 +35,7 @@ export function Entrega({
   const pronto = !atrasado && dias <= 1
   if (soloAviso && !atrasado && !pronto) return null
   const texto = atrasado
-    ? Math.abs(dias) > 45
-      ? `Atrasado desde ${format(parseISO(o.fecha_entrega!), 'd MMM', { locale: es })}`
-      : `Atrasado ${Math.abs(dias) === 1 ? '1 día' : `${Math.abs(dias)} días`}`
+    ? textoAtraso(Math.abs(dias))
     : dias === 0
       ? 'Entrega hoy'
       : dias === 1
@@ -44,7 +50,9 @@ export function Entrega({
       )}
     >
       <CalendarClock aria-hidden />
-      <span className="truncate first-letter:uppercase" title={texto}>{texto}</span>
+      <span className="truncate first-letter:uppercase" title={`${texto} · entrega: ${format(parseISO(o.fecha_entrega!), "d 'de' MMMM 'de' yyyy", { locale: es })}`}>
+        {texto}
+      </span>
     </span>
   )
 }

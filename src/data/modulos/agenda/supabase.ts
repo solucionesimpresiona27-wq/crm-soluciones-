@@ -1,11 +1,14 @@
 /** MÓDULO AGENDA · implementación real (Supabase). */
-import { hoyLocal, limpio, mensajeError, revisar, supabase, textoBusqueda } from '@/data/comun/real'
+import { hoyLocal, limpio, mensajeError, revisar, revisarOpcional, supabase, textoBusqueda } from '@/data/comun/real'
 import type { TablesUpdate } from '@/lib/database.types'
 import type { ApiAgenda, DatosTarea, EventoAgenda, Tarea } from './contrato'
 
 // El cliente sale de clientes_operacion: Diseño y Producción (sin permiso de clientes) solo ven el
 // nombre de los clientes que tienen pedidos; quien ve clientes, el de todos.
 const CAMPOS = '*, responsable:perfiles!responsable_id(nombre), cliente:clientes_operacion(nombre), pedido:pedidos(folio)'
+
+const NO_ENCONTRADA = 'No se encontró la tarea; quizá alguien la eliminó. Recarga la agenda'
+const SIN_PERMISO = 'Solo el responsable, quien creó la tarea o administración pueden cambiarla'
 
 function aTarea(f: Record<string, unknown>): Tarea {
   const { responsable, cliente, pedido, ...t } = f as Record<string, unknown> & {
@@ -82,13 +85,22 @@ export const agendaSupabase: ApiAgenda = {
       return aTarea(f as unknown as Record<string, unknown>)
     },
 
+    async obtener(id) {
+      const f = revisarOpcional(await supabase().from('tareas').select(CAMPOS).eq('id', id).maybeSingle())
+      if (!f) throw new Error(NO_ENCONTRADA)
+      return aTarea(f as unknown as Record<string, unknown>)
+    },
+
     async actualizar(id, cambios) {
-      const f = revisar(await supabase().from('tareas').update(fila(cambios)).eq('id', id).select(CAMPOS).single())
+      // RLS filtra en silencio la fila ajena: sin fila, el aviso dice quién puede cambiarla
+      const f = revisarOpcional(await supabase().from('tareas').update(fila(cambios)).eq('id', id).select(CAMPOS).maybeSingle())
+      if (!f) throw new Error(SIN_PERMISO)
       return aTarea(f as unknown as Record<string, unknown>)
     },
 
     async completar(id, completada = true) {
-      const f = revisar(await supabase().from('tareas').update({ completada }).eq('id', id).select(CAMPOS).single())
+      const f = revisarOpcional(await supabase().from('tareas').update({ completada }).eq('id', id).select(CAMPOS).maybeSingle())
+      if (!f) throw new Error(SIN_PERMISO)
       return aTarea(f as unknown as Record<string, unknown>)
     },
 

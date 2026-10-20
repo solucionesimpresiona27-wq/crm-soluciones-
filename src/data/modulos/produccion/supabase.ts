@@ -11,6 +11,9 @@ const COLUMNAS =
  * ("URI too long"). Se piden por tandas.
  */
 const TANDA = 80
+/** Filas por petición (el servidor entrega hasta 1000) y tope de seguridad del tablero. */
+const PAGINA = 1000
+const MAX_ORDENES = 5000
 function tandas<T>(xs: T[]) {
   const r: T[][] = []
   for (let i = 0; i < xs.length; i += TANDA) r.push(xs.slice(i, i + TANDA))
@@ -70,10 +73,18 @@ function aOrden(f: Record<string, unknown>, mapa: Map<string, string>, porAproba
 export const produccionSupabase: ApiProduccion = {
   produccion: {
     async tablero(filtros = {}) {
-      let q = supabase().from('ordenes_trabajo').select(COLUMNAS)
-      q = q.not('estado', 'in', filtros.incluirEntregados ? '(finalizado,cancelado)' : '(entregado,finalizado,cancelado)')
-      if (filtros.responsableId) q = q.eq('responsable_id', filtros.responsableId)
-      const filas = revisar(await q.order('fecha_entrega', { ascending: true, nullsFirst: false }).order('folio').limit(500)) as unknown as Array<Record<string, unknown>>
+      // Todas las órdenes en curso, por páginas: un límite fijo dejaba fuera (sin avisar) las más nuevas
+      const filas: Array<Record<string, unknown>> = []
+      for (let desde = 0; desde < MAX_ORDENES; desde += PAGINA) {
+        let q = supabase().from('ordenes_trabajo').select(COLUMNAS)
+        q = q.not('estado', 'in', filtros.incluirEntregados ? '(finalizado,cancelado)' : '(entregado,finalizado,cancelado)')
+        if (filtros.responsableId) q = q.eq('responsable_id', filtros.responsableId)
+        const pagina = revisar(
+          await q.order('fecha_entrega', { ascending: true, nullsFirst: false }).order('folio').order('id').range(desde, desde + PAGINA - 1),
+        ) as unknown as Array<Record<string, unknown>>
+        filas.push(...pagina)
+        if (pagina.length < PAGINA) break
+      }
       const [mapa, porAprobar] = await Promise.all([
         nombres(filas.flatMap((f) => [f.responsable_id as string, f.disenador_id as string])),
         pendientes(filas.map((f) => f.id as string)),

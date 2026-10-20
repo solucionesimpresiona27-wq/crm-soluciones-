@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { desgloseGastos, leerNumero, nivelExistencia } from './util'
+import { desgloseGastos, leerNumero, nivelExistencia, nombreUnidad } from './util'
 
 describe('inventario · utilidades', () => {
   it('nivel del medidor', () => {
@@ -12,6 +12,15 @@ describe('inventario · utilidades', () => {
     expect(leerNumero('2,5')).toBe(2.5)
     expect(leerNumero('')).toBeNull()
     expect(leerNumero('abc')).toBeNull()
+  })
+  it('concuerda la unidad con la cantidad', () => {
+    expect(nombreUnidad(1, 'hoja')).toBe('hoja')
+    expect(nombreUnidad(780, 'hoja')).toBe('hojas')
+    expect(nombreUnidad(-3, 'metro')).toBe('metros')
+    expect(nombreUnidad(2.5, 'millar')).toBe('millares')
+    expect(nombreUnidad(0, 'pieza')).toBe('piezas')
+    expect(nombreUnidad(12, 'm2')).toBe('m²')
+    expect(nombreUnidad(4, 'kg')).toBe('kg')
   })
   it('desglose sin cancelados', () => {
     const d = desgloseGastos([

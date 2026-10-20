@@ -1,4 +1,4 @@
-import type { CategoriaGasto, Gasto, Material } from '@/data/modulos/inventario/contrato'
+import { UNIDADES_MATERIAL, type CategoriaGasto, type Gasto, type Material, type UnidadMaterial } from '@/data/modulos/inventario/contrato'
 import { redondear } from '@/lib/utils'
 
 /** Proporción del medidor de existencia: el mínimo queda en el 40 % de la cápsula. */
@@ -38,4 +38,18 @@ export function desgloseGastos(gastos: Pick<Gasto, 'categoria' | 'monto' | 'canc
     mapa.set(g.categoria, { monto: redondear(c.monto + g.monto), cuantos: c.cuantos + 1 })
   }
   return { total, cuantos, categorias: [...mapa.entries()].map(([categoria, v]) => ({ categoria, ...v })).sort((a, b) => b.monto - a.monto) }
+}
+
+const PLURALES: Partial<Record<UnidadMaterial, string>> = {
+  metro: 'metros',
+  hoja: 'hojas',
+  pieza: 'piezas',
+  litro: 'litros',
+  rollo: 'rollos',
+  millar: 'millares',
+}
+
+/** Unidad concordada con la cantidad: "1 hoja", "780 hojas", "2.5 millares"; m² y kg no cambian. */
+export function nombreUnidad(n: number, u: UnidadMaterial) {
+  return Math.abs(n) === 1 ? UNIDADES_MATERIAL[u] : (PLURALES[u] ?? UNIDADES_MATERIAL[u])
 }

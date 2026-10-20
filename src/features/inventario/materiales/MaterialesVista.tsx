@@ -42,6 +42,8 @@ export default function MaterialesVista() {
   const gestionar = puede('gestionar_inventario')
   const consumir = gestionar || puede('registrar_consumos')
   const costos = puede('ver_costos')
+  // Los proveedores son de compras y administración (la base no los muestra a producción ni a diseño)
+  const verProveedor = gestionar || costos || puede('registrar_gastos')
 
   // Acción rápida global: ?nuevo=1 abre el alta
   useEffect(() => {
@@ -61,9 +63,9 @@ export default function MaterialesVista() {
   const visibles = useMemo(
     () =>
       (soloBajo ? bajos : lista).filter(
-        (m) => !q || [m.nombre, m.categoria, m.ubicacion, m.proveedor].some((x) => x?.toLocaleLowerCase('es').includes(q)),
+        (m) => !q || [m.nombre, m.categoria, m.ubicacion, verProveedor ? m.proveedor : null].some((x) => x?.toLocaleLowerCase('es').includes(q)),
       ),
-    [lista, bajos, soloBajo, q],
+    [lista, bajos, soloBajo, q, verProveedor],
   )
   const valor = costos ? lista.reduce((s, m) => s + (m.activo && m.costo_unitario ? Math.max(0, m.existencia) * m.costo_unitario : 0), 0) : null
 
@@ -115,7 +117,7 @@ export default function MaterialesVista() {
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2.5">
         <div className="w-full sm:w-80">
-          <GlassInput icono={<Search />} aria-label="Buscar material" placeholder="Buscar material, ubicación o proveedor" value={texto} onChange={(e) => setTexto(e.target.value)} className="rounded-full" />
+          <GlassInput icono={<Search />} aria-label="Buscar material" placeholder={verProveedor ? 'Buscar material, ubicación o proveedor' : 'Buscar material o ubicación'} value={texto} onChange={(e) => setTexto(e.target.value)} className="rounded-full" />
         </div>
         {gestionar ? (
           <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm text-fg-muted">
@@ -170,7 +172,7 @@ export default function MaterialesVista() {
         </GlassPanel>
       ) : escritorio ? (
         <GlassPanel className="p-2">
-          <TablaMateriales materiales={visibles} acciones={acciones} costos={costos} descripcion={descripcion} />
+          <TablaMateriales materiales={visibles} acciones={acciones} costos={costos} verProveedor={verProveedor} descripcion={descripcion} />
         </GlassPanel>
       ) : (
         <ul aria-label={descripcion} className="grid grid-cols-[minmax(0,1fr)] gap-2.5 md:grid-cols-2">
@@ -180,7 +182,7 @@ export default function MaterialesVista() {
                 <div className="flex items-start gap-2">
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-md font-semibold text-fg">{m.nombre}</p>
-                    <p className="truncate text-xs text-fg-muted">{[m.categoria, m.ubicacion, m.proveedor].filter(Boolean).join(' · ') || 'Sin ubicación'}</p>
+                    <p className="truncate text-xs text-fg-muted">{[m.categoria, m.ubicacion, verProveedor ? m.proveedor : null].filter(Boolean).join(' · ') || 'Sin categoría ni ubicación'}</p>
                   </div>
                   <MasAcciones m={m} acciones={acciones} />
                 </div>
@@ -304,7 +306,19 @@ function MasAcciones({ m, acciones }: { m: Material; acciones: Acciones }) {
   )
 }
 
-function TablaMateriales({ materiales, acciones, costos, descripcion }: { materiales: Material[]; acciones: Acciones; costos: boolean; descripcion: string }) {
+function TablaMateriales({
+  materiales,
+  acciones,
+  costos,
+  verProveedor,
+  descripcion,
+}: {
+  materiales: Material[]
+  acciones: Acciones
+  costos: boolean
+  verProveedor: boolean
+  descripcion: string
+}) {
   return (
     <table className="tabla">
       <caption className="sr-only">{descripcion}</caption>
@@ -313,7 +327,7 @@ function TablaMateriales({ materiales, acciones, costos, descripcion }: { materi
           <th scope="col" className="w-[26%] pl-5">Material</th>
           <th scope="col" className="w-[28%]">Existencia</th>
           <th scope="col" className="hidden xl:table-cell">Ubicación</th>
-          <th scope="col">Proveedor</th>
+          {verProveedor ? <th scope="col">Proveedor</th> : null}
           {costos ? <th scope="col" className="text-right">Costo</th> : null}
           <th scope="col" className="w-[9.5rem]">
             <span className="sr-only">Acciones</span>
@@ -344,26 +358,28 @@ function TablaMateriales({ materiales, acciones, costos, descripcion }: { materi
               <td>
                 <Existencia m={m} />
               </td>
-              <td className="hidden text-fg-muted xl:table-cell">
+              <td className="hidden max-w-[11rem] text-fg-muted xl:table-cell">
                 {m.ubicacion ? (
-                  <span className="inline-flex items-center gap-1.5">
+                  <span className="inline-flex max-w-full items-center gap-1.5" title={m.ubicacion}>
                     <MapPin className="size-3.5 shrink-0 text-fg-subtle" aria-hidden />
-                    {m.ubicacion}
+                    <span className="truncate">{m.ubicacion}</span>
                   </span>
                 ) : (
                   '—'
                 )}
               </td>
-              <td className="max-w-[12rem] text-fg-muted">
-                {m.proveedor ? (
-                  <span className="inline-flex max-w-full items-center gap-1.5">
-                    <Truck className="size-3.5 shrink-0 text-fg-subtle" aria-hidden />
-                    <span className="truncate">{m.proveedor}</span>
-                  </span>
-                ) : (
-                  '—'
-                )}
-              </td>
+              {verProveedor ? (
+                <td className="max-w-[12rem] text-fg-muted">
+                  {m.proveedor ? (
+                    <span className="inline-flex max-w-full items-center gap-1.5" title={m.proveedor}>
+                      <Truck className="size-3.5 shrink-0 text-fg-subtle" aria-hidden />
+                      <span className="truncate">{m.proveedor}</span>
+                    </span>
+                  ) : (
+                    '—'
+                  )}
+                </td>
+              ) : null}
               {costos ? (
                 <td className="num whitespace-nowrap text-right">
                   {m.costo_unitario !== null ? (

@@ -126,7 +126,7 @@ export const pedidosDemo: ApiPedidos = {
         .filter((p) => !filtros.soloAtrasados || p.atrasado)
         .filter((p) => !t || normalizar(`${p.folio} ${p.titulo} ${p.cliente}`).includes(t))
         .sort((x, y) => (x.fecha_entrega ?? '9999').localeCompare(y.fecha_entrega ?? '9999') || x.folio.localeCompare(y.folio))
-        .slice(0, filtros.limite ?? 500)
+        .slice(0, filtros.limite)
     },
 
     async obtener(id) {

@@ -114,7 +114,7 @@ function Detalle({ id }: { id: string }) {
               {p.cotizacion_id && precios ? (
                 <Link
                   to={`/cotizaciones/${p.cotizacion_id}`}
-                  className="inline-flex h-6 items-center gap-1 rounded-full bg-fg/[0.07] px-2.5 text-xs font-semibold text-fg-muted outline-none transition-colors hover:bg-fg/[0.12] hover:text-fg"
+                  className="relative inline-flex h-6 items-center gap-1 rounded-full bg-fg/[0.07] px-2.5 text-xs font-semibold text-fg-muted outline-none transition-colors after:absolute after:-inset-y-2.5 after:inset-x-0 hover:bg-fg/[0.12] hover:text-fg focus-visible:shadow-[var(--focus-ring)]"
                 >
                   <FileText className="size-3" aria-hidden />
                   <span className="sr-only">Cotización de origen </span>
