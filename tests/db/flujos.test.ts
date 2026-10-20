@@ -47,9 +47,11 @@ suite('Flujos de negocio y permisos', () => {
 
   beforeAll(async () => {
     // El primer usuario del sistema se vuelve administrador
+    // (si la base ya se sembró con otro administrador, se crea este como administrador activo)
     const { count } = await admin.from('perfiles').select('*', { count: 'exact', head: true }).eq('rol', 'admin')
-    const emailAdmin = count ? `admin@prueba.local` : `admin@prueba.local`
-    if (!count) await crearUsuario(emailAdmin)
+    const emailAdmin = `admin@prueba.local`
+    const existe = (await createClient(URL, ANON, { auth: { persistSession: false } }).auth.signInWithPassword({ email: emailAdmin, password: PASS })).error === null
+    if (!existe) await crearUsuario(emailAdmin, count ? { rol: 'admin', activo: true, nombre: 'Administración Prueba' } : {})
     idVentas = await crearUsuario(`ventas-${sufijo}@prueba.local`, { rol: 'ventas', activo: true, nombre: 'Vendedora Prueba' })
     await crearUsuario(`diseno-${sufijo}@prueba.local`, { rol: 'diseno', activo: true, nombre: 'Diseñador Prueba' })
     await crearUsuario(`prod-${sufijo}@prueba.local`, { rol: 'produccion', activo: true, nombre: 'Producción Prueba' })
