@@ -97,14 +97,23 @@ export function Resumen({
             <Lock className="size-3.5" aria-hidden />
             Utilidad estimada, solo para ti
           </p>
-          <div className="mt-1.5 flex items-baseline justify-between gap-3">
-            <span className={cn('num text-md font-semibold', util.utilidad < 0 ? 'text-danger' : 'text-fg')}>{dinero(util.utilidad)}</span>
-            <span className="num text-fg-muted">{util.margen === null ? 'Sin venta' : `${porcentaje(util.margen, 1)} de margen`}</span>
-          </div>
-          <p className="num mt-0.5 text-xs text-fg-subtle">
-            Costo {dinero(util.costo)}
-            {util.sinCosto > 0 ? `; ${util.sinCosto} ${util.sinCosto === 1 ? 'concepto sin costo' : 'conceptos sin costo'}` : ''}
-          </p>
+          {util.sinCosto === conceptos ? (
+            <p className="mt-1.5 text-xs text-fg-muted">
+              {conceptos === 1 ? 'El concepto no tiene' : 'Ningún concepto tiene'} costo capturado, así que no se puede estimar la utilidad. Captúralo en
+              la calculadora de cada concepto.
+            </p>
+          ) : (
+            <>
+              <div className="mt-1.5 flex items-baseline justify-between gap-3">
+                <span className={cn('num text-md font-semibold', util.utilidad < 0 ? 'text-danger' : 'text-fg')}>{dinero(util.utilidad)}</span>
+                <span className="num text-fg-muted">{util.margen === null ? 'Sin venta' : `${porcentaje(util.margen, 1)} de margen`}</span>
+              </div>
+              <p className="num mt-0.5 text-xs text-fg-subtle">
+                Costo {dinero(util.costo)}
+                {util.sinCosto > 0 ? `; ${util.sinCosto} ${util.sinCosto === 1 ? 'concepto sin costo' : 'conceptos sin costo'}` : ''}
+              </p>
+            </>
+          )}
         </div>
       ) : null}
 

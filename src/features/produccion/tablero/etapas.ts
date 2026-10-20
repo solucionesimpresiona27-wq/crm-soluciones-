@@ -1,6 +1,13 @@
 import type { OrdenTrabajo } from '@/data/modulos/produccion/contrato'
 import type { EstadoPedido } from '@/data/tipos'
+import { ESTADO_PEDIDO } from '@/lib/estados'
 import { normalizar } from '@/lib/utils'
+
+/** Etapa en una frase ("Reanudar en producción", "en “Acabados”"), sin repetir el "en" de la etiqueta. */
+export function enEtapa(e: EstadoPedido) {
+  const t = ESTADO_PEDIDO[e].etiqueta
+  return /^en /i.test(t) ? t.toLowerCase() : `en “${t}”`
+}
 
 /** Columnas del tablero, en el orden del taller. "nuevo" (esperando anticipo) solo aparece si tiene órdenes. */
 export const ETAPAS_TABLERO: EstadoPedido[] = [

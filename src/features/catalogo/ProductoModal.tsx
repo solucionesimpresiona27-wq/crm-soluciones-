@@ -181,7 +181,7 @@ export function ProductoModal({ producto, abierto, onCambio }: { producto: Produ
       toast.success(producto ? 'Producto actualizado' : 'Producto agregado al catálogo')
       onCambio(false)
     } catch (e) {
-      setError(`${(e as Error).message}. Revisa los datos e inténtalo de nuevo.`)
+      setError(`${(e as Error).message.replace(/\.?$/, '.')} Revisa los datos e inténtalo de nuevo.`)
     }
   }
 

@@ -26,6 +26,18 @@ import { usePreciosPara, useProductosCalculadora } from '../catalogo/consultas'
 import { guardarBorrador, type BorradorCalculadora, type PartidaCalculadora } from './borrador'
 
 type Num = number | null
+
+/** "1 pieza", "1 millar"… (METODOS trae la etiqueta en plural) */
+const SINGULAR: Record<MetodoCalculo, string> = {
+  pieza: 'pieza',
+  m2: 'pieza',
+  metro_lineal: 'pieza',
+  millar: 'millar',
+  hora: 'hora',
+  servicio: 'servicio',
+  proyecto: 'proyecto',
+  mensualidad: 'mes',
+}
 const v = (x: Num) => x ?? 0
 
 const LISTAS: Array<{ valor: ListaPrecio; etiqueta: string }> = [
@@ -35,7 +47,7 @@ const LISTAS: Array<{ valor: ListaPrecio; etiqueta: string }> = [
 ]
 
 function Subtitulo({ children }: { children: ReactNode }) {
-  return <h2 className="text-sm font-semibold text-fg-muted">{children}</h2>
+  return <h3 className="text-sm font-semibold text-fg-muted">{children}</h3>
 }
 
 function Renglon({ etiqueta, valor, fuerte, tenue }: { etiqueta: ReactNode; valor: ReactNode; fuerte?: boolean; tenue?: boolean }) {
@@ -49,10 +61,20 @@ function Renglon({ etiqueta, valor, fuerte, tenue }: { etiqueta: ReactNode; valo
 
 export default function CalculadoraPage() {
   const { puede } = useSesion()
+  const navegar = useNavigate()
   if (!puede('ver_precios'))
     return (
-      <GlassPanel className="mt-2">
-        <EstadoVacio icono={<Lock />} titulo="La calculadora es para ventas y administración" descripcion="Tu rol no incluye precios. Si necesitas un precio para un cliente, pídelo a ventas." />
+      <GlassPanel className="mx-auto mt-2 max-w-xl">
+        <EstadoVacio
+          icono={<Lock />}
+          titulo="La calculadora es para ventas y administración"
+          descripcion="Tu rol no incluye precios. Si necesitas un precio para un cliente, pídelo a ventas."
+          accion={
+            <GlassButton variante="cristal" onClick={() => navegar('/')}>
+              Ir al inicio
+            </GlassButton>
+          }
+        />
       </GlassPanel>
     )
   return <Calculadora />
@@ -203,10 +225,10 @@ function Calculadora() {
       <GlassPanel className="flex flex-col gap-6 p-5 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl font-semibold tracking-tight text-fg">Calculadora de mostrador</h1>
+            <h2 className="text-xl font-semibold tracking-tight text-fg">Calculadora de mostrador</h2>
             <p className="text-sm text-fg-muted">Cotiza rápido con los precios del catálogo o captura uno a mano.</p>
           </div>
-          <GlassButton variante="fantasma" tamano="sm" icono={<RotateCcw />} onClick={reiniciar}>
+          <GlassButton variante="fantasma" tamano="sm" icono={<RotateCcw />} onClick={reiniciar} className="pointer-coarse:h-11">
             Empezar de nuevo
           </GlassButton>
         </div>
@@ -215,7 +237,7 @@ function Calculadora() {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <Subtitulo>Lista de precios</Subtitulo>
             {puede('editar_catalogo') ? (
-              <Link to="/catalogo" className="inline-flex min-h-11 items-center gap-1.5 rounded-full px-2 text-sm text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+              <Link to="/catalogo" className="inline-flex min-h-11 items-center gap-1.5 rounded-full px-2 text-sm text-accent hover:underline dark:text-navy-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
                 <BookOpen className="size-4" aria-hidden /> Abrir catálogo
               </Link>
             ) : null}
@@ -308,14 +330,14 @@ function Calculadora() {
       <div className="lg:sticky lg:top-4">
         <GlassPanel className="flex flex-col gap-4 p-5 sm:p-6" aria-live="polite">
           <div className="flex items-center justify-between gap-2">
-            <Subtitulo>Resultado</Subtitulo>
+            <h2 className="text-sm font-semibold text-fg-muted">Resultado</h2>
             {r.aplicoMinimo ? <Pildora tono="luz">Precio mínimo aplicado</Pildora> : null}
           </div>
           <div>
             <p className="text-sm text-fg-muted">Total{conIva ? ' con IVA' : ''}</p>
             <AnimatedNumber valor={totales.total} formato={dinero} className="num block text-3xl font-semibold tracking-tight text-fg leading-none sm:text-display sm:leading-none" />
             <p className="mt-2 text-sm text-fg-muted">
-              <span className="num font-medium text-fg">{dinero(r.precioUnitario)}</span> por {info.unidad} · {cantidad(cant)} {info.cantidad.toLowerCase()}
+              <span className="num font-medium text-fg">{dinero(r.precioUnitario)}</span> por {info.unidad} · {cantidad(cant)} {v(cant) === 1 ? SINGULAR[metodo] : info.cantidad.toLowerCase()}
               {info.medidas ? ` · ${cantidad(r.unidadesCobro)} ${info.unidadCobro}` : ''}
             </p>
           </div>

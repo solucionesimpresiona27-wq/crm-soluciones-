@@ -71,3 +71,17 @@ test('ventas ve precios pero no costos ni puede editar el catálogo', async ({ p
   expect(r.error !== null || (r.data ?? []).length === 0).toBe(true)
   sinErrores()
 })
+
+test('las categorías caben en un celular sin desplazamiento horizontal', async ({ page }) => {
+  const sinErrores = vigilarErrores(page)
+  await page.setViewportSize({ width: 390, height: 844 })
+  await entrar(page, 'admin')
+  await page.goto('/catalogo/categorias')
+  await expect(page.getByRole('button', { name: /^Renombrar / }).first()).toBeVisible()
+  const desborde = Number(await page.evaluate('document.documentElement.scrollWidth - document.documentElement.clientWidth'))
+  expect(desborde).toBe(0)
+  // Los controles de cada categoría quedan dentro de la pantalla
+  const caja = await page.getByRole('button', { name: /^Renombrar / }).first().boundingBox()
+  expect((caja?.x ?? 0) + (caja?.width ?? 0)).toBeLessThanOrEqual(390)
+  sinErrores()
+})

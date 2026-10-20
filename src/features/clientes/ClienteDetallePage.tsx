@@ -308,7 +308,7 @@ function Ficha({ id }: { id: string }) {
             {errorBorrar}
           </p>
         ) : (
-          <p className="text-sm text-fg-muted">{tieneDocumentos ? 'La base de datos protege los documentos ligados al cliente.' : 'Si solo quieres ocultarlo, usa Desactivar cliente.'}</p>
+          <p className="text-sm text-fg-muted">{tieneDocumentos ? 'Sus cotizaciones, pedidos y pagos se conservan aunque lo desactives.' : 'Si solo quieres ocultarlo, usa Desactivar cliente.'}</p>
         )}
       </GlassModal>
     </div>

@@ -29,7 +29,7 @@ export default function CotizacionDetallePage() {
   const navegar = useNavigate()
   if (!puede('ver_precios')) {
     return (
-      <GlassPanel className="mt-2">
+      <GlassPanel className="mx-auto mt-2 max-w-xl">
         <EstadoVacio
           icono={<Lock />}
           titulo="Las cotizaciones son para ventas y administración"
@@ -72,7 +72,7 @@ function Detalle({ id }: { id: string }) {
         <EstadoVacio
           icono={<FileSearch />}
           titulo={noExiste ? 'No encontramos esta cotización' : 'No se pudo abrir la cotización'}
-          descripcion={noExiste ? 'Puede que se haya eliminado o que el enlace esté incompleto.' : `${consulta.error.message}. Revisa tu conexión e inténtalo de nuevo.`}
+          descripcion={noExiste ? 'Puede que se haya eliminado o que el enlace esté incompleto.' : `${consulta.error.message.replace(/\.?$/, '.')} Revisa tu conexión e inténtalo de nuevo.`}
           accion={
             <div className="flex flex-wrap justify-center gap-2">
               <GlassButton variante="cristal" icono={<ArrowLeft />} onClick={volver}>

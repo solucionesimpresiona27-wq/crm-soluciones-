@@ -1,4 +1,4 @@
-import { FileText, LayoutDashboard, LayoutGrid, Package, Plus } from 'lucide-react'
+import { CalendarDays, FileText, Hammer, LayoutDashboard, LayoutGrid, Package, Plus } from 'lucide-react'
 import { LayoutGroup, motion } from 'motion/react'
 import { useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
@@ -8,10 +8,15 @@ import { cn } from '@/lib/utils'
 import { CuadriculaAcciones } from './CuadriculaAcciones'
 import { moduloDeRuta, useModulosVisibles } from './usarModulos'
 
-const pestanas = [
-  { ruta: '/', titulo: 'Inicio', icono: LayoutDashboard },
+type PestanaMovil = { ruta: string; titulo: string; icono: typeof Package }
+
+const INICIO: PestanaMovil = { ruta: '/', titulo: 'Inicio', icono: LayoutDashboard }
+const PEDIDOS: PestanaMovil = { ruta: '/pedidos', titulo: 'Pedidos', icono: Package }
+/** Segunda pestaña: la primera de estas que el rol pueda abrir (diseño y producción no cotizan). */
+const SEGUNDA: PestanaMovil[] = [
   { ruta: '/cotizaciones', titulo: 'Cotizar', icono: FileText },
-  { ruta: '/pedidos', titulo: 'Pedidos', icono: Package },
+  { ruta: '/produccion', titulo: 'Producción', icono: Hammer },
+  { ruta: '/agenda', titulo: 'Agenda', icono: CalendarDays },
 ]
 
 /** Barra inferior flotante para celular, con botón central de acciones rápidas. */
@@ -22,9 +27,11 @@ export function NavegacionMovil() {
   const [mas, setMas] = useState(false)
   const modulos = useModulosVisibles()
   const actual = moduloDeRuta(pathname)
+  const visibles = new Set(modulos.map((m) => m.ruta))
+  const pestanas = [INICIO, SEGUNDA.find((p) => visibles.has(p.ruta)) ?? SEGUNDA[2], PEDIDOS]
   const enPestana = pestanas.some((p) => p.ruta === actual?.ruta)
 
-  const Pestana = ({ ruta, titulo, icono: Icono }: (typeof pestanas)[number]) => {
+  const Pestana = ({ ruta, titulo, icono: Icono }: PestanaMovil) => {
     const activo = actual?.ruta === ruta
     return (
       <NavLink

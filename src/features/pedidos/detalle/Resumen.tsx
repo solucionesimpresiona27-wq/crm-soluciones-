@@ -1,6 +1,6 @@
 import { CalendarClock, Flag, HandCoins, MapPin, Palette, Pencil, ReceiptText, UserRound, UserRoundCog } from 'lucide-react'
 import { motion, useReducedMotion } from 'motion/react'
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useEquipo } from '@/app/consultas'
@@ -278,6 +278,8 @@ export function ModuloFacturacion({ p, editar }: { p: PedidoDetalle; editar: boo
   const [folio, setFolio] = useState(p.folio_factura ?? '')
   const [fechaF, setFechaF] = useState(p.fecha_factura ?? '')
   const [editando, setEditando] = useState(false)
+  const [errorFolio, setErrorFolio] = useState<string | null>(null)
+  const folioRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     setFolio(p.folio_factura ?? '')
@@ -287,9 +289,11 @@ export function ModuloFacturacion({ p, editar }: { p: PedidoDetalle; editar: boo
   const guardar = async (e: FormEvent) => {
     e.preventDefault()
     if (!folio.trim()) {
-      toast.error('Escribe el folio de la factura (CFDI) para marcarla')
+      setErrorFolio('Escribe el folio de la factura (CFDI), por ejemplo A-1024')
+      folioRef.current?.focus()
       return
     }
+    setErrorFolio(null)
     try {
       await facturar.mutateAsync({ id: p.id, datos: { facturado: true, folio_factura: folio.trim(), fecha_factura: fechaF || null } })
       toast.success(`${p.folio} marcado como facturado`)
@@ -365,9 +369,23 @@ export function ModuloFacturacion({ p, editar }: { p: PedidoDetalle; editar: boo
         </dl>
       ) : editar && (p.requiere_factura || editando) ? (
         <form onSubmit={guardar} className="mt-3 flex flex-col gap-3 border-t border-[var(--divider)] pt-3" noValidate>
-          <div className="grid grid-cols-[1fr_auto] gap-2">
-            <Campo etiqueta="Folio CFDI">
-              {(id, a) => <GlassInput id={id} {...a} value={folio} onChange={(e) => setFolio(e.target.value)} placeholder="Ej. A-1024" className="num" autoComplete="off" />}
+          <div className="grid grid-cols-[1fr_auto] items-start gap-2">
+            <Campo etiqueta="Folio CFDI" error={errorFolio}>
+              {(id, a) => (
+                <GlassInput
+                  ref={folioRef}
+                  id={id}
+                  {...a}
+                  value={folio}
+                  onChange={(e) => {
+                    setFolio(e.target.value)
+                    if (errorFolio && e.target.value.trim()) setErrorFolio(null)
+                  }}
+                  placeholder="Ej. A-1024"
+                  className="num"
+                  autoComplete="off"
+                />
+              )}
             </Campo>
             <Campo etiqueta="Fecha" opcional>
               {(id, a) => <GlassInput id={id} {...a} type="date" value={fechaF} onChange={(e) => setFechaF(e.target.value)} className="w-[9.5rem]" />}

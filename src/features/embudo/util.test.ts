@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Oportunidad } from '@/data/modulos/embudo/contrato'
-import { diasDesde, estadoAccion, metricas, porEtapa } from './util'
+import { dinero } from '@/lib/format'
+import { diasDesde, dineroRedondo, estadoAccion, metricas, porEtapa } from './util'
 
 const op = (p: Partial<Oportunidad>): Oportunidad =>
   ({ id: Math.random().toString(), etapa: 'contactado', valor_estimado: null, proxima_accion_fecha: null, cerrada_at: null, updated_at: '2026-10-01T10:00:00Z', ...p }) as Oportunidad
@@ -11,6 +12,11 @@ describe('embudo/util', () => {
     expect(estadoAccion('2026-10-14', '2026-10-14')).toBe('hoy')
     expect(estadoAccion('2026-10-20', '2026-10-14')).toBe('proxima')
     expect(estadoAccion(null, '2026-10-14')).toBeNull()
+  })
+  it('redondea montos al peso igual en métricas, columnas y zonas', () => {
+    expect(dineroRedondo(3450.5)).toBe(dinero(3451).replace(/\.00$/, ''))
+    expect(dineroRedondo(3450.49)).toBe(dinero(3450).replace(/\.00$/, ''))
+    expect(dineroRedondo(3450.5)).not.toMatch(/\.\d\d$/)
   })
   it('cuenta días', () => expect(diasDesde('2026-10-01T23:00:00Z', '2026-10-14')).toBe(13))
   it('calcula métricas', () => {

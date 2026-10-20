@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { Campo, GlassButton, GlassInput, GlassModal, GlassToggle } from '@/components/glass'
 import type { Contacto, DatosContacto } from '@/data/modulos/clientes/contrato'
 import { useGuardarContacto } from '../consultas'
-import { validarCorreo, validarTelefono } from '../validacion'
+import { enfocarPrimerError, validarCorreo, validarTelefono } from '../validacion'
 
 /** Alta o edición de un contacto de la empresa. */
 export function ContactoModal({
@@ -50,7 +50,7 @@ export function ContactoModal({
     const c = validarCorreo(d.email)
     if (c) e.email = c
     setErrores(e)
-    if (Object.values(e).some(Boolean)) return
+    if (Object.values(e).some(Boolean)) return enfocarPrimerError('form-contacto')
     try {
       await guardar.mutateAsync({ id: contacto?.id, datos: d })
       toast.success(contacto ? 'Contacto actualizado' : `Contacto ${d.nombre.trim()} agregado`)
@@ -96,7 +96,7 @@ export function ContactoModal({
         <GlassToggle
           icono={<Star />}
           titulo="Contacto principal"
-          subtitulo="Aparece en la lista de clientes y en los documentos"
+          subtitulo="Aparece en la lista y en los documentos"
           activo={Boolean(d.principal)}
           onCambio={(v) => set('principal', v)}
         />

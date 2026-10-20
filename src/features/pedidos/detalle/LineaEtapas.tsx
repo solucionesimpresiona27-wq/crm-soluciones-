@@ -26,6 +26,7 @@ import type { EstadoPedido } from '@/data/tipos'
 import { ESTADO_PEDIDO, FLUJO_PEDIDO } from '@/lib/estados'
 import { resorte } from '@/lib/motion'
 import { cn } from '@/lib/utils'
+import { enEtapa } from '../lista/datos'
 
 export const ICONO_ETAPA: Record<EstadoPedido, LucideIcon> = {
   nuevo: CircleDot,
@@ -111,7 +112,7 @@ export function LineaEtapas({ p, a }: { p: PedidoDetalle; a: AccionesEtapas }) {
           <p className="text-sm font-medium text-fg-muted">Etapa actual</p>
           <p className="text-2xl font-semibold leading-tight tracking-tight text-fg">{ESTADO_PEDIDO[p.estado].etiqueta}</p>
           {p.estado === 'pausado' && p.estado_anterior ? (
-            <p className="mt-0.5 text-sm text-fg-muted">Se quedó en {ESTADO_PEDIDO[p.estado_anterior].etiqueta.toLowerCase()}</p>
+            <p className="mt-0.5 text-sm text-fg-muted">Se quedó {enEtapa(p.estado_anterior)}</p>
           ) : null}
         </div>
         {a.gestionar && !detenido && !terminado ? (
@@ -184,7 +185,7 @@ export function LineaEtapas({ p, a }: { p: PedidoDetalle; a: AccionesEtapas }) {
         <div className="mt-5 flex flex-col gap-2.5 border-t border-[var(--divider)] pt-5 sm:flex-row sm:items-center">
           {p.estado === 'pausado' ? (
             <GlassButton variante="luz" tamano="lg" icono={<Play />} cargando={a.ocupado !== null} onClick={a.reanudar} className="w-full sm:w-auto">
-              Reanudar{p.estado_anterior ? ` en ${ESTADO_PEDIDO[p.estado_anterior].etiqueta.toLowerCase()}` : ''}
+              Reanudar{p.estado_anterior ? ` ${enEtapa(p.estado_anterior)}` : ''}
             </GlassButton>
           ) : p.estado === 'cancelado' ? (
             a.gestionar ? (

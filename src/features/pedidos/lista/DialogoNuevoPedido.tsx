@@ -144,7 +144,7 @@ export function DialogoNuevoPedido({ abierto, onCambio }: { abierto: boolean; on
               <p className="text-sm font-medium text-fg-muted" id="nuevo-prioridad">
                 Prioridad
               </p>
-              <SegmentedControl etiqueta="Prioridad" tamano="sm" segmentos={PRIORIDADES} valor={prioridad} onCambio={setPrioridad} className="w-full" />
+              <SegmentedControl etiqueta="Prioridad" segmentos={PRIORIDADES} valor={prioridad} onCambio={setPrioridad} className="w-full" />
             </div>
             <Campo etiqueta="Responsable" opcional>
               {(id, a) => (

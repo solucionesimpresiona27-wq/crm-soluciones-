@@ -24,6 +24,14 @@ function Senal({ tono, children }: { tono: 'luz' | 'peligro' | 'aviso' | 'neutro
   )
 }
 
+/** En los módulos de una columna (unos 140 px por dentro en celular) las cifras largas bajan de tamaño para no desbordarse. */
+function tamanoCifra(texto: string) {
+  if (texto.length <= 8) return 'text-3xl'
+  // En escritorio angosto (lg, 4 columnas) el módulo vuelve a medir unos 170 px por dentro
+  if (texto.length <= 9) return 'text-2xl sm:text-3xl lg:text-2xl xl:text-3xl'
+  return 'text-xl sm:text-3xl lg:text-2xl xl:text-3xl'
+}
+
 /* ---------------------------------------------------------------------
    Cotizaciones pendientes
    --------------------------------------------------------------------- */
@@ -55,10 +63,10 @@ export function CotizacionesModulo({ r, variante }: { r: DashboardResumen; varia
         <div className="flex h-full flex-col">
           <TituloModulo icono={<FileText />}>Cotizaciones</TituloModulo>
           <p className="mt-auto flex items-baseline gap-1.5 pt-2">
-            <span className="text-3xl font-semibold tracking-tight text-fg">{entero(abiertas.cantidad)}</span>
+            <span className="num text-3xl font-semibold tracking-tight text-fg">{entero(abiertas.cantidad)}</span>
             <span className="text-sm text-fg-muted">{abiertas.cantidad === 1 ? 'abierta' : 'abiertas'}</span>
           </p>
-          <p className="text-sm font-medium text-fg">{pesos(abiertas.total)}</p>
+          <p className="num text-sm font-medium text-fg">{pesos(abiertas.total)}</p>
           <div className="mt-2">{senal}</div>
         </div>
       </ModuloEnlace>
@@ -70,7 +78,7 @@ export function CotizacionesModulo({ r, variante }: { r: DashboardResumen; varia
       <div className="flex h-full flex-col">
         <TituloModulo icono={<FileText />}>Cotizaciones abiertas</TituloModulo>
         <div className="mt-auto flex flex-wrap items-end gap-x-5 gap-y-1 pt-2">
-          <p className="glass-text text-[2.6rem] font-semibold leading-none tracking-[-0.035em] lg:text-[3rem]">{pesos(abiertas.total)}</p>
+          <p className="num glass-text text-[2.6rem] font-semibold leading-none tracking-[-0.035em] lg:text-[3rem]">{pesos(abiertas.total)}</p>
           <p className="pb-1 text-sm text-fg-muted">en {plural(abiertas.cantidad, 'cotización', 'cotizaciones')}</p>
         </div>
         <div className="mt-2.5">{senal}</div>
@@ -87,10 +95,10 @@ export function CobrarModulo({ r }: { r: DashboardResumen }) {
   const cobrar = r.por_cobrar ?? { total: 0, pedidos: 0 }
   const vencidos = r.pagos_vencidos
   return (
-    <ModuloEnlace a="/pagos">
+    <ModuloEnlace a="/pagos/por-cobrar">
       <div className="flex h-full flex-col">
         <TituloModulo icono={<Wallet />}>Por cobrar</TituloModulo>
-        <p className="mt-auto pt-2 text-3xl font-semibold tracking-tight text-fg">{pesos(cobrar.total)}</p>
+        <p className={cn('num mt-auto whitespace-nowrap pt-2 font-semibold tracking-tight text-fg', tamanoCifra(pesos(cobrar.total)))}>{pesos(cobrar.total)}</p>
         <p className="text-sm text-fg-muted">{plural(cobrar.pedidos, 'pedido con saldo', 'pedidos con saldo')}</p>
         <div className="mt-2">
           {vencidos && vencidos.pedidos > 0 ? (

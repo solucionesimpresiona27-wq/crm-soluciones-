@@ -1,7 +1,7 @@
-import { DndContext, DragOverlay, PointerSensor, useDraggable, useDroppable, useSensor, useSensors, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core'
-import { ChevronDown, Filter, Plus, RotateCcw, Search, Target, Trophy, XCircle } from 'lucide-react'
+import { DndContext, DragOverlay, PointerSensor, useDraggable, useDroppable, useSensor, useSensors, type DndContextProps, type DragEndEvent, type DragStartEvent, type UniqueIdentifier } from '@dnd-kit/core'
+import { ChevronDown, ChevronsDown, Filter, Plus, RotateCcw, Search, Target, Trophy, XCircle } from 'lucide-react'
 import { motion, useReducedMotion } from 'motion/react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useEquipo } from '@/app/consultas'
@@ -9,7 +9,7 @@ import { useSesion } from '@/app/sesion'
 import { AnimatedNumber, EstadoVacio, GlassButton, GlassInput, GlassPanel, GlassSelect, SegmentedControl, Skeleton } from '@/components/glass'
 import { ETAPAS_EMBUDO, type EtapaComercial, type Oportunidad } from '@/data/modulos/embudo/contrato'
 import { useEsMovil } from '@/hooks/useMediaQuery'
-import { dinero, hoyISO } from '@/lib/format'
+import { hoyISO } from '@/lib/format'
 import { normalizar, cn } from '@/lib/utils'
 import { resorte } from '@/lib/motion'
 import { useMoverEtapa, useOportunidades } from './consultas'
@@ -17,7 +17,10 @@ import { DetalleOportunidad } from './DetalleOportunidad'
 import { MotivoPerdidaModal } from './MotivoPerdidaModal'
 import { OportunidadModal } from './OportunidadModal'
 import { TarjetaOportunidad } from './Tarjeta'
-import { etiquetaEtapa, metricas, porEtapa } from './util'
+import { dineroRedondo, etiquetaEtapa, metricas, porEtapa } from './util'
+
+/** Tarjetas por columna antes de "Ver más". */
+const POR_TANDA = 25
 
 const CORTO: Record<EtapaComercial, string> = {
   prospecto_nuevo: 'Prospecto',
@@ -27,6 +30,19 @@ const CORTO: Record<EtapaComercial, string> = {
   en_seguimiento: 'Seguimiento',
   ganado: 'Ganado',
   perdido: 'Perdido',
+}
+
+/** Instrucciones y avisos del arrastre para lectores de pantalla (dnd-kit los trae en inglés). */
+const tituloArrastre = (d: { data: { current?: Record<string, unknown> } }) => `“${String(d.data.current?.titulo ?? 'La oportunidad')}”`
+const etapaDestino = (id: UniqueIdentifier | undefined) => (id ? etiquetaEtapa(id as EtapaComercial) : null)
+const ACCESIBILIDAD_ARRASTRE: DndContextProps['accessibility'] = {
+  screenReaderInstructions: { draggable: 'Para cambiarla de etapa con el teclado usa el botón “Mover a otra etapa” de la tarjeta.' },
+  announcements: {
+    onDragStart: ({ active }) => `Tomaste ${tituloArrastre(active)}.`,
+    onDragOver: ({ active, over }) => (over ? `${tituloArrastre(active)} está sobre ${etapaDestino(over.id)}.` : `${tituloArrastre(active)} ya no está sobre una etapa.`),
+    onDragEnd: ({ active, over }) => (over ? `${tituloArrastre(active)} se soltó en ${etapaDestino(over.id)}.` : `${tituloArrastre(active)} se soltó fuera de las etapas.`),
+    onDragCancel: ({ active }) => `Se canceló el arrastre de ${tituloArrastre(active)}.`,
+  },
 }
 
 function inicioMes() {
@@ -56,14 +72,21 @@ function Metrica({ etiqueta, children, luz, onClick, activo }: { etiqueta: strin
 }
 
 function TarjetaArrastrable(props: { o: Oportunidad; hoy: string; conPrecios: boolean; onAbrir: () => void; onMover: (e: EtapaComercial) => void; arrastrable: boolean }) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: props.o.id, data: { etapa: props.o.etapa }, disabled: !props.arrastrable })
-  // El menú "Mover a…" es la alternativa con teclado; la tarjeta no necesita ser un botón extra
-  const { role: _r, tabIndex: _t, ...atributos } = attributes
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: props.o.id,
+    data: { etapa: props.o.etapa, titulo: props.o.titulo },
+    disabled: !props.arrastrable,
+    attributes: { roleDescription: 'tarjeta que se puede arrastrar' },
+  })
+  // El menú "Mover a…" es la alternativa con teclado; la tarjeta no necesita ser un botón extra.
+  // Sin arrastre (celular) no se pasan atributos: dnd-kit marcaría la tarjeta como aria-disabled
+  // y los lectores de pantalla anunciarían "Abrir" como deshabilitado.
+  const { role: _r, tabIndex: _t, 'aria-disabled': _d, ...atributos } = attributes
   return (
     <TarjetaOportunidad
       ref={setNodeRef}
-      {...atributos}
-      {...listeners}
+      {...(props.arrastrable ? atributos : {})}
+      {...(props.arrastrable ? listeners : {})}
       oportunidad={props.o}
       hoy={props.hoy}
       conPrecios={props.conPrecios}
@@ -98,6 +121,10 @@ function Columna({
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: etapa.etapa })
   const valor = ops.reduce((s, o) => s + (o.valor_estimado ?? 0), 0)
+  // Con cientos de oportunidades la columna se vuelve inmanejable: se muestran por tandas
+  const [visibles, setVisibles] = useState(POR_TANDA)
+  const mostradas = ops.length > visibles ? ops.slice(0, visibles) : ops
+  const restantes = ops.length - mostradas.length
   const Icono = etapa.etapa === 'ganado' ? Trophy : etapa.etapa === 'perdido' ? XCircle : null
   return (
     <section
@@ -115,13 +142,18 @@ function Columna({
         {Icono ? <Icono className={cn('size-4 self-center', etapa.etapa === 'ganado' ? 'text-success' : 'text-danger')} aria-hidden /> : null}
         <h2 className="truncate text-sm font-semibold text-fg">{etapa.etiqueta}</h2>
         <span className="num text-sm text-fg-subtle">{ops.length}</span>
-        {conPrecios && valor > 0 ? <span className="num ml-auto text-xs font-medium text-fg-muted">{dinero(valor).replace(/\.\d\d$/, '')}</span> : null}
+        {conPrecios && valor > 0 ? <span className="num ml-auto text-xs font-medium text-fg-muted">{dineroRedondo(valor)}</span> : null}
       </header>
       {etapa.cerrada ? <p className="-mt-1.5 px-2 pb-2 text-xs text-fg-subtle">Cerradas este mes</p> : null}
       <div className="flex flex-1 flex-col gap-2">
-        {ops.map((o) => (
+        {mostradas.map((o) => (
           <TarjetaArrastrable key={o.id} o={o} hoy={hoy} conPrecios={conPrecios} arrastrable={arrastrable} onAbrir={() => onAbrir(o)} onMover={(e) => onMover(o, e)} />
         ))}
+        {restantes > 0 ? (
+          <GlassButton variante="fantasma" icono={<ChevronsDown />} className="w-full" onClick={() => setVisibles((v) => v + POR_TANDA)}>
+            Ver {Math.min(restantes, POR_TANDA)} más <span className="num font-normal text-fg-subtle">· quedan {restantes}</span>
+          </GlassButton>
+        ) : null}
         {!ops.length ? (
           <p className="grid flex-1 place-items-center rounded-tile border border-dashed border-[var(--divider)] px-3 py-6 text-center text-xs text-fg-subtle">
             {arrastrable ? 'Suelta aquí una oportunidad' : 'Sin oportunidades'}
@@ -174,9 +206,9 @@ function ZonaCerrada({
         <span className="block text-sm font-semibold text-fg">
           {ganado ? 'Ganadas' : 'Perdidas'} este mes <span className="num font-normal text-fg-subtle">{ops.length}</span>
         </span>
-        <span className="block text-xs text-fg-subtle">{arrastrando ? `Suelta aquí para marcarla como ${ganado ? 'ganada' : 'perdida'}` : abierta ? 'Toca para ocultar' : 'Toca para ver'}</span>
+        <span className="block text-xs text-fg-subtle">{arrastrando ? `Suelta aquí para marcarla como ${ganado ? 'ganada' : 'perdida'}` : abierta ? 'Ocultar la lista' : 'Mostrar la lista'}</span>
       </span>
-      {conPrecios && valor > 0 ? <span className="num text-base font-semibold text-fg">{dinero(valor).replace(/\.00$/, '')}</span> : null}
+      {conPrecios && valor > 0 ? <span className="num text-base font-semibold text-fg">{dineroRedondo(valor)}</span> : null}
       <ChevronDown className={cn('size-4 text-fg-subtle transition-transform', abierta && 'rotate-180')} aria-hidden />
     </button>
   )
@@ -193,6 +225,8 @@ export default function EmbudoPage() {
   const mover = useMoverEtapa()
   const [params, setParams] = useSearchParams()
   const [texto, setTexto] = useState('')
+  // Filtrar cientos de tarjetas en cada tecla traba la escritura: el tablero se actualiza después
+  const textoDiferido = useDeferredValue(texto)
   const responsable = params.get('responsable') ?? ''
   const soloSinAccion = params.get('sin_accion') === '1'
   const [arrastrada, setArrastrada] = useState<Oportunidad | null>(null)
@@ -201,7 +235,9 @@ export default function EmbudoPage() {
   const abiertaId = params.get('op')
   const [etapaMovil, setEtapaMovil] = useState<EtapaComercial>('prospecto_nuevo')
   const carril = useRef<HTMLDivElement>(null)
+  const pestanas = useRef<HTMLDivElement>(null)
   const [cerradaAbierta, setCerradaAbierta] = useState<'ganado' | 'perdido' | null>(null)
+  const [cerradasVisibles, setCerradasVisibles] = useState(POR_TANDA)
 
   const setParam = (k: string, v: string | null) =>
     setParams(
@@ -217,14 +253,14 @@ export default function EmbudoPage() {
   const todas = consulta.data ?? []
   const m = useMemo(() => metricas(todas, hoy), [todas, hoy])
   const filtradas = useMemo(() => {
-    const t = normalizar(texto.trim())
+    const t = normalizar(textoDiferido.trim())
     return todas.filter(
       (o) =>
         (!responsable || o.responsable_id === responsable) &&
         (!soloSinAccion || (!o.proxima_accion_fecha && o.etapa !== 'ganado' && o.etapa !== 'perdido')) &&
         (!t || normalizar(`${o.titulo} ${o.cliente.nombre}`).includes(t)),
     )
-  }, [todas, texto, responsable, soloSinAccion])
+  }, [todas, textoDiferido, responsable, soloSinAccion])
   const grupos = useMemo(() => porEtapa(filtradas, inicioMes()), [filtradas])
 
   const sensores = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
@@ -250,7 +286,7 @@ export default function EmbudoPage() {
     setEtapaMovil(et)
     const c = carril.current
     const el = c?.querySelector<HTMLElement>(`[data-etapa="${et}"]`)
-    if (c && el) c.scrollTo({ left: el.offsetLeft - c.offsetLeft - 16, behavior: reducir ? 'auto' : 'smooth' })
+    if (c && el) c.scrollTo({ left: el.offsetLeft - c.offsetLeft - 12, behavior: reducir ? 'auto' : 'smooth' })
   }
   useEffect(() => {
     const el = carril.current
@@ -263,6 +299,14 @@ export default function EmbudoPage() {
     el.addEventListener('scroll', alDeslizar, { passive: true })
     return () => el.removeEventListener('scroll', alDeslizar)
   }, [movil, consulta.isSuccess])
+
+  // Al deslizar a Seguimiento, Ganado o Perdido la pestaña activa quedaba fuera de la vista
+  useEffect(() => {
+    const lista = pestanas.current?.querySelector<HTMLElement>('[role="tablist"]')
+    const tab = lista?.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')
+    if (!lista || !tab) return
+    lista.scrollTo({ left: tab.offsetLeft - (lista.clientWidth - tab.offsetWidth) / 2, behavior: reducir ? 'auto' : 'smooth' })
+  }, [etapaMovil, reducir])
 
   const abierta = abiertaId ? (todas.find((o) => o.id === abiertaId) ?? null) : null
   const columnas = movil ? ETAPAS_EMBUDO : ETAPAS_EMBUDO.filter((e) => !e.cerrada)
@@ -283,14 +327,14 @@ export default function EmbudoPage() {
           </GlassButton>
         </div>
 
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden" aria-label="Resumen del embudo" role="group">
+        <div className="-mx-3 flex gap-2 overflow-x-auto px-3 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden" aria-label="Resumen del embudo" role="group">
           {consulta.isPending ? (
             Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-11 w-44 shrink-0 rounded-full" />)
           ) : (
             <>
               {conPrecios ? (
                 <Metrica etiqueta="Valor en juego">
-                  <AnimatedNumber valor={m.valorEnJuego} formato={(n) => dinero(Math.round(n)).replace(/\.00$/, '')} />
+                  <AnimatedNumber valor={m.valorEnJuego} formato={dineroRedondo} />
                 </Metrica>
               ) : (
                 <Metrica etiqueta="Abiertas">{m.abiertas}</Metrica>
@@ -298,7 +342,7 @@ export default function EmbudoPage() {
               <Metrica etiqueta="Tasa de cierre · 90 días">
                 {m.tasaCierre === null ? '—' : `${Math.round(m.tasaCierre * 100)}%`}
                 <span className="ml-1.5 text-xs font-normal text-fg-subtle">
-                  {m.ganadas90}/{m.ganadas90 + m.perdidas90}
+                  {m.ganadas90} de {m.ganadas90 + m.perdidas90}
                 </span>
               </Metrica>
               <Metrica etiqueta="Sin próxima acción" luz={m.sinAccion > 0} activo={soloSinAccion} onClick={m.sinAccion > 0 || soloSinAccion ? () => setParam('sin_accion', soloSinAccion ? null : '1') : undefined}>
@@ -327,14 +371,15 @@ export default function EmbudoPage() {
       </motion.div>
 
       {movil && consulta.isSuccess ? (
-        <SegmentedControl
-          etiqueta="Etapa"
-          tamano="sm"
-          className="-mx-1 self-start"
-          valor={etapaMovil}
-          onCambio={irAEtapa}
-          segmentos={ETAPAS_EMBUDO.map((e) => ({ valor: e.etapa, etiqueta: CORTO[e.etapa], conteo: grupos[e.etapa].length }))}
-        />
+        <div ref={pestanas} className="-mx-1 flex">
+          <SegmentedControl
+            etiqueta="Etapa"
+            tamano="sm"
+            valor={etapaMovil}
+            onCambio={irAEtapa}
+            segmentos={ETAPAS_EMBUDO.map((e) => ({ valor: e.etapa, etiqueta: CORTO[e.etapa], conteo: grupos[e.etapa].length }))}
+          />
+        </div>
       ) : null}
 
       {consulta.isPending ? (
@@ -370,12 +415,12 @@ export default function EmbudoPage() {
           />
         </GlassPanel>
       ) : (
-        <DndContext sensors={sensores} onDragStart={(e: DragStartEvent) => setArrastrada(todas.find((o) => o.id === e.active.id) ?? null)} onDragEnd={alSoltar} onDragCancel={() => setArrastrada(null)}>
+        <DndContext sensors={sensores} accessibility={ACCESIBILIDAD_ARRASTRE} onDragStart={(e: DragStartEvent) => setArrastrada(todas.find((o) => o.id === e.active.id) ?? null)} onDragEnd={alSoltar} onDragCancel={() => setArrastrada(null)}>
           {!movil ? (
             <div className="flex flex-col gap-3">
               <div className="grid grid-cols-2 gap-3">
                 {(['ganado', 'perdido'] as const).map((et) => (
-                  <ZonaCerrada key={et} etapa={et} ops={grupos[et]} abierta={cerradaAbierta === et} onAlternar={() => setCerradaAbierta((a) => (a === et ? null : et))} conPrecios={conPrecios} arrastrando={Boolean(arrastrada)} />
+                  <ZonaCerrada key={et} etapa={et} ops={grupos[et]} abierta={cerradaAbierta === et} onAlternar={() => (setCerradaAbierta((a) => (a === et ? null : et)), setCerradasVisibles(POR_TANDA))} conPrecios={conPrecios} arrastrando={Boolean(arrastrada)} />
                 ))}
               </div>
               {cerradaAbierta ? (
@@ -389,9 +434,17 @@ export default function EmbudoPage() {
                   role="region"
                 >
                   {grupos[cerradaAbierta].length ? (
-                    grupos[cerradaAbierta].map((o) => (
-                      <TarjetaArrastrable key={o.id} o={o} hoy={hoy} conPrecios={conPrecios} arrastrable onAbrir={() => setParam('op', o.id)} onMover={(e) => moverA(o, e)} />
-                    ))
+                    <>
+                      {grupos[cerradaAbierta].slice(0, cerradasVisibles).map((o) => (
+                        <TarjetaArrastrable key={o.id} o={o} hoy={hoy} conPrecios={conPrecios} arrastrable onAbrir={() => setParam('op', o.id)} onMover={(e) => moverA(o, e)} />
+                      ))}
+                      {grupos[cerradaAbierta].length > cerradasVisibles ? (
+                        <GlassButton variante="fantasma" icono={<ChevronsDown />} className="col-span-full justify-self-center" onClick={() => setCerradasVisibles((v) => v + POR_TANDA)}>
+                          Ver {Math.min(grupos[cerradaAbierta].length - cerradasVisibles, POR_TANDA)} más{' '}
+                          <span className="num font-normal text-fg-subtle">· quedan {grupos[cerradaAbierta].length - cerradasVisibles}</span>
+                        </GlassButton>
+                      ) : null}
+                    </>
                   ) : (
                     <p className="col-span-full py-3 text-center text-sm text-fg-subtle">Ninguna este mes.</p>
                   )}
@@ -403,7 +456,7 @@ export default function EmbudoPage() {
             ref={carril}
             className={cn(
               'flex gap-3 overflow-x-auto pb-3',
-              movil ? '-mx-4 snap-x snap-mandatory scroll-px-4 px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden' : 'lg:grid lg:grid-cols-5 lg:overflow-visible',
+              movil ? '-mx-3 snap-x snap-mandatory scroll-px-3 px-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden' : 'lg:grid lg:grid-cols-5 lg:overflow-visible',
             )}
           >
             {columnas.map((e) => (
@@ -417,7 +470,7 @@ export default function EmbudoPage() {
                 arrastrable={!movil}
                 onAbrir={(o) => setParam('op', o.id)}
                 onMover={moverA}
-                className={movil ? 'w-[calc(100vw-2rem)] shrink-0 snap-start' : 'w-72 shrink-0 lg:w-auto'}
+                className={movil ? 'w-[calc(100vw-1.5rem)] shrink-0 snap-start' : 'w-72 shrink-0 lg:w-auto'}
               />
             ))}
           </div>

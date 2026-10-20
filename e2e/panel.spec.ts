@@ -31,3 +31,46 @@ for (const rol of ['produccion', 'diseno'] as const) {
     sinErrores()
   })
 }
+
+test('la búsqueda global encuentra módulos y abre el detalle del cliente', async ({ page }) => {
+  const sinErrores = vigilarErrores(page)
+  await entrar(page, 'admin')
+  await expect(page.getByRole('heading', { level: 1, name: 'Inicio' })).toBeVisible()
+  await page.keyboard.press('Control+k')
+  const buscar = page.getByPlaceholder('Busca un cliente, folio o módulo')
+  await buscar.fill('cobros')
+  await page.getByRole('option', { name: /Pagos/ }).click()
+  await expect(page).toHaveURL(/\/pagos$/)
+
+  await page.keyboard.press('Control+k')
+  await buscar.fill('cliente')
+  const cliente = page.locator('[cmdk-group]', { hasText: 'Clientes' }).getByRole('option').first()
+  await cliente.click()
+  await expect(page).toHaveURL(/\/clientes\/[0-9a-f-]{36}$/)
+  sinErrores()
+})
+
+test.describe('celular', () => {
+  test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
+
+  test('la barra inferior solo ofrece lo que el rol puede abrir', async ({ page }) => {
+    await entrar(page, 'diseno')
+    const barra = page.getByRole('navigation', { name: 'Navegación principal' })
+    await expect(barra.getByRole('link', { name: 'Cotizar' })).toHaveCount(0)
+    await barra.getByRole('link', { name: 'Producción' }).click()
+    await expect(page).toHaveURL(/\/produccion$/)
+  })
+
+  test('administración cotiza desde la barra inferior y el panel no se desborda', async ({ page }) => {
+    await entrar(page, 'admin')
+    await expect(page.getByText('Por cobrar').first()).toBeVisible()
+    // Las cifras terminan de animarse antes de medir
+    await page.waitForLoadState('networkidle')
+    await page.waitForTimeout(1500)
+    // En celular el navegador ensancha la ventana si algo se sale: se compara con el ancho de la pantalla
+    const desborde = (await page.evaluate<number>('document.documentElement.scrollWidth')) - 390
+    expect(desborde).toBeLessThanOrEqual(0)
+    await page.getByRole('navigation', { name: 'Navegación principal' }).getByRole('link', { name: 'Cotizar' }).click()
+    await expect(page).toHaveURL(/\/cotizaciones$/)
+  })
+})

@@ -48,7 +48,7 @@ export function DialogoConvertir({
   const enviar = async (e: FormEvent) => {
     e.preventDefault()
     if (entrega && entrega < hoy) {
-      setError('La fecha de entrega no puede ser anterior a hoy')
+      setError('La fecha de entrega no puede ser anterior a hoy: elige hoy o una fecha posterior.')
       return
     }
     setError(null)
@@ -173,7 +173,7 @@ export function DialogoRechazar({ abierto, onCambio, c }: { abierto: boolean; on
   const enviar = async (e: FormEvent) => {
     e.preventDefault()
     if (motivo.trim().length < 3) {
-      setError('Escribe el motivo del rechazo; ayuda a mejorar las próximas cotizaciones')
+      setError('Escribe el motivo del rechazo; ayuda a mejorar las próximas cotizaciones.')
       return
     }
     try {

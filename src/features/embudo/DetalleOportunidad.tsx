@@ -1,9 +1,9 @@
-import { FilePlus2, MessageCircle, Pencil, Send, Trash2 } from 'lucide-react'
+import { FilePlus2, MessageCircle, Pencil, RotateCcw, SearchX, Send, Trash2 } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useSesion } from '@/app/sesion'
-import { GlassButton, GlassIconButton, GlassModal, GlassSelect, GlassTextarea, Pildora, Skeleton } from '@/components/glass'
+import { EstadoVacio, GlassButton, GlassIconButton, GlassModal, GlassSelect, GlassTextarea, Pildora, Skeleton } from '@/components/glass'
 import { TIPOS_ACTIVIDAD, type TipoActividad } from '@/data/modulos/clientes/contrato'
 import type { EtapaComercial, Oportunidad } from '@/data/modulos/embudo/contrato'
 import { useWhatsAppCliente } from '@/features/clientes/piezas'
@@ -30,8 +30,8 @@ export function DetalleOportunidad({ id, previa, hoy, onCerrar, onEditar, onMove
   const conPrecios = puede('ver_precios')
   const navegar = useNavigate()
   const detalle = useOportunidad(id)
-  const actividades = useActividadesOportunidad(id)
   const o = (detalle.data ?? previa) as Oportunidad | null
+  const actividades = useActividadesOportunidad(id, Boolean(o))
   const registrar = useRegistrarActividadOportunidad(o)
   const eliminar = useEliminarOportunidad()
   const wa = useWhatsAppCliente()
@@ -79,14 +79,25 @@ export function DetalleOportunidad({ id, previa, hoy, onCerrar, onEditar, onMove
         ) : undefined
       }
     >
-      {!o ? (
+      {!o && detalle.isError ? (
+        <EstadoVacio
+          icono={<SearchX />}
+          titulo="No se pudo abrir la oportunidad"
+          descripcion={`${detalle.error.message}. Puede que la hayan eliminado; revisa el tablero o vuelve a intentarlo.`}
+          accion={
+            <GlassButton icono={<RotateCcw />} onClick={() => void detalle.refetch()}>
+              Reintentar
+            </GlassButton>
+          }
+        />
+      ) : !o ? (
         <div className="flex flex-col gap-3" role="status" aria-label="Cargando oportunidad">
           <Skeleton className="h-24 rounded-tile" />
           <Skeleton className="h-40 rounded-tile" />
         </div>
       ) : (
         <div className="flex flex-col gap-5">
-          <div className="flex flex-wrap items-start justify-center gap-x-5 gap-y-3 sm:justify-start">
+          <div className="grid auto-cols-fr grid-flow-col items-start justify-items-center gap-x-2 sm:flex sm:justify-start sm:gap-x-5">
             <GlassIconButton etiqueta="WhatsApp" mostrarEtiqueta icono={<MessageCircle />} destacado tono="luz" onClick={whatsapp} />
             {conPrecios ? (
               <GlassIconButton

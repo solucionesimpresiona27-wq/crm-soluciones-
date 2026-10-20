@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import { Campo, GlassButton, GlassInput, GlassModal, GlassToggle, SegmentedControl } from '@/components/glass'
 import { api } from '@/data/api'
 import type { ClienteBreve } from '@/data/tipos'
-import { validarCorreo, validarRfc, validarTelefono } from './validacion'
+import { enfocarPrimerError, validarCorreo, validarRfc, validarTelefono } from './validacion'
 
 interface Props {
   abierto: boolean
@@ -98,7 +98,7 @@ export function NuevoClienteModal({ abierto, onCambio, nombreInicial = '', onCre
       if (r) errs.rfc = r
     }
     setErrores(errs)
-    if (Object.values(errs).some(Boolean)) return
+    if (Object.values(errs).some(Boolean)) return enfocarPrimerError('form-nuevo-cliente')
     setError(null)
     crear.mutate()
   }

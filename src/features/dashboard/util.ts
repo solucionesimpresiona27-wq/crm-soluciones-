@@ -44,10 +44,18 @@ export function diasHasta(fecha: string, hoy: string) {
   return differenceInCalendarDays(aFecha(fecha), aFecha(hoy))
 }
 
-/** "Hoy", "Mañana", "En 3 días" o "Atrasado 4 días". */
+/** "1 día", "4 días", "3 meses" o "más de un año" (los atrasos muy viejos no se cuentan en días). */
+function atraso(dias: number) {
+  if (dias === 1) return '1 día'
+  if (dias < 60) return `${dias} días`
+  if (dias < 365) return `${Math.floor(dias / 30)} meses`
+  return dias < 730 ? 'más de un año' : `más de ${Math.floor(dias / 365)} años`
+}
+
+/** "Hoy", "Mañana", "En 3 días", "Atrasado 4 días" o "Atrasado 3 meses". */
 export function cuandoEntrega(fecha: string, hoy: string) {
   const d = diasHasta(fecha, hoy)
-  if (d < 0) return { texto: d === -1 ? 'Atrasado 1 día' : `Atrasado ${-d} días`, atrasado: true }
+  if (d < 0) return { texto: `Atrasado ${atraso(-d)}`, atrasado: true }
   if (d === 0) return { texto: 'Hoy', atrasado: false }
   if (d === 1) return { texto: 'Mañana', atrasado: false }
   return { texto: `En ${d} días`, atrasado: false }

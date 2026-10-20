@@ -39,3 +39,12 @@ export function validarCodigoPostal(cp: string | null | undefined): string | nul
   if (!v) return null
   return /^\d{5}$/.test(v) ? null : 'El código postal fiscal lleva 5 dígitos'
 }
+
+/** Tras validar, lleva el foco (y el scroll) al primer campo marcado con error del formulario. */
+export function enfocarPrimerError(formId: string) {
+  requestAnimationFrame(() => {
+    const campo = document.querySelector<HTMLElement>(`#${formId} [aria-invalid="true"]`)
+    campo?.focus()
+    campo?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  })
+}

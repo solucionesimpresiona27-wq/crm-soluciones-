@@ -27,11 +27,11 @@ function FilaPendiente({ p, hoy, angosto }: { p: EntregaProxima; hoy: string; an
     <li className="flex items-start gap-3">
       <span className={cn('mt-1.5 size-2 shrink-0 rounded-full', destacada ? 'bg-luz shadow-[0_0_10px_rgba(249,194,6,0.8)]' : 'bg-fg/15')} aria-hidden />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-fg">{p.titulo}</p>
-        <p className="flex min-w-0 items-baseline gap-2 text-xs text-fg-muted">
+        <p className={cn('text-sm font-semibold text-fg', angosto ? 'line-clamp-2 break-words' : 'truncate')}>{p.titulo}</p>
+        <p className={cn('flex min-w-0 items-baseline gap-x-2 text-xs text-fg-muted', angosto && 'flex-wrap')}>
           <span className={cn('shrink-0 font-medium', cuando.atrasado ? 'text-danger' : 'text-fg')}>{cuando.texto}</span>
           <span className="num shrink-0 text-fg-subtle">{p.folio}</span>
-          <span className="truncate">{p.cliente}</span>
+          <span className={cn('truncate', angosto && 'basis-full')}>{p.cliente}</span>
         </p>
         {destacada ? <span className="sr-only">Prioridad {p.prioridad}</span> : null}
         {angosto ? (
@@ -50,15 +50,15 @@ function FilaPendiente({ p, hoy, angosto }: { p: EntregaProxima; hoy: string; an
 }
 
 /** Tarea propia de hoy (o vencida) con su círculo para completarla desde el panel. */
-function FilaTarea({ t, hecha, onCompletar }: { t: Tarea; hecha: boolean; onCompletar: (v: boolean) => void }) {
+function FilaTarea({ t, hecha, angosto, onCompletar }: { t: Tarea; hecha: boolean; angosto: boolean; onCompletar: (v: boolean) => void }) {
   return (
     <li className="flex items-center gap-3">
       <CirculoCompletar hecha={hecha} titulo={t.titulo} onCambio={onCompletar} />
       <div className="min-w-0 flex-1">
-        <p className={cn('truncate text-sm font-semibold text-fg', hecha && 'text-fg-subtle line-through decoration-fg/40')}>{t.titulo}</p>
-        <p className="flex min-w-0 items-baseline gap-2 text-xs text-fg-muted">
+        <p className={cn('text-sm font-semibold text-fg', angosto ? 'line-clamp-2 break-words' : 'truncate', hecha && 'text-fg-subtle line-through decoration-fg/40')}>{t.titulo}</p>
+        <p className={cn('flex min-w-0 items-baseline gap-x-2 text-xs text-fg-muted', angosto && 'flex-wrap')}>
           <span className={cn('shrink-0 font-medium', t.vencida && !hecha ? 'text-warning' : 'text-fg')}>{t.vencida ? 'Atrasada' : t.hora ? `Hoy ${t.hora}` : 'Hoy'}</span>
-          {t.cliente ? <span className="truncate">{t.cliente}</span> : null}
+          {t.cliente ? <span className={cn('truncate', angosto && 'basis-full')}>{t.cliente}</span> : null}
         </p>
       </div>
     </li>
@@ -104,30 +104,41 @@ export function PendientesModulo({ r, tamano }: { r: DashboardResumen; tamano: T
   const nPedidos = Math.max(0, max - nTareas)
   const pendientesTareas = tareas.lista.filter((t) => !tareas.hechas[t.id]).length
   const total = lista.length + pendientesTareas
+  const enlace = 'inline-flex h-11 items-center rounded-full px-3 text-xs font-semibold text-accent outline-none transition-colors hover:bg-[var(--control-bg)] dark:text-navy-200'
   return (
     <Modulo etiqueta="Mis pendientes" className="flex flex-col">
       <TituloModulo
         icono={<ListTodo />}
         extra={
           lista.length > nPedidos ? (
-            <Link
-              to="/pedidos"
-              className="-my-2 inline-flex h-11 items-center rounded-full px-3 text-xs font-semibold text-accent outline-none transition-colors hover:bg-[var(--control-bg)] dark:text-navy-200"
-            >
+            <Link to="/pedidos" className={cn('-my-2', enlace)}>
               Ver los {lista.length}
+            </Link>
+          ) : tareas.lista.length > nTareas ? (
+            // Hay tareas que no caben: la agenda las muestra todas
+            <Link to="/agenda" className={cn('-my-2', enlace)}>
+              Ver las {pendientesTareas} tareas
             </Link>
           ) : total ? (
             <span className="grid h-6 min-w-6 place-items-center rounded-full bg-[var(--control-bg)] px-2 text-xs font-bold text-fg">{total}</span>
           ) : null
         }
       >
-        Mis pendientes
+        {angosto ? (
+          // En celular la columna mide unos 140 px: el título corto cabe junto al contador
+          <>
+            <span className="sm:hidden">Pendientes</span>
+            <span className="hidden sm:inline">Mis pendientes</span>
+          </>
+        ) : (
+          'Mis pendientes'
+        )}
       </TituloModulo>
       {lista.length || tareas.lista.length ? (
         <>
           <ul className={cn('mt-4 flex flex-col', angosto ? 'gap-4' : 'gap-3.5', tamano === '2x1' && 'mt-3')}>
             {tareas.lista.slice(0, nTareas).map((t) => (
-              <FilaTarea key={t.id} t={t} hecha={Boolean(tareas.hechas[t.id])} onCompletar={(v) => tareas.cambiar(t, v)} />
+              <FilaTarea key={t.id} t={t} hecha={Boolean(tareas.hechas[t.id])} angosto={angosto} onCompletar={(v) => tareas.cambiar(t, v)} />
             ))}
             {lista.slice(0, nPedidos).map((p) => (
               <FilaPendiente key={p.id} p={p} hoy={r.hoy} angosto={angosto} />

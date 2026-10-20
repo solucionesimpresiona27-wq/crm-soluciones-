@@ -33,8 +33,11 @@ function FichaFecha({ fecha, hoy }: { fecha: string; hoy: string }) {
       )}
       aria-hidden
     >
-      {/* El día de la semana va arriba, como en un calendario: "mar 20" se lee martes, no marzo */}
-      <span className="text-2xs font-medium opacity-80">{d === 0 ? 'hoy' : format(f, 'EEE', { locale: es }).replace('.', '')}</span>
+      {/* El día de la semana va arriba, como en un calendario: "mar 20" se lee martes, no marzo.
+          Fuera de esta semana el día de la semana ya no ubica la fecha: se muestra el mes. */}
+      <span className="text-2xs font-medium opacity-80">
+        {d === 0 ? 'hoy' : format(f, Math.abs(d) > 6 ? 'MMM' : 'EEE', { locale: es }).replace('.', '')}
+      </span>
       <span className="mt-0.5 text-md font-semibold">{format(f, 'd')}</span>
     </span>
   )

@@ -6,7 +6,18 @@ test('muestra un error claro con contraseña incorrecta', async ({ page }) => {
   await page.getByLabel('Correo').fill(USUARIOS.ventas.email)
   await page.getByLabel('Contraseña', { exact: true }).fill('incorrecta123')
   await page.getByRole('button', { name: 'Entrar', exact: true }).click()
-  await expect(page.getByRole('alert')).toHaveText('Correo o contraseña incorrectos')
+  await expect(page.getByRole('alert')).toHaveText(/^Correo o contraseña incorrectos/)
+  await expect(page).toHaveURL(/\/login/)
+})
+
+test('valida el correo antes de intentar entrar', async ({ page }) => {
+  await page.goto('/login')
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click()
+  await expect(page.getByRole('alert')).toHaveText('Escribe tu correo y tu contraseña para entrar.')
+  await page.getByLabel('Correo').fill('ventas')
+  await page.getByLabel('Contraseña', { exact: true }).fill('algo')
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click()
+  await expect(page.getByRole('alert')).toContainText('nombre@correo.com')
   await expect(page).toHaveURL(/\/login/)
 })
 
@@ -53,4 +64,11 @@ test('el tema oscuro se guarda entre visitas', async ({ page }) => {
   const despues = await html.getAttribute('data-theme')
   await page.reload()
   await expect(html).toHaveAttribute('data-theme', despues ?? '')
+})
+
+test('un enlace de contraseña sin sesión explica cómo pedir otro', async ({ page }) => {
+  await page.goto('/nueva-contrasena')
+  await expect(page.getByText('Este enlace ya no es válido')).toBeVisible()
+  await page.getByRole('button', { name: 'Pedir un enlace nuevo' }).click()
+  await expect(page).toHaveURL(/\/login/)
 })

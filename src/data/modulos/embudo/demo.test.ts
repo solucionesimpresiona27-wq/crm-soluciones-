@@ -17,6 +17,11 @@ describe('embudo · vista previa', () => {
     expect(d.cotizaciones.map((c) => c.folio)).toEqual(['COT-0004'])
   })
 
+  it('una oportunidad que no existe da un mensaje claro', async () => {
+    entrarComo('ventas')
+    await expect(api.oportunidades.obtener('no-existe')).rejects.toThrow('ya no existe')
+  })
+
   it('mover a perdido exige motivo y cierra la oportunidad', async () => {
     entrarComo('ventas')
     await expect(api.oportunidades.moverEtapa('o3', 'perdido')).rejects.toThrow('motivo')

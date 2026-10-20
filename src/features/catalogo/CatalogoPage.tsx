@@ -137,7 +137,7 @@ function ProductosVista() {
         </GlassPanel>
       ) : fichas.isError ? (
         <GlassPanel>
-          <EstadoVacio titulo="No se pudo cargar el catálogo" descripcion={`${fichas.error.message}. Revisa tu conexión e inténtalo de nuevo.`} accion={<GlassButton onClick={() => void fichas.refetch()}>Reintentar</GlassButton>} />
+          <EstadoVacio titulo="No se pudo cargar el catálogo" descripcion={`${fichas.error.message.replace(/\.?$/, '.')} Revisa tu conexión e inténtalo de nuevo.`} accion={<GlassButton onClick={() => void fichas.refetch()}>Reintentar</GlassButton>} />
         </GlassPanel>
       ) : grupos.length === 0 ? (
         <GlassPanel>
@@ -176,20 +176,20 @@ function FilaProducto({ p, verPrecios, editar, onEditar }: { p: ProductoFicha; v
   const sin = !tienePrecio(p)
   const etapas = [p.requiere_diseno && 'Diseño', p.requiere_produccion && 'Producción', p.requiere_instalacion && 'Instalación'].filter(Boolean) as string[]
   return (
-    <li className={cn('flex items-center gap-3 rounded-control px-2 py-3', !p.activo && 'opacity-60')} data-producto={p.nombre}>
+    <li className={cn('flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-control px-2 py-3 sm:flex-nowrap', !p.activo && 'opacity-60')} data-producto={p.nombre}>
       <div className="min-w-0 flex-1">
-        <p className="truncate font-medium text-fg">{p.nombre}</p>
-        <p className="truncate text-sm text-fg-muted">
+        <p className="font-medium text-fg max-sm:break-words sm:truncate">{p.nombre}</p>
+        <p className="text-sm text-fg-muted max-sm:break-words sm:truncate">
           {METODOS[p.metodo_calculo].etiqueta}
           {etapas.length ? ` · ${etapas.join(', ')}` : ''}
           {!p.activo ? ' · Inactivo' : ''}
         </p>
       </div>
       {verPrecios ? (
-        <div className="flex shrink-0 flex-col items-end gap-1 text-right">
+        <div className="flex shrink-0 flex-col gap-1 max-sm:order-last max-sm:basis-full max-sm:items-start sm:items-end sm:text-right">
           {sin ? (
             editar ? (
-              <button type="button" onClick={onEditar} className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+              <button type="button" onClick={onEditar} className="inline-flex items-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent pointer-coarse:-my-2.5 pointer-coarse:min-h-11">
                 <Pildora tono="luz">Sin precio: captúralo</Pildora>
               </button>
             ) : (

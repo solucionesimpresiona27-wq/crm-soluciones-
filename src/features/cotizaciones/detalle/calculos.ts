@@ -60,11 +60,10 @@ export interface Hito {
 /** Recorrido de la cotización en orden del proceso (no todos los pasos tienen fecha registrada). */
 export function hitosCotizacion(c: CotizacionCompleta, visible: EstadoCotizacionVisible): Hito[] {
   const hitos: Hito[] = [{ clave: 'creada', titulo: 'Creada', cuando: fechaHora(c.created_at), detalle: c.vendedor ? `Por ${c.vendedor.nombre}` : null, tono: 'hecho' }]
-  hitos.push(
-    c.enviada_at
-      ? { clave: 'enviada', titulo: 'Enviada al cliente', cuando: fechaHora(c.enviada_at), tono: 'hecho' }
-      : { clave: 'enviada', titulo: 'Enviada al cliente', cuando: null, detalle: 'Todavía no se envía', tono: 'pendiente' },
-  )
+  // Sin fecha de envío: en borrador falta enviarla; si ya avanzó (p. ej. se aceptó en mostrador) el paso no aplica.
+  if (c.enviada_at) hitos.push({ clave: 'enviada', titulo: 'Enviada al cliente', cuando: fechaHora(c.enviada_at), tono: 'hecho' })
+  else if (c.estado === 'borrador') hitos.push({ clave: 'enviada', titulo: 'Enviada al cliente', cuando: null, detalle: 'Todavía no se envía', tono: 'pendiente' })
+  else if (c.estado === 'enviada') hitos.push({ clave: 'enviada', titulo: 'Enviada al cliente', cuando: null, tono: 'hecho' })
   if (visible === 'vencida') {
     hitos.push({ clave: 'vencida', titulo: 'Venció sin respuesta', cuando: format(parseISO(`${c.fecha_vencimiento}T12:00:00`), 'd MMM yyyy', { locale: es }), tono: 'aviso' })
   }

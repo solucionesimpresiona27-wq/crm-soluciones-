@@ -12,7 +12,7 @@ import { useDebounce } from '@/hooks/useDebounce'
 import { telefono } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { useGuardarOportunidad } from './consultas'
-import { ORIGENES } from './util'
+import { enfocarSinDesplazar, ORIGENES } from './util'
 
 interface Props {
   abierto: boolean
@@ -38,7 +38,7 @@ function SelectorCliente({ valor, onValor, error, bloqueado }: { valor: ClienteS
           <div id={id} className="glass glass-thick flex min-h-11 items-center gap-3 rounded-control py-1.5 pl-4 pr-1.5">
             <Check className="size-4 shrink-0 text-success" aria-hidden />
             <span className="min-w-0 flex-1">
-              <span className="block truncate font-semibold text-fg">{valor.nombre}</span>
+              <span className="block truncate font-semibold text-fg" title={valor.nombre}>{valor.nombre}</span>
               {valor.whatsapp ? <span className="num block text-xs text-fg-muted">{telefono(valor.whatsapp)}</span> : null}
             </span>
             {bloqueado ? null : (
@@ -151,7 +151,11 @@ export function OportunidadModal({ abierto, onCambio, oportunidad, onGuardada }:
     if (v !== null && (!Number.isFinite(v) || v < 0)) err.valor = 'Escribe un monto válido (sin signos) o déjalo vacío.'
     if (accion.trim() && !fecha) err.fecha = 'Indica cuándo harás la próxima acción.'
     setErrores(err)
-    if (Object.keys(err).length) return
+    if (Object.keys(err).length) {
+      // Lleva el foco al primer campo con error para que se vea y se pueda corregir de inmediato
+      requestAnimationFrame(() => enfocarSinDesplazar(document.querySelector<HTMLElement>('#form-oportunidad [aria-invalid="true"]')))
+      return
+    }
     guardar.mutate(
       {
         id: oportunidad?.id,
@@ -195,8 +199,8 @@ export function OportunidadModal({ abierto, onCambio, oportunidad, onGuardada }:
         </>
       }
     >
-      <form id="form-oportunidad" onSubmit={enviar} noValidate className="grid gap-4 sm:grid-cols-2">
-        <div className="sm:col-span-2">
+      <form id="form-oportunidad" onSubmit={enviar} noValidate className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="min-w-0 sm:col-span-2">
           <SelectorCliente valor={cliente} onValor={setCliente} error={errores.cliente} bloqueado={Boolean(oportunidad)} />
         </div>
         <Campo etiqueta="Título" error={errores.titulo} className="sm:col-span-2">

@@ -1,4 +1,5 @@
 import { ETAPAS_EMBUDO, type EtapaComercial, type Oportunidad } from '@/data/modulos/embudo/contrato'
+import { dinero } from '@/lib/format'
 
 export const ABIERTAS = ETAPAS_EMBUDO.filter((e) => !e.cerrada)
 export const CERRADAS = ETAPAS_EMBUDO.filter((e) => e.cerrada)
@@ -6,6 +7,9 @@ export const etiquetaEtapa = (e: EtapaComercial) => ETAPAS_EMBUDO.find((x) => x.
 
 export const ORIGENES = ['WhatsApp', 'Facebook', 'Instagram', 'TikTok', 'Recomendación', 'Visita', 'Otro'] as const
 export const MOTIVOS_PERDIDA = ['Precio', 'Tiempo de entrega', 'Eligió a otro proveedor', 'Sin respuesta', 'Otro'] as const
+
+/** Monto redondeado al peso, sin centavos (sumas y valores estimados del tablero). */
+export const dineroRedondo = (n: number) => dinero(Math.round(n)).replace(/\.00$/, '')
 
 const DIA = 86_400_000
 const aDia = (iso: string) => Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10))
@@ -67,3 +71,13 @@ export const iniciales = (n: string | null) =>
     .slice(0, 2)
     .map((p) => p[0]!.toUpperCase())
     .join('')
+
+/**
+ * Enfoca un campo (p. ej. el primero con error) y lo acerca solo en vertical: `focus()` normal
+ * desplazaba de lado el contenido de la hoja en celular.
+ */
+export function enfocarSinDesplazar(el: HTMLElement | null) {
+  if (!el) return
+  el.focus({ preventScroll: true })
+  el.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+}

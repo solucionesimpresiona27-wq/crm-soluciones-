@@ -1,5 +1,5 @@
 /** MÓDULO EMBUDO · implementación real (Supabase). */
-import { limpio, mensajeError, n, revisar, supabase, textoBusqueda } from '@/data/comun/real'
+import { limpio, mensajeError, n, revisar, revisarOpcional, supabase, textoBusqueda } from '@/data/comun/real'
 import type { TablesUpdate } from '@/lib/database.types'
 import type { ApiEmbudo, DatosOportunidad, Oportunidad, ResumenEmbudo } from './contrato'
 
@@ -33,6 +33,8 @@ function fila(d: Partial<DatosOportunidad>): TablesUpdate<'oportunidades'> {
   return f
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 function inicioMes() {
   const d = new Date()
   return new Date(d.getFullYear(), d.getMonth(), 1).toISOString()
@@ -55,14 +57,18 @@ export const embudoSupabase: ApiEmbudo = {
     },
 
     async obtener(id) {
+      if (!UUID.test(id)) throw new Error('Esta oportunidad ya no existe o no tienes acceso a ella')
       const sb = supabase()
       const [o, cot] = await Promise.all([
-        sb.from('oportunidades').select(CAMPOS).eq('id', id).single(),
+        // maybeSingle: un enlace viejo (?op=…) no provoca un 406, solo un aviso claro
+        sb.from('oportunidades').select(CAMPOS).eq('id', id).maybeSingle(),
         // Sin "ver_precios" la base devuelve la lista vacía
         sb.from('cotizaciones').select('id, folio, titulo, estado, total, fecha').eq('oportunidad_id', id).order('fecha', { ascending: false }),
       ])
+      const fila = revisarOpcional(o)
+      if (!fila) throw new Error('Esta oportunidad ya no existe o no tienes acceso a ella')
       return {
-        ...aOportunidad(revisar(o) as unknown as Record<string, unknown>),
+        ...aOportunidad(fila as unknown as Record<string, unknown>),
         cotizaciones: revisar(cot).map((c) => ({ ...c, total: n(c.total) })),
       }
     },

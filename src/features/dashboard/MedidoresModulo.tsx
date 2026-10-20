@@ -76,7 +76,7 @@ export function MedidoresModulo({ r }: { r: DashboardResumen }) {
         <div key={m.id} className={cn('flex min-h-0 flex-col items-stretch gap-2.5', medidores.length === 1 && 'w-full max-w-[8.5rem]')}>
           <CapsuleMeter valor={m.valor} icono={m.icono} etiqueta={m.etiqueta} textoValor={m.textoValor} tono={m.tono} className="min-h-0 flex-1" />
           <div className="px-1 text-center" aria-hidden>
-            <p className="text-xl font-semibold leading-tight tracking-tight text-fg">{Math.round(m.valor * 100)}%</p>
+            <p className="num text-xl font-semibold leading-tight tracking-tight text-fg">{Math.round(m.valor * 100)}%</p>
             <p className="text-xs leading-tight text-fg-muted">{m.etiqueta}</p>
           </div>
         </div>

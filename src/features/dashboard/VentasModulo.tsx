@@ -61,7 +61,7 @@ function PildoraCambio({ cambio, mesPrevio, corto }: { cambio: number; mesPrevio
 /** Cifra principal en "texto de cristal", con el signo de pesos en menor tamaño. */
 function CifraCristal({ valor, contar, className }: { valor: number; contar: boolean; className?: string }) {
   return (
-    <p className={cn('flex items-start font-semibold leading-none', className)}>
+    <p className={cn('num flex items-start font-semibold leading-none', className)}>
       <span className="sr-only">{dinero(valor)}</span>
       <span aria-hidden className="glass-text mr-[0.04em] mt-[0.12em] text-[0.46em] leading-none">
         $
@@ -132,7 +132,7 @@ export function VentasModulo({ r, abierto, onAbrir, onCerrar, enfocar, onEnfocad
                 <Muestra color={colores.cobrado} />
                 Cobrado
               </dt>
-              <dd className="mt-0.5 text-md font-semibold text-fg">
+              <dd className="num mt-0.5 text-md font-semibold text-fg">
                 {pesos(d.cobrado)}
                 {d.pctCobrado !== null ? <span className="ml-1.5 text-xs font-medium text-fg-subtle">{d.pctCobrado}%</span> : null}
               </dd>
@@ -140,7 +140,7 @@ export function VentasModulo({ r, abierto, onAbrir, onCerrar, enfocar, onEnfocad
             {d.utilidad ? (
               <div>
                 <dt className="text-xs font-medium text-fg-muted">Utilidad estimada</dt>
-                <dd className="mt-0.5 text-md font-semibold text-fg">
+                <dd className="num mt-0.5 text-md font-semibold text-fg">
                   {pesos(d.utilidad.utilidad)}
                   {d.margen !== null ? <span className="ml-1.5 text-xs font-medium text-fg-subtle">{d.margen}% de margen</span> : null}
                 </dd>
@@ -190,7 +190,7 @@ function Dato({ etiqueta, valor, nota, muestra }: { etiqueta: string; valor: str
         {muestra ? <Muestra color={muestra} /> : null}
         {etiqueta}
       </p>
-      <p className="mt-1 text-xl font-semibold tracking-tight text-fg">{valor}</p>
+      <p className="num mt-1 text-xl font-semibold tracking-tight text-fg">{valor}</p>
       {nota ? <p className="mt-0.5 text-xs text-fg-subtle">{nota}</p> : null}
     </div>
   )

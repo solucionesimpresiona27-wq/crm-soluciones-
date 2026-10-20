@@ -115,7 +115,7 @@ export function ProduccionModulo({ r, variante, abierto, onAbrir, onCerrar, enfo
             </TituloModulo>
             <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
               <p className="flex items-baseline gap-2">
-                <span className="text-3xl font-semibold tracking-tight text-fg">{entero(r.pedidos_activos)}</span>
+                <span className="num text-3xl font-semibold tracking-tight text-fg">{entero(r.pedidos_activos)}</span>
                 <span className="text-sm text-fg-muted">{r.pedidos_activos === 1 ? 'pedido activo' : 'pedidos activos'}</span>
               </p>
               <Indicadores r={r} />
@@ -129,7 +129,7 @@ export function ProduccionModulo({ r, variante, abierto, onAbrir, onCerrar, enfo
             </TituloModulo>
             <div className="mt-3 grid flex-1 gap-5 sm:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
               <div className="flex flex-col">
-                <p className="glass-text text-[3.5rem] font-semibold leading-none tracking-[-0.04em] lg:text-[4.25rem]">
+                <p className="num glass-text text-[3.5rem] font-semibold leading-none tracking-[-0.04em] lg:text-[4.25rem]">
                   {entero(r.pedidos_activos)}
                 </p>
                 <p className="mb-3 mt-1 text-sm text-fg-muted">{r.pedidos_activos === 1 ? 'pedido activo' : 'pedidos activos'}</p>
@@ -196,7 +196,7 @@ function DetalleProduccion({ r }: { r: DashboardResumen }) {
     <div className="grid gap-7 md:grid-cols-[14rem_minmax(0,1fr)]">
       <aside className="flex flex-col gap-4 md:sticky md:top-0 md:self-start">
         <div>
-          <p className="glass-text text-hero font-semibold">{entero(r.pedidos_activos)}</p>
+          <p className="num glass-text text-hero font-semibold">{entero(r.pedidos_activos)}</p>
           <p className="mt-1 text-sm text-fg-muted">{r.pedidos_activos === 1 ? 'pedido activo' : 'pedidos activos'}</p>
         </div>
         <Indicadores r={r} disenos />

@@ -5,7 +5,7 @@ import type { MetodoCalculo } from '@/data/tipos'
  * Concepto que la Calculadora deja listo para el editor de cotizaciones.
  * Se guarda en sessionStorage con la clave CLAVE_BORRADOR_CALCULADORA y también se manda
  * en `location.state.desdeCalculadora` al navegar a /cotizaciones/nueva.
- * (El editor todavía debe leerlo: ver la respuesta del módulo catálogo para el cambio compartido.)
+ * El editor (CotizacionEditorPage) lo convierte en conceptos y borra la copia de sessionStorage.
  */
 export const CLAVE_BORRADOR_CALCULADORA = 'impresiona:calculadora:borrador'
 

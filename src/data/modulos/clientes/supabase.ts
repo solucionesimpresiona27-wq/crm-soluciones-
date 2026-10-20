@@ -1,7 +1,12 @@
 /** MÓDULO CLIENTES · implementación real (Supabase). */
-import { limpio, mensajeError, n, nn, revisar, sinError, supabase, textoBusqueda } from '@/data/comun/real'
+import { limpio, mensajeError, n, nn, revisar, revisarOpcional, sinError, supabase, textoBusqueda } from '@/data/comun/real'
 import type { TablesInsert, TablesUpdate } from '@/lib/database.types'
 import type { ApiClientes, Cliente, ClienteLista, DatosCliente, DatosContacto, HistorialCliente, ResumenCliente } from './contrato'
+
+/** Un id que no es UUID (enlace mal copiado) no llega a la base: evita errores 400 y se trata como "no encontrado". */
+function exigirId(id: string) {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) throw new Error('Cliente no encontrado')
+}
 
 const CAMPOS_BREVE = 'id, nombre, whatsapp, telefono, email, requiere_factura'
 const CAMPOS_LISTA =
@@ -66,7 +71,10 @@ export const clientesSupabase: ApiClientes = {
     },
 
     async obtener(id) {
-      const c = revisar(await supabase().from('clientes').select('*, vendedor:perfiles!vendedor_id(id, nombre)').eq('id', id).single())
+      // Enlace incompleto o cliente borrado (o sin permiso): "no encontrado" sin error HTTP ni reintentos.
+      exigirId(id)
+      const c = revisarOpcional(await supabase().from('clientes').select('*, vendedor:perfiles!vendedor_id(id, nombre)').eq('id', id).maybeSingle())
+      if (!c) throw new Error('Cliente no encontrado')
       return aCliente(c as unknown as Record<string, unknown>)
     },
 
@@ -91,6 +99,7 @@ export const clientesSupabase: ApiClientes = {
     },
 
     async resumen(id) {
+      exigirId(id)
       const r = revisar(await supabase().rpc('resumen_cliente', { p_cliente: id })) as unknown as Record<string, unknown>
       const resumen: ResumenCliente = {
         pedidos: n(r.pedidos),
@@ -103,6 +112,7 @@ export const clientesSupabase: ApiClientes = {
     },
 
     async historial(id) {
+      exigirId(id)
       const sb = supabase()
       // Sin "ver_precios" la base devuelve cotizaciones y pagos vacíos y la vista de órdenes sin montos.
       const [cot, ped, pag] = await Promise.all([
@@ -143,6 +153,7 @@ export const clientesSupabase: ApiClientes = {
 
   contactos: {
     async listar(clienteId) {
+      exigirId(clienteId)
       return revisar(
         await supabase().from('contactos').select('*').eq('cliente_id', clienteId).order('principal', { ascending: false }).order('nombre'),
       )
@@ -170,6 +181,7 @@ export const clientesSupabase: ApiClientes = {
   actividades: {
     async listar({ clienteId, oportunidadId, limite }) {
       let q = supabase().from('actividades').select('*, usuario:perfiles!usuario_id(nombre), oportunidad:oportunidades(titulo)')
+      if (clienteId) exigirId(clienteId)
       if (clienteId) q = q.eq('cliente_id', clienteId)
       if (oportunidadId) q = q.eq('oportunidad_id', oportunidadId)
       const filas = revisar(await q.order('fecha', { ascending: false }).limit(limite ?? 200))

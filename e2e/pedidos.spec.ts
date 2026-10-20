@@ -70,7 +70,7 @@ test('ventas lleva el pedido por sus etapas, pausa, sube y aprueba un diseño y 
   await dialogo.getByRole('textbox', { name: 'Motivo' }).fill('Falta el logotipo en vectores')
   await dialogo.getByRole('button', { name: 'Pausar pedido' }).click()
   await expect(page.getByText('Motivo: Falta el logotipo en vectores')).toBeVisible()
-  await etapa(page).getByRole('button', { name: /Reanudar en en diseño/ }).click()
+  await etapa(page).getByRole('button', { name: /^Reanudar en diseño$/ }).click()
   await expect(etapa(page).getByText('En diseño', { exact: true })).toBeVisible()
 
   // Sube un diseño: queda v1 por aprobar y el pedido pasa solo a "Esperando aprobación"

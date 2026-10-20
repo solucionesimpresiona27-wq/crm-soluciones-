@@ -1,9 +1,11 @@
+import { format, parseISO } from 'date-fns'
+import { es } from 'date-fns/locale'
 import { CalendarClock, FileClock, GripVertical, MapPin } from 'lucide-react'
 import { forwardRef, type HTMLAttributes, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Pildora } from '@/components/glass'
 import type { OrdenTrabajo } from '@/data/modulos/produccion/contrato'
-import { fecha, fechaRelativa } from '@/lib/format'
+import { fechaRelativa } from '@/lib/format'
 import { cn, iniciales } from '@/lib/utils'
 import { diasParaEntrega } from './etapas'
 
@@ -26,7 +28,7 @@ export function Entrega({
   if (soloAviso && !atrasado && !pronto) return null
   const texto = atrasado
     ? Math.abs(dias) > 45
-      ? `Atrasado desde ${fecha(o.fecha_entrega)}`
+      ? `Atrasado desde ${format(parseISO(o.fecha_entrega!), 'd MMM', { locale: es })}`
       : `Atrasado ${Math.abs(dias) === 1 ? '1 día' : `${Math.abs(dias)} días`}`
     : dias === 0
       ? 'Entrega hoy'

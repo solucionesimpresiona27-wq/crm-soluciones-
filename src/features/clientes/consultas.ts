@@ -24,7 +24,13 @@ export const useSaldosClientes = (activo: boolean) =>
 export const useClientesInactivos = (dias: number, activo: boolean) =>
   useQuery({ queryKey: clavesClientes.inactivos(dias), queryFn: () => api.clientes.inactivos(dias), enabled: activo && dias > 0 })
 
-export const useCliente = (id: string) => useQuery({ queryKey: clavesClientes.ficha(id), queryFn: () => api.clientes.obtener(id) })
+export const useCliente = (id: string) =>
+  useQuery({
+    queryKey: clavesClientes.ficha(id),
+    queryFn: () => api.clientes.obtener(id),
+    // Un cliente que no existe no aparece reintentando: se avisa de inmediato.
+    retry: (intentos, error) => !/no encontrad/i.test(error.message) && intentos < 1,
+  })
 export const useResumenCliente = (id: string) => useQuery({ queryKey: clavesClientes.resumen(id), queryFn: () => api.clientes.resumen(id) })
 export const useHistorialCliente = (id: string) => useQuery({ queryKey: clavesClientes.historial(id), queryFn: () => api.clientes.historial(id) })
 export const useContactos = (id: string) => useQuery({ queryKey: clavesClientes.contactos(id), queryFn: () => api.contactos.listar(id) })

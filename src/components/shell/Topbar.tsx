@@ -26,7 +26,7 @@ export function Topbar({ onBuscar }: { onBuscar: () => void }) {
         <button
           type="button"
           onClick={onBuscar}
-          className="hidden h-11 w-72 items-center gap-2.5 rounded-full bg-[var(--field-bg)] px-4 text-sm text-fg-subtle shadow-[inset_0_0_0_1px_rgb(var(--line)/0.08)] outline-none transition-colors hover:text-fg-muted lg:flex"
+          className="hidden h-11 w-72 items-center gap-2.5 rounded-full bg-[var(--field-bg)] px-4 text-sm text-fg-subtle shadow-[inset_0_0_0_1px_rgb(var(--line)/0.08)] outline-none transition-colors hover:text-fg-muted lg:flex focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--focus-outline))]"
         >
           <Search className="size-4" aria-hidden />
           <span className="flex-1 text-left">Buscar clientes, folios…</span>
@@ -36,7 +36,7 @@ export function Topbar({ onBuscar }: { onBuscar: () => void }) {
           type="button"
           onClick={onBuscar}
           aria-label="Buscar"
-          className="grid size-10 place-items-center rounded-full text-fg-muted outline-none transition-colors hover:bg-[var(--control-bg)] hover:text-fg lg:hidden"
+          className="grid size-10 shrink-0 place-items-center rounded-full text-fg-muted pointer-coarse:size-11 outline-none transition-colors hover:bg-[var(--control-bg)] hover:text-fg lg:hidden"
         >
           <Search className="size-5" aria-hidden />
         </button>

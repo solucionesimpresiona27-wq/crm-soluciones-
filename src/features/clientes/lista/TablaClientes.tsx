@@ -201,7 +201,10 @@ export function TarjetasClientes({ filas, acciones, conSaldo, descripcion }: { f
                     <span className="num text-lg font-semibold leading-tight tracking-tight text-fg">{dinero(f.saldo)}</span>
                   </span>
                 ) : (
-                  <span className="text-xs text-fg-subtle">{LISTA_CORTA[f.lista_precio]}</span>
+                  <span className="flex flex-col items-end">
+                    <span className="text-xs text-fg-subtle">Lista de precios</span>
+                    <span className="font-medium text-fg">{LISTA_CORTA[f.lista_precio]}</span>
+                  </span>
                 )}
               </div>
             </GlassSurface>

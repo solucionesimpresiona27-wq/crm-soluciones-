@@ -47,8 +47,8 @@ export function Reactivar({ dias, onDias, diasConfig, conPrecios, escritorio }: 
             <span className="num font-semibold text-fg">{dias}</span> días. Un mensaje a tiempo trae de vuelta pedidos.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2 pl-14 sm:pl-0">
-          <div className="w-28">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+          <div className="w-[6.5rem] sm:w-28">
             <GlassInput
               type="number"
               min={1}
@@ -65,7 +65,7 @@ export function Reactivar({ dias, onDias, diasConfig, conPrecios, escritorio }: 
             />
           </div>
           {ATAJOS.filter((a) => a !== dias).slice(0, 3).map((a) => (
-            <GlassButton key={a} variante="fantasma" tamano="sm" className="h-11 px-3 pointer-coarse:h-11" onClick={() => onDias(a)}>
+            <GlassButton key={a} variante="fantasma" tamano="sm" className="h-11 px-2.5 sm:px-3" onClick={() => onDias(a)}>
               {a === 365 ? '1 año' : `${a} días`}
             </GlassButton>
           ))}
@@ -130,7 +130,7 @@ export function Reactivar({ dias, onDias, diasConfig, conPrecios, escritorio }: 
                 </div>
                 {c.etiquetas.length ? <Etiquetas etiquetas={c.etiquetas} max={3} className="mt-2" /> : null}
                 <div className="mt-auto flex items-end justify-between gap-3 pt-3">
-                  <div className="flex gap-5 text-sm">
+                  <div className="flex gap-4 text-sm sm:gap-5">
                     <span className="flex flex-col">
                       <span className="num text-xl font-semibold leading-tight tracking-tight text-fg">{cantidad(c.dias_sin_compra)}</span>
                       <span className="text-xs text-fg-subtle">días sin comprar</span>
@@ -140,18 +140,18 @@ export function Reactivar({ dias, onDias, diasConfig, conPrecios, escritorio }: 
                       <span className="text-xs text-fg-subtle">{c.pedidos === 1 ? 'pedido' : 'pedidos'}</span>
                     </span>
                     {conPrecios && c.total_comprado !== null ? (
-                      <span className="hidden flex-col min-[400px]:flex">
+                      <span className="flex flex-col">
                         <span className="num text-xl font-semibold leading-tight tracking-tight text-fg">{dinero(c.total_comprado).replace(/\.00$/, '')}</span>
                         <span className="text-xs text-fg-subtle">comprado</span>
                       </span>
                     ) : null}
                   </div>
                 </div>
-                <div className="mt-3 flex gap-2 border-t border-[var(--divider)] pt-3">
-                  <GlassButton variante="primario" icono={<MessageCircle />} className="flex-1" onClick={() => escribir(c)}>
+                <div className="mt-3 flex flex-wrap gap-2 border-t border-[var(--divider)] pt-3">
+                  <GlassButton variante="primario" icono={<MessageCircle />} className="grow-[3] basis-auto" onClick={() => escribir(c)}>
                     Escribir por WhatsApp
                   </GlassButton>
-                  <GlassButton variante="cristal" onClick={() => navegar(`/clientes/${c.cliente_id}`)}>
+                  <GlassButton variante="cristal" className="grow basis-auto" onClick={() => navegar(`/clientes/${c.cliente_id}`)}>
                     Ver ficha
                   </GlassButton>
                 </div>

@@ -18,7 +18,7 @@ import {
 import { ChevronsLeftRight, CircleDashed, CirclePause, Inbox } from 'lucide-react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useEffect, useMemo, useRef, useState, type KeyboardEventHandler, type MouseEventHandler, type ReactNode } from 'react'
-import { SegmentedControl } from '@/components/glass'
+import { GlassButton, SegmentedControl } from '@/components/glass'
 import type { OrdenTrabajo } from '@/data/modulos/produccion/contrato'
 import type { EstadoPedido } from '@/data/tipos'
 import { useEsMovil } from '@/hooks/useMediaQuery'
@@ -26,9 +26,12 @@ import { ESTADO_PEDIDO } from '@/lib/estados'
 import { resorte } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 import { MenuMover } from './MenuMover'
+import { enEtapa } from './etapas'
 import { AsaArrastre, TarjetaOrden } from './TarjetaOrden'
 
 const COL = 'col:'
+/** Tarjetas que se pintan por columna; el resto aparece con "Mostrar más" (la base real tiene cientos). */
+const POR_COLUMNA = 30
 const nombre = (e: EstadoPedido) => ESTADO_PEDIDO[e].etiqueta
 
 /** Con el teclado, ← y → saltan de columna en columna (en lugar de moverse de 25 en 25 px). */
@@ -74,6 +77,9 @@ export function Tablero({ grupos, columnas, hoy, puedeMover, onMover, onPausar }
   const [recien, setRecien] = useState<string | null>(null)
   // "Nuevo" (esperando anticipo) y "Pausado" no son trabajo activo del taller: empiezan plegadas
   const [abiertas, setAbiertas] = useState<Set<EstadoPedido>>(() => new Set())
+  const [limites, setLimites] = useState<Partial<Record<EstadoPedido, number>>>({})
+  const limite = (e: EstadoPedido) => limites[e] ?? POR_COLUMNA
+  const mas = (e: EstadoPedido) => () => setLimites((l) => ({ ...l, [e]: (l[e] ?? POR_COLUMNA) + POR_COLUMNA }))
   const plegable = (e: EstadoPedido) => !movil && (e === 'nuevo' || e === 'pausado')
   const alternar = (e: EstadoPedido) =>
     setAbiertas((a) => {
@@ -108,7 +114,7 @@ export function Tablero({ grupos, columnas, hoy, puedeMover, onMover, onPausar }
   const anuncios: Announcements = {
     onDragStart: ({ active }) => {
       const o = buscar(active.id)
-      return o ? `Tomaste ${o.folio}, en ${nombre(o.estado)}. Flecha izquierda o derecha cambia de etapa; Espacio la suelta y Escape cancela.` : undefined
+      return o ? `Tomaste ${o.folio}, ${enEtapa(o.estado)}. Flecha izquierda o derecha cambia de etapa; Espacio la suelta y Escape cancela.` : undefined
     },
     onDragOver: ({ active, over }) => {
       const o = buscar(active.id)
@@ -118,11 +124,11 @@ export function Tablero({ grupos, columnas, hoy, puedeMover, onMover, onPausar }
     onDragEnd: ({ active, over }) => {
       const o = buscar(active.id)
       if (!o) return undefined
-      return over ? `${o.folio} se soltó en ${nombre(String(over.id).slice(COL.length) as EstadoPedido)}` : `${o.folio} se quedó en ${nombre(o.estado)}`
+      return over ? `${o.folio} se soltó ${enEtapa(String(over.id).slice(COL.length) as EstadoPedido)}` : `${o.folio} se quedó ${enEtapa(o.estado)}`
     },
     onDragCancel: ({ active }) => {
       const o = buscar(active.id)
-      return o ? `Movimiento cancelado. ${o.folio} sigue en ${nombre(o.estado)}.` : undefined
+      return o ? `Movimiento cancelado. ${o.folio} sigue ${enEtapa(o.estado)}.` : undefined
     },
   }
 
@@ -186,7 +192,7 @@ export function Tablero({ grupos, columnas, hoy, puedeMover, onMover, onPausar }
         <div ref={selector}>
           <SegmentedControl
             etiqueta="Etapa visible"
-            tamano="sm"
+            tamano="md"
             segmentos={todas.map((e) => ({
               valor: e,
               etiqueta: ESTADO_PEDIDO[e].corto,
@@ -216,8 +222,10 @@ export function Tablero({ grupos, columnas, hoy, puedeMover, onMover, onPausar }
             ordenes={grupos.get(e) ?? []}
             plegada={plegable(e) && !abiertas.has(e)}
             onPlegar={plegable(e) ? () => alternar(e) : undefined}
+            restantes={Math.max(0, (grupos.get(e)?.length ?? 0) - limite(e))}
+            onMas={mas(e)}
           >
-            {(grupos.get(e) ?? []).map((o) => (
+            {(grupos.get(e) ?? []).slice(0, limite(e)).map((o) => (
               <Tarjeta key={o.id} o={o} hoy={hoy} puedeMover={puedeMover} recien={recien === o.id} onMover={onMover} onPausar={onPausar} />
             ))}
           </Columna>
@@ -229,8 +237,10 @@ export function Tablero({ grupos, columnas, hoy, puedeMover, onMover, onPausar }
           ordenes={pausados}
           plegada={plegable('pausado') && !abiertas.has('pausado')}
           onPlegar={plegable('pausado') ? () => alternar('pausado') : undefined}
+          restantes={Math.max(0, pausados.length - limite('pausado'))}
+          onMas={mas('pausado')}
         >
-          {pausados.map((o) => (
+          {pausados.slice(0, limite('pausado')).map((o) => (
             <Tarjeta key={o.id} o={o} hoy={hoy} puedeMover={puedeMover} recien={recien === o.id} onMover={onMover} onPausar={onPausar} />
           ))}
         </Columna>
@@ -258,12 +268,17 @@ function Columna({
   children,
   plegada,
   onPlegar,
+  restantes = 0,
+  onMas,
 }: {
   estado: EstadoPedido
   ordenes: OrdenTrabajo[]
   children: ReactNode
   plegada?: boolean
   onPlegar?: () => void
+  /** Órdenes de la columna que aún no se muestran */
+  restantes?: number
+  onMas?: () => void
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: `${COL}${estado}` })
   const reducir = useReducedMotion()
@@ -362,6 +377,13 @@ function Columna({
         <AnimatePresence initial={false} mode="popLayout">
           {children}
         </AnimatePresence>
+        {restantes > 0 && onMas ? (
+          <li className="shrink-0">
+            <GlassButton variante="fantasma" tamano="sm" onClick={onMas} className="h-11 w-full">
+              Mostrar {Math.min(POR_COLUMNA, restantes)} más (quedan {restantes})
+            </GlassButton>
+          </li>
+        ) : null}
         {ordenes.length === 0 ? (
           <li className="flex flex-1 flex-col items-center justify-center gap-2 rounded-tile border border-dashed border-[var(--divider)] px-4 py-8 text-center text-xs text-fg-subtle [&_svg]:size-5">
             <Inbox aria-hidden />

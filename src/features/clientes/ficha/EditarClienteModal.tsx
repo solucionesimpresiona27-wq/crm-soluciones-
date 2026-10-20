@@ -5,7 +5,7 @@ import { useEquipo } from '@/app/consultas'
 import { Campo, GlassButton, GlassInput, GlassModal, GlassSelect, GlassToggle, SegmentedControl } from '@/components/glass'
 import type { Cliente, DatosCliente, TipoCliente } from '@/data/modulos/clientes/contrato'
 import { useActualizarCliente, useEtiquetas } from '../consultas'
-import { validarCodigoPostal, validarCorreo, validarRfc, validarTelefono } from '../validacion'
+import { enfocarPrimerError, validarCodigoPostal, validarCorreo, validarRfc, validarTelefono } from '../validacion'
 
 export const REGIMENES = [
   '601 General de Ley Personas Morales',
@@ -109,6 +109,7 @@ export function EditarClienteModal({ abierto, onCambio, cliente, seccion }: { ab
     setErrores(e)
     if (Object.values(e).some(Boolean)) {
       setErrorGeneral('Revisa los campos marcados en rojo.')
+      enfocarPrimerError('form-editar-cliente')
       return
     }
     setErrorGeneral(null)
@@ -172,6 +173,7 @@ export function EditarClienteModal({ abierto, onCambio, cliente, seccion }: { ab
           <>
             <SegmentedControl
               etiqueta="Tipo de cliente"
+              className="w-full [&>*]:flex-1"
               valor={d.tipo ?? 'empresa'}
               onCambio={(v) => set('tipo', v)}
               segmentos={[

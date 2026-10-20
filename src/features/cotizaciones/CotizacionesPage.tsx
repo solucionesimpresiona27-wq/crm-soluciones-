@@ -28,7 +28,7 @@ export default function CotizacionesPage() {
 function SinAcceso() {
   const navegar = useNavigate()
   return (
-    <GlassPanel className="mt-2">
+    <GlassPanel className="mx-auto mt-2 max-w-xl">
       <EstadoVacio
         icono={<Lock />}
         titulo="Las cotizaciones son para ventas y administración"
@@ -205,7 +205,7 @@ function ListaCotizaciones() {
               <EstadoVacio
                 icono={<FileSearch />}
                 titulo="No se pudieron cargar las cotizaciones"
-                descripcion={`${consulta.error.message}. Revisa tu conexión e inténtalo de nuevo.`}
+                descripcion={`${consulta.error.message.replace(/\.?$/, '.')} Revisa tu conexión e inténtalo de nuevo.`}
                 accion={
                   <GlassButton icono={<RotateCcw />} onClick={() => void consulta.refetch()}>
                     Reintentar

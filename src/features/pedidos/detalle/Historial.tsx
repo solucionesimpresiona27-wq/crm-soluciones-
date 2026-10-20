@@ -7,6 +7,7 @@ import { EncabezadoPanel, GlassButton, GlassPanel, GlassTextarea, Skeleton } fro
 import type { EventoPedido } from '@/data/modulos/pedidos/contrato'
 import { ESTADO_PEDIDO } from '@/lib/estados'
 import { cn } from '@/lib/utils'
+import { enEtapa } from '../lista/datos'
 import { useAgregarNota, useEventosPedido } from '../consultas'
 
 const ICONO: Record<string, LucideIcon> = {
@@ -24,7 +25,7 @@ function titulo(e: EventoPedido) {
   if (e.tipo === 'estado' && e.estado_a) {
     if (e.estado_a === 'pausado') return 'Pedido en pausa'
     if (e.estado_a === 'cancelado') return 'Pedido cancelado'
-    if (e.estado_de === 'pausado') return `Reanudado en ${ESTADO_PEDIDO[e.estado_a].etiqueta.toLowerCase()}`
+    if (e.estado_de === 'pausado') return `Reanudado ${enEtapa(e.estado_a)}`
     return ESTADO_PEDIDO[e.estado_a].etiqueta
   }
   if (e.tipo === 'nota') return 'Nota'

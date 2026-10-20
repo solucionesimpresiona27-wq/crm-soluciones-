@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { Campo, EstadoVacio, GlassButton, GlassIconButton, GlassInput, GlassPanel, Pildora, Skeleton } from '@/components/glass'
 import type { Categoria } from '@/data/modulos/catalogo/contrato'
+import { cn } from '@/lib/utils'
 import { useCategorias, useGuardarCategoria } from './consultas'
 
 /** Administración de categorías: crear, renombrar, ordenar y desactivar. */
@@ -22,7 +23,7 @@ export function CategoriasVista() {
       if (aviso) toast.success(aviso)
       return true
     } catch (e) {
-      toast.error(`${(e as Error).message}. Inténtalo de nuevo.`)
+      toast.error(`${(e as Error).message.replace(/\.?$/, '.')} Inténtalo de nuevo.`)
       return false
     }
   }
@@ -43,8 +44,8 @@ export function CategoriasVista() {
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
-      <div className="flex flex-col gap-4">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+      <div className="flex min-w-0 flex-col gap-4">
         {categorias.isPending ? (
           <GlassPanel className="flex flex-col gap-3 p-5">
             {Array.from({ length: 6 }, (_, i) => (
@@ -63,37 +64,39 @@ export function CategoriasVista() {
                 <h2 className="px-2 pb-2 text-lg font-semibold tracking-tight text-fg">{g}</h2>
                 <ul className="divide-y divide-[var(--divider)]">
                   {grupo.map((c, i) => (
-                    <li key={c.id} className="flex min-h-14 items-center gap-2 px-2 py-1.5">
+                    <li key={c.id} className="flex min-h-14 flex-wrap items-center gap-x-2 gap-y-1 px-2 py-1.5">
                       {editando === c.id ? (
                         <form
-                          className="flex flex-1 items-center gap-2"
+                          className="flex min-w-0 flex-1 basis-full items-center gap-2"
                           onSubmit={async (e) => {
                             e.preventDefault()
                             if (await ejecutar({ id: c.id, nombre, grupo: c.grupo }, 'Categoría renombrada')) setEditando(null)
                           }}
                         >
-                          <GlassInput aria-label={`Nuevo nombre de ${c.nombre}`} autoFocus value={nombre} onChange={(e) => setNombre(e.target.value)} className="flex-1" />
+                          <GlassInput aria-label={`Nuevo nombre de ${c.nombre}`} autoFocus value={nombre} onChange={(e) => setNombre(e.target.value)} className="min-w-0 flex-1" />
                           <GlassIconButton type="submit" etiqueta="Guardar nombre" icono={<Check />} tamano="sm" destacado />
                           <GlassIconButton etiqueta="Cancelar" icono={<X />} tamano="sm" onClick={() => setEditando(null)} />
                         </form>
                       ) : (
                         <>
-                          <span className={c.activo ? 'flex-1 font-medium text-fg' : 'flex-1 font-medium text-fg-subtle'}>{c.nombre}</span>
+                          <span className={cn('min-w-[9rem] flex-1 break-words font-medium', c.activo ? 'text-fg' : 'text-fg-subtle')}>{c.nombre}</span>
                           {!c.activo ? <Pildora>Inactiva</Pildora> : null}
-                          <GlassIconButton etiqueta={`Subir ${c.nombre}`} icono={<ArrowUp />} tamano="sm" disabled={i === 0 || guardar.isPending} onClick={() => void mover(grupo, i, -1)} />
-                          <GlassIconButton etiqueta={`Bajar ${c.nombre}`} icono={<ArrowDown />} tamano="sm" disabled={i === grupo.length - 1 || guardar.isPending} onClick={() => void mover(grupo, i, 1)} />
-                          <GlassIconButton
-                            etiqueta={`Renombrar ${c.nombre}`}
-                            icono={<Pencil />}
-                            tamano="sm"
-                            onClick={() => {
-                              setEditando(c.id)
-                              setNombre(c.nombre)
-                            }}
-                          />
-                          <GlassButton variante="fantasma" tamano="sm" className="pointer-coarse:h-11" onClick={() => void ejecutar({ id: c.id, nombre: c.nombre, grupo: c.grupo, activo: !c.activo }, c.activo ? 'Categoría desactivada' : 'Categoría activada')}>
-                            {c.activo ? 'Desactivar' : 'Activar'}
-                          </GlassButton>
+                          <div className="ml-auto flex items-center gap-2">
+                            <GlassIconButton etiqueta={`Subir ${c.nombre}`} icono={<ArrowUp />} tamano="sm" disabled={i === 0 || guardar.isPending} onClick={() => void mover(grupo, i, -1)} />
+                            <GlassIconButton etiqueta={`Bajar ${c.nombre}`} icono={<ArrowDown />} tamano="sm" disabled={i === grupo.length - 1 || guardar.isPending} onClick={() => void mover(grupo, i, 1)} />
+                            <GlassIconButton
+                              etiqueta={`Renombrar ${c.nombre}`}
+                              icono={<Pencil />}
+                              tamano="sm"
+                              onClick={() => {
+                                setEditando(c.id)
+                                setNombre(c.nombre)
+                              }}
+                            />
+                            <GlassButton variante="fantasma" tamano="sm" className="pointer-coarse:h-11" onClick={() => void ejecutar({ id: c.id, nombre: c.nombre, grupo: c.grupo, activo: !c.activo }, c.activo ? 'Categoría desactivada' : 'Categoría activada')}>
+                              {c.activo ? 'Desactivar' : 'Activar'}
+                            </GlassButton>
+                          </div>
                         </>
                       )}
                     </li>

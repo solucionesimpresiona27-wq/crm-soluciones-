@@ -28,7 +28,7 @@ export function MenuUsuario() {
         <button
           type="button"
           aria-label="Menú de usuario"
-          className="grid size-10 shrink-0 place-items-center rounded-full bg-gradient-to-br from-navy-500 to-navy-700 text-sm font-bold text-white shadow-[0_6px_16px_-6px_rgba(14,28,48,0.6),inset_0_1px_0_rgba(255,255,255,0.35)] outline-none transition-transform duration-300 ease-spring hover:scale-105 active:scale-95"
+          className="grid size-10 shrink-0 place-items-center rounded-full bg-gradient-to-br from-navy-500 to-navy-700 text-sm font-bold text-white shadow-[0_6px_16px_-6px_rgba(14,28,48,0.6),inset_0_1px_0_rgba(255,255,255,0.35)] outline-none transition-transform duration-300 ease-spring hover:scale-105 active:scale-95 pointer-coarse:size-11 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgb(var(--focus-outline))]"
         >
           {iniciales(sesion.perfil.nombre)}
         </button>
@@ -47,9 +47,8 @@ export function MenuUsuario() {
               >
                 <div className="px-3 pb-3 pt-2">
                   <p className="truncate text-sm font-semibold text-fg">{sesion.perfil.nombre}</p>
-                  <p className="truncate text-xs text-fg-subtle">
-                    {NOMBRE_ROL[sesion.perfil.rol]} · {sesion.email}
-                  </p>
+                  <p className="truncate text-xs text-fg-muted">{NOMBRE_ROL[sesion.perfil.rol]}</p>
+                  <p className="truncate text-xs text-fg-subtle">{sesion.email}</p>
                 </div>
                 <div className="hairline mx-2" />
                 <p className="px-3 pb-1 pt-3 text-xs font-medium text-fg-subtle">Apariencia</p>
@@ -80,7 +79,7 @@ export function MenuUsuario() {
                     await cerrar()
                     navegar('/login', { replace: true })
                   }}
-                  className="mt-1 flex cursor-pointer items-center gap-3 rounded-full px-3 py-2.5 text-sm font-medium text-danger outline-none data-[highlighted]:bg-danger-soft"
+                  className="mt-1 flex min-h-11 cursor-pointer items-center gap-3 rounded-full px-3 py-2.5 text-sm font-medium text-danger outline-none data-[highlighted]:bg-danger-soft"
                 >
                   <LogOut className="size-4" aria-hidden />
                   Cerrar sesión

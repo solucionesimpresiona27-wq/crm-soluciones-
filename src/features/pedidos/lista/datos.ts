@@ -1,7 +1,14 @@
 import { differenceInCalendarDays, parseISO } from 'date-fns'
 import type { PedidoLista, Prioridad } from '@/data/modulos/pedidos/contrato'
 import type { EstadoPedido } from '@/data/tipos'
+import { ESTADO_PEDIDO } from '@/lib/estados'
 import { normalizar } from '@/lib/utils'
+
+/** Etapa en una frase ("Se quedó en producción", "Reanudar en “Acabados”"), sin repetir el "en" de la etiqueta. */
+export function enEtapa(e: EstadoPedido) {
+  const t = ESTADO_PEDIDO[e].etiqueta
+  return /^en /i.test(t) ? t.toLowerCase() : `en “${t}”`
+}
 
 /** Fases de la lista (agrupan etapas). "Cerrados" se pide aparte, solo al abrirla. */
 export const FASES = [

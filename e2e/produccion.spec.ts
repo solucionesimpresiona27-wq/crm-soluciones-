@@ -69,3 +69,21 @@ test('la orden de trabajo se abre sin precios y guarda notas de producción', as
   await expect(hoja).not.toContainText('$')
   sinErrores()
 })
+
+test('las columnas largas muestran 30 órdenes y cargan más al pedirlo', async ({ page }) => {
+  const sinErrores = vigilarErrores(page)
+  await entrar(page, 'admin')
+  await page.goto('/produccion')
+  const tablero = page.getByLabel('Tablero de producción por etapas')
+  await expect(tablero.locator('article').first()).toBeVisible()
+  const botonMas = page.getByRole('button', { name: /^Mostrar \d+ más \(quedan \d+\)$/ })
+  test.skip((await tablero.locator(botonMas).count()) === 0, 'Ninguna columna pasa de 30 órdenes en esta base')
+  // Se fija la columna por su etapa: al cargar todo, el botón desaparece y el filtro "has" cambiaría de columna
+  const etapa = await tablero.locator('section[data-etapa]').filter({ has: botonMas }).first().getAttribute('data-etapa')
+  const columna = tablero.locator(`section[data-etapa="${etapa}"]`)
+  const mas = columna.locator(botonMas)
+  await expect(columna.locator('article')).toHaveCount(30)
+  await mas.click()
+  await expect.poll(() => columna.locator('article').count()).toBeGreaterThan(30)
+  sinErrores()
+})

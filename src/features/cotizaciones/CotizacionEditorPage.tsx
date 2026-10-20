@@ -33,7 +33,7 @@ export default function CotizacionEditorPage() {
 function SinAcceso() {
   const navegar = useNavigate()
   return (
-    <GlassPanel className="mt-2">
+    <GlassPanel className="mx-auto mt-2 max-w-xl">
       <EstadoVacio
         icono={<Lock />}
         titulo="Tu rol no crea ni edita cotizaciones"
@@ -93,7 +93,7 @@ function Cargador({ id }: { id?: string }) {
         <EstadoVacio
           icono={<FileSearch />}
           titulo={noExiste ? 'No encontramos esta cotización' : 'No se pudo abrir la cotización'}
-          descripcion={noExiste ? 'Puede que se haya eliminado o que el enlace esté incompleto.' : `${consulta.error?.message ?? ''}. Revisa tu conexión e inténtalo de nuevo.`}
+          descripcion={noExiste ? 'Puede que se haya eliminado o que el enlace esté incompleto.' : `${(consulta.error?.message ?? 'No se pudo cargar').replace(/\.?$/, '.')} Revisa tu conexión e inténtalo de nuevo.`}
           accion={
             <div className="flex flex-wrap justify-center gap-2">
               <GlassButton variante="cristal" icono={<ArrowLeft />} onClick={() => navegar(`/cotizaciones${lista}`)}>

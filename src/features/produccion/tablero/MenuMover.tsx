@@ -9,7 +9,7 @@ import type { EstadoPedido } from '@/data/tipos'
 import { ESTADO_PEDIDO } from '@/lib/estados'
 import { resorte } from '@/lib/motion'
 import { cn } from '@/lib/utils'
-import { DESTINOS } from './etapas'
+import { DESTINOS, enEtapa } from './etapas'
 
 /** Menú "Mover a…" de cada tarjeta: la forma de cambiar de etapa en celular (y alternativa al arrastre). */
 export function MenuMover({
@@ -60,7 +60,7 @@ export function MenuMover({
                 <Menu.Label className="px-3 pb-1 pt-2 text-xs font-medium text-fg-subtle">Mover {o.folio} a…</Menu.Label>
                 {pausado && o.estado_anterior ? (
                   <Opcion icono={<CirclePlay />} onSelect={() => onMover(o.estado_anterior!)} luz>
-                    Reanudar en {ESTADO_PEDIDO[o.estado_anterior].etiqueta.toLowerCase()}
+                    Reanudar {enEtapa(o.estado_anterior)}
                   </Opcion>
                 ) : null}
                 {DESTINOS.map((e) => {

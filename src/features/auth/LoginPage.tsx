@@ -14,6 +14,8 @@ import { AVISO_DEMO, DEMO } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 import { BulboCristal } from './BulboCristal'
 
+const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 const rolesDemo: Array<{ rol: Rol; icono: typeof ShieldCheck; detalle: string }> = [
   { rol: 'admin', icono: ShieldCheck, detalle: 'Ve todo: ventas, costos, utilidades y reportes' },
   { rol: 'ventas', icono: TrendingUp, detalle: 'Cotiza y da seguimiento; sin costos ni utilidades' },
@@ -45,8 +47,9 @@ export default function LoginPage() {
       if (DEMO) {
         await api.sesion.iniciarDemo?.(rol)
       } else {
-        if (!email.trim() || !password) throw new Error('Escribe tu correo y contraseña')
-        await api.sesion.iniciar(email, password)
+        if (!email.trim() || !password) throw new Error('Escribe tu correo y tu contraseña para entrar.')
+        if (!CORREO.test(email.trim())) throw new Error('Revisa tu correo: debe verse como nombre@correo.com.')
+        await api.sesion.iniciar(email.trim(), password)
       }
       // Al cargar la sesión, el <Navigate> de arriba lleva a `destino`. No se navega aquí también:
       // la sesión puede llegar antes por alCambiar y esta segunda navegación pisaría la del usuario.
@@ -62,7 +65,7 @@ export default function LoginPage() {
     e.preventDefault()
     setError(null)
     setAviso(null)
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    if (!CORREO.test(email.trim())) {
       setError('Escribe el correo con el que entras al CRM')
       return
     }
@@ -208,7 +211,7 @@ export default function LoginPage() {
                               type="button"
                               onClick={() => setVer((v) => !v)}
                               aria-label={ver ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                              className="absolute right-1.5 top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-full text-fg-subtle outline-none transition-colors hover:bg-[var(--control-bg)] hover:text-fg"
+                              className="absolute right-1.5 top-1/2 grid size-9 -translate-y-1/2 pointer-coarse:right-0 pointer-coarse:size-11 place-items-center rounded-full text-fg-subtle outline-none transition-colors hover:bg-[var(--control-bg)] hover:text-fg"
                             >
                               {ver ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                             </button>
@@ -243,7 +246,7 @@ export default function LoginPage() {
                         setModo('recuperar')
                         setError(null)
                       }}
-                      className="self-center rounded-full px-3 py-1.5 text-sm font-medium text-fg-muted outline-none transition-colors hover:text-fg"
+                      className="min-h-11 self-center rounded-full px-3 py-1.5 text-sm font-medium text-fg-muted outline-none transition-colors hover:text-fg"
                     >
                       ¿Olvidaste tu contraseña?
                     </button>

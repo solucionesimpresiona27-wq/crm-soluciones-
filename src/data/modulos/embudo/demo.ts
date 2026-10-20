@@ -25,7 +25,7 @@ function conNombres(o: Fila): Oportunidad {
 
 function buscar(id: string) {
   const o = a.oportunidades.find((x) => x.id === id)
-  if (!o) throw new Error('Oportunidad no encontrada')
+  if (!o) throw new Error('Esta oportunidad ya no existe o no tienes acceso a ella')
   return o
 }
 

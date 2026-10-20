@@ -60,7 +60,7 @@ export function Conceptos({
               <span className="num text-2xl font-semibold tracking-tight text-fg leading-none">{cantidad(p.cantidad)}</span>
               <span className="text-sm text-fg-muted">{p.unidad}</span>
             </div>
-            <div className="col-start-2 mt-3 flex flex-col gap-2 sm:col-span-2">
+            <div className="col-start-2 mt-3 flex flex-col gap-2 sm:col-[2/-1]">
               <NotaPartida p={p} editable={editable} guardar={guardar} />
               <Casilla marcada={Boolean(hechos[`p:${p.id}`])} onCambio={(v) => marcar(`p:${p.id}`, v)} className="-ml-2 w-auto self-start pr-3">
                 Concepto terminado

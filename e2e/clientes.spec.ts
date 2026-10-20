@@ -102,3 +102,31 @@ test('diseño y producción ven el aviso de acceso y la base no les da los datos
     expect(data).toEqual([])
   }
 })
+
+// Revisión visual (clientes): enlaces rotos avisan sin peticiones fallidas y el alta lleva al primer error.
+test('un cliente inexistente muestra el aviso sin errores de red, y el alta enfoca el primer campo con error', async ({ page }) => {
+  const sinErrores = vigilarErrores(page)
+  const fallidas: string[] = []
+  page.on('response', (r) => {
+    if (r.status() >= 400 && r.url().includes('/rest/v1/')) fallidas.push(`${r.status()} ${r.url()}`)
+  })
+  await entrar(page, 'ventas')
+  for (const id of ['00000000-0000-0000-0000-000000000000', 'enlace-incompleto']) {
+    await page.goto(`/clientes/${id}`)
+    await expect(page.getByText('No encontramos este cliente')).toBeVisible()
+  }
+  expect(fallidas).toEqual([])
+
+  await page.getByRole('button', { name: 'Volver a clientes' }).click()
+  await expect(page).toHaveURL(/\/clientes$/)
+  await page.getByRole('button', { name: 'Nuevo cliente' }).first().click()
+  const alta = page.getByRole('dialog', { name: 'Nuevo cliente' })
+  await alta.getByLabel('Nombre comercial').fill('Prueba de foco')
+  await alta.getByLabel('WhatsApp').fill('33 12')
+  await alta.getByRole('button', { name: 'Crear cliente' }).click()
+  await expect(alta.getByText(/debe tener 10 dígitos/)).toBeVisible()
+  await expect(alta.getByLabel('WhatsApp')).toBeFocused()
+  await page.keyboard.press('Escape')
+  await expect(alta).toBeHidden()
+  sinErrores()
+})
