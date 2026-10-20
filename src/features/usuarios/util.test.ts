@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cambiosLegibles, contarAnulaciones, contrasenaValida, estadoPermisos, generarContrasena, valorLegible } from './util'
+import { cambiosLegibles, contarAnulaciones, contrasenaValida, estadoPermisos, generarContrasena, resumenDatos, valorLegible } from './util'
 
 describe('usuarios · utilidades', () => {
   it('genera contraseñas válidas para la función admin-usuarios', () => {
@@ -24,5 +24,19 @@ describe('usuarios · utilidades', () => {
     ])
     expect(valorLegible({ ver_costos: true })).toBe('ver costos: Sí'.replace(/^./, 'V'))
     expect(valorLegible(null)).toBe('vacío')
+  })
+
+  // Recorrido de punta a punta: la bitácora mostraba "listo_entrega → entregado", "Importe 939.6" y "Total 0" al crear un pedido
+  it('traduce estados y métodos, da formato de dinero y omite totales provisionales al crear', () => {
+    expect(cambiosLegibles({ tabla: 'pedidos', accion: 'cambio_estado', datos: null, cambios: { estado: ['listo_entrega', 'entregado'] } })).toEqual([
+      { campo: 'Estado', antes: 'Listo para entrega', despues: 'Entregado' },
+    ])
+    expect(cambiosLegibles({ tabla: 'oportunidades', accion: 'cambio_estado', datos: null, cambios: { etapa: ['cotizacion_enviada', 'ganado'] } })[0]).toMatchObject({ antes: 'Cotización enviada', despues: 'Ganado' })
+    expect(resumenDatos({ tipo: 'liquidacion', metodo: 'efectivo', importe: 939.6 }, 4, 'pagos')).toEqual([
+      { campo: 'Tipo', valor: 'Liquidación' },
+      { campo: 'Método', valor: 'Efectivo' },
+      { campo: 'Importe', valor: '$939.60' },
+    ])
+    expect(resumenDatos({ folio: 'PED-0001', iva: 0, saldo: 0, total: 0 }, 4, 'pedidos')).toEqual([{ campo: 'Folio', valor: 'PED-0001' }])
   })
 })

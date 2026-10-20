@@ -26,7 +26,8 @@ function Senal({ tono, children }: { tono: 'luz' | 'peligro' | 'aviso' | 'neutro
 
 /** En los módulos de una columna (unos 140 px por dentro en celular) las cifras largas bajan de tamaño para no desbordarse. */
 function tamanoCifra(texto: string) {
-  if (texto.length <= 8) return 'text-3xl'
+  // Celular de 390 px: el módulo mide unos 140 px por dentro y "$698,458" (8 caracteres) ya no cabe en text-3xl
+  if (texto.length <= 7) return 'text-3xl'
   // En escritorio angosto (lg, 4 columnas) el módulo vuelve a medir unos 170 px por dentro
   if (texto.length <= 9) return 'text-2xl sm:text-3xl lg:text-2xl xl:text-3xl'
   return 'text-xl sm:text-3xl lg:text-2xl xl:text-3xl'

@@ -69,6 +69,19 @@ describe('clientes · vista previa', () => {
     expect((await api.actividades.listar({ clienteId: nuevo.id })).length).toBe(1)
   })
 
+  // Recorrido de punta a punta: un WhatsApp capturado "33 9876 5432" no se encontraba al buscar 3398765432
+  it('guarda los teléfonos como 10 dígitos y los encuentra con o sin espacios', async () => {
+    entrarComo('ventas')
+    const c = await api.clientes.crear({ nombre: 'Taquería Prueba Teléfono', whatsapp: '33 9876 5432', telefono: '+52 1 33 1111 2222' })
+    expect(c.whatsapp).toBe('3398765432')
+    expect(c.telefono).toBe('3311112222')
+    for (const q of ['3398765432', '33 9876 5432', '+52 33 9876 5432']) expect((await api.clientes.buscar(q)).map((x) => x.id), q).toContain(c.id)
+    const ct = await api.contactos.crear(c.id, { nombre: 'Marta', whatsapp: '33-1234-5678' })
+    expect(ct.whatsapp).toBe('3312345678')
+    // Lo que no es un número mexicano de 10 dígitos se respeta como se escribió
+    expect((await api.clientes.actualizar(c.id, { telefono: 'ext. 204' })).telefono).toBe('ext. 204')
+  })
+
   it('reactivación: clientes sin compras en 90 días', async () => {
     entrarComo('ventas')
     const inactivos = await api.clientes.inactivos()

@@ -173,7 +173,7 @@ function Entrada({ e }: { e: EntradaBitacora }) {
   const accion = (e.accion in ACCIONES_BITACORA ? e.accion : 'modificar') as AccionBitacora
   const Icono = ICONO[accion]
   const cambios = cambiosLegibles(e)
-  const datos = cambios.length ? [] : resumenDatos(e.datos)
+  const datos = cambios.length ? [] : resumenDatos(e.datos, 4, e.tabla)
   const detalle = cambios.length > 0 || datos.length > 0
   const visibles = abierta ? cambios : cambios.slice(0, 3)
 

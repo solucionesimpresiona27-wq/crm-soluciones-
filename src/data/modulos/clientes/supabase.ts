@@ -1,6 +1,7 @@
 /** MÓDULO CLIENTES · implementación real (Supabase). */
 import { limpio, mensajeError, n, nn, revisar, revisarOpcional, sinError, supabase, textoBusqueda } from '@/data/comun/real'
 import type { TablesInsert, TablesUpdate } from '@/lib/database.types'
+import { busquedaTelefono, telefonoGuardado } from './telefono'
 import type { ApiClientes, Cliente, ClienteLista, DatosCliente, DatosContacto, HistorialCliente, ResumenCliente } from './contrato'
 
 /** Un id que no es UUID (enlace mal copiado) no llega a la base: evita errores 400 y se trata como "no encontrado". */
@@ -18,6 +19,7 @@ function filaCliente(d: Partial<DatosCliente>) {
   const textos = ['telefono', 'whatsapp', 'email', 'direccion', 'ciudad', 'notas', 'origen', 'razon_social', 'regimen_fiscal', 'codigo_postal_fiscal', 'uso_cfdi', 'email_facturacion'] as const
   if (d.nombre !== undefined) f.nombre = d.nombre.trim()
   for (const k of textos) if (d[k] !== undefined) f[k] = limpio(d[k])
+  for (const k of ['telefono', 'whatsapp'] as const) if (d[k] !== undefined) f[k] = telefonoGuardado(d[k])
   if (d.rfc !== undefined) f.rfc = limpio(d.rfc)?.toUpperCase() ?? null
   if (d.email !== undefined) f.email = limpio(d.email)?.toLowerCase() ?? null
   for (const k of ['tipo', 'requiere_factura', 'dias_credito', 'vendedor_id', 'lista_precio'] as const) if (d[k] !== undefined) f[k] = d[k]
@@ -34,7 +36,7 @@ export const clientesSupabase: ApiClientes = {
   clientes: {
     async buscar(texto) {
       let q = supabase().from('clientes').select(CAMPOS_BREVE).eq('activo', true)
-      const t = textoBusqueda(texto)
+      const t = textoBusqueda(busquedaTelefono(texto))
       if (t) q = q.ilike('busqueda', `%${t}%`)
       return revisar(await q.order('nombre').limit(20))
     },
@@ -52,7 +54,7 @@ export const clientesSupabase: ApiClientes = {
     async listar(filtros = {}) {
       let q = supabase().from('clientes').select(CAMPOS_LISTA)
       if (!filtros.incluirInactivos) q = q.eq('activo', true)
-      const t = textoBusqueda(filtros.texto ?? '')
+      const t = textoBusqueda(busquedaTelefono(filtros.texto ?? ''))
       if (t) q = q.ilike('busqueda', `%${t}%`)
       if (filtros.etiqueta) q = q.contains('etiquetas', [filtros.etiqueta])
       if (filtros.vendedorId) q = q.eq('vendedor_id', filtros.vendedorId)
@@ -224,6 +226,7 @@ function filaContacto(d: Partial<DatosContacto>) {
   const f: Record<string, unknown> = {}
   if (d.nombre !== undefined) f.nombre = d.nombre.trim()
   for (const k of ['puesto', 'telefono', 'whatsapp', 'notas'] as const) if (d[k] !== undefined) f[k] = limpio(d[k])
+  for (const k of ['telefono', 'whatsapp'] as const) if (d[k] !== undefined) f[k] = telefonoGuardado(d[k])
   if (d.email !== undefined) f.email = limpio(d.email)?.toLowerCase() ?? null
   if (d.principal !== undefined) f.principal = d.principal
   return f

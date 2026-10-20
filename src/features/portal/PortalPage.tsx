@@ -48,7 +48,7 @@ function Portal({ crudo }: { crudo: string }) {
   const reducir = useReducedMotion()
   const q = useVistaPortal(token)
   const empresa = q.data?.empresa.nombre ?? 'Soluciones Impresiona'
-  const folio = q.data?.cotizacion?.folio ?? q.data?.pedido?.folio
+  const folio = q.data?.pedido?.folio ?? q.data?.cotizacion?.folio
 
   useEffect(() => {
     const previo = document.title
@@ -92,10 +92,11 @@ function Portal({ crudo }: { crudo: string }) {
           <Esqueleto />
         ) : (
           <motion.main initial={reducir ? { opacity: 0 } : { opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={resorte.suave}>
-            {q.data.tipo === 'cotizacion' && q.data.cotizacion ? (
-              <VistaCotizacion token={token} vista={q.data} />
-            ) : q.data.pedido ? (
+            {/* Una cotización ya convertida muestra el avance de su pedido: el cliente sigue con el mismo enlace y ahí aprueba los diseños */}
+            {q.data.pedido ? (
               <VistaPedido token={token} vista={q.data} />
+            ) : q.data.tipo === 'cotizacion' && q.data.cotizacion ? (
+              <VistaCotizacion token={token} vista={q.data} />
             ) : (
               <GlassPanel className="mx-auto max-w-lg rounded-sheet p-2">
                 <EstadoVacio icono={<Link2Off />} titulo="Enlace no disponible" descripcion={MENSAJE_ENLACE} />

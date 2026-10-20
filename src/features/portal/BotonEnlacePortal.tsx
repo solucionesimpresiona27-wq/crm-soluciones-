@@ -45,13 +45,13 @@ export function BotonEnlacePortal({ tipo, id, folio, clienteWhatsapp, className 
         descripcion={tipo === 'cotizacion' ? `Tu cliente ve ${folio} y la aprueba sin crear cuenta.` : `Tu cliente ve el avance de ${folio} y aprueba sus diseños.`}
         ancho="md"
       >
-        {abierto ? <PanelEnlaces tipo={tipo} id={id} clienteWhatsapp={clienteWhatsapp} /> : null}
+        {abierto ? <PanelEnlaces tipo={tipo} id={id} folio={folio} clienteWhatsapp={clienteWhatsapp} /> : null}
       </GlassModal>
     </>
   )
 }
 
-function PanelEnlaces({ tipo, id, clienteWhatsapp }: Omit<BotonEnlacePortalProps, "className" | "folio">) {
+function PanelEnlaces({ tipo, id, folio, clienteWhatsapp }: Omit<BotonEnlacePortalProps, 'className'>) {
   const enlaces = useEnlacesPortal(tipo, id)
   const crear = useCrearEnlace(tipo, id)
   const revocar = useRevocarEnlace(tipo, id)
@@ -135,7 +135,8 @@ function PanelEnlaces({ tipo, id, clienteWhatsapp }: Omit<BotonEnlacePortalProps
                   destacado
                   tono="acento"
                   tamano="sm"
-                  onClick={() => window.open(enlaceWhatsApp(clienteWhatsapp, mensaje(e.tipo, e.folio, e.url)), '_blank', 'noopener,noreferrer')}
+                  // En el pedido, el enlace de su cotización ya muestra el avance del pedido: el mensaje habla del pedido
+                  onClick={() => window.open(enlaceWhatsApp(clienteWhatsapp, tipo === 'pedido' ? mensaje('pedido', folio, e.url) : mensaje(e.tipo, e.folio, e.url)), '_blank', 'noopener,noreferrer')}
                 />
                 <GlassIconButton
                   icono={<Ban />}

@@ -1,6 +1,8 @@
 import type { EntradaBitacora, Usuario } from '@/data/modulos/administracion/contrato'
 import { PERMISOS, type Permiso, type Rol } from '@/data/tipos'
 import type { Json } from '@/lib/database.types'
+import { ESTADO_COTIZACION, ESTADO_PEDIDO } from '@/lib/estados'
+import { dinero } from '@/lib/format'
 import { permisosDeRol } from '@/lib/permisos'
 
 export const ROLES: Rol[] = ['admin', 'ventas', 'diseno', 'produccion']
@@ -133,6 +135,10 @@ const CAMPOS: Record<string, string> = {
   total: 'Total',
   monto: 'Monto',
   notas: 'Notas',
+  metodo: 'Método',
+  metodo_pago: 'Método de pago',
+  estado_pago: 'Estado de pago',
+  iva: 'IVA',
 }
 
 export const nombreCampo = (c: string) =>
@@ -163,25 +169,83 @@ export interface CambioLegible {
 
 const OCULTOS = new Set(['updated_at', 'created_at', 'busqueda', 'id'])
 
+/** Campos de dinero: se muestran como $1,879.20 en vez de 1879.2. */
+const DINERO = new Set([
+  'total', 'subtotal', 'iva', 'saldo', 'pagado', 'importe', 'monto', 'precio', 'precio_unitario', 'precio_venta', 'precio_minimo',
+  'valor_estimado', 'descuento_monto', 'costo_unitario', 'costo_total', 'costo_material', 'costo_mano_obra', 'costo_fijo',
+  'efectivo_inicial', 'efectivo_contado', 'esperado', 'diferencia',
+])
+
+/** Totales que la base calcula después de crear el registro (al crearlo valen 0 y confunden). */
+const CALCULADOS = new Set(['total', 'subtotal', 'iva', 'saldo', 'pagado', 'descuento_monto'])
+
+/** Códigos de la base (enums) en español, por campo. `estado` depende de la tabla. */
+const CODIGOS: Record<string, Record<string, string>> = {
+  metodo: { efectivo: 'Efectivo', transferencia: 'Transferencia', deposito: 'Depósito', tarjeta: 'Tarjeta' },
+  tipo_pago: { anticipo: 'Anticipo', abono: 'Abono', liquidacion: 'Liquidación', devolucion: 'Devolución' },
+  estado_pago: { pendiente: 'Pendiente', anticipo: 'Con anticipo', parcial: 'Pago parcial', liquidado: 'Liquidado', reembolsado: 'Reembolsado' },
+  etapa: {
+    prospecto_nuevo: 'Prospecto', contactado: 'Contactado', interesado: 'Interesado', cotizacion_enviada: 'Cotización enviada',
+    en_seguimiento: 'En seguimiento', ganado: 'Ganado', perdido: 'Perdido',
+  },
+  tipo_movimiento: { entrada: 'Entrada', consumo: 'Consumo', ajuste: 'Ajuste', merma: 'Merma' },
+  tipo_tarea: { tarea: 'Tarea', llamada: 'Llamada', seguimiento: 'Seguimiento', entrega: 'Entrega', instalacion: 'Instalación', recordatorio: 'Recordatorio' },
+  tipo_partida: { concepto: 'Concepto', instalacion: 'Instalación', transporte: 'Transporte', diseno: 'Diseño', extra: 'Extra' },
+  prioridad: { baja: 'Baja', normal: 'Normal', alta: 'Alta', urgente: 'Urgente' },
+  estado_archivo: { no_aplica: 'No aplica', pendiente: 'Por aprobar', aprobado: 'Aprobado', cambios: 'Pidió cambios', rechazado: 'Rechazado' },
+  rol: { admin: 'Administración', ventas: 'Ventas', diseno: 'Diseño', produccion: 'Producción' },
+}
+
+function codigos(tabla: string | undefined, campo: string): Record<string, string> | undefined {
+  if (campo === 'estado') {
+    if (tabla === 'pedidos') return Object.fromEntries(Object.entries(ESTADO_PEDIDO).map(([k, v]) => [k, v.etiqueta]))
+    if (tabla === 'cotizaciones') return Object.fromEntries(Object.entries(ESTADO_COTIZACION).map(([k, v]) => [k, v.etiqueta]))
+    if (tabla === 'archivos') return CODIGOS.estado_archivo
+    return undefined
+  }
+  if (campo === 'tipo') {
+    if (tabla === 'pagos') return CODIGOS.tipo_pago
+    if (tabla === 'movimientos_inventario') return CODIGOS.tipo_movimiento
+    if (tabla === 'tareas') return CODIGOS.tipo_tarea
+    if (tabla === 'partidas') return CODIGOS.tipo_partida
+    return undefined
+  }
+  if (campo === 'metodo' || campo === 'metodo_pago') return CODIGOS.metodo
+  if (campo === 'estado_aprobacion') return CODIGOS.estado_archivo
+  return CODIGOS[campo]
+}
+
+/** Valor legible de un campo concreto: montos con formato de dinero y códigos en español. */
+export function valorCampo(tabla: string | undefined, campo: string, v: Json | undefined): string {
+  if (DINERO.has(campo) && v !== null && v !== undefined && v !== '' && !Number.isNaN(Number(v)) && typeof v !== 'boolean') return dinero(Number(v))
+  if (typeof v === 'string') {
+    const texto = codigos(tabla, campo)?.[v]
+    if (texto) return texto
+  }
+  return valorLegible(v)
+}
+
 /** Diferencias {campo: [antes, después]} de tg_bitacora a una lista legible. */
-export function cambiosLegibles(e: Pick<EntradaBitacora, 'cambios' | 'datos' | 'accion'>): CambioLegible[] {
+export function cambiosLegibles(e: Pick<EntradaBitacora, 'cambios' | 'datos' | 'accion'> & { tabla?: string }): CambioLegible[] {
   const c = e.cambios
   if (c && typeof c === 'object' && !Array.isArray(c)) {
     return Object.entries(c)
       .filter(([k]) => !OCULTOS.has(k))
       .map(([k, par]) => {
         const [antes, despues] = Array.isArray(par) ? par : [null, par]
-        return { campo: nombreCampo(k), antes: valorLegible(antes), despues: valorLegible(despues) }
+        return { campo: nombreCampo(k), antes: valorCampo(e.tabla, k, antes), despues: valorCampo(e.tabla, k, despues) }
       })
   }
   return []
 }
 
 /** Resumen corto de un registro creado o eliminado (los primeros campos con valor). */
-export function resumenDatos(datos: Json | null, max = 4): { campo: string; valor: string }[] {
+export function resumenDatos(datos: Json | null, max = 4, tabla?: string): { campo: string; valor: string }[] {
   if (!datos || typeof datos !== 'object' || Array.isArray(datos)) return []
   return Object.entries(datos)
     .filter(([k, v]) => !OCULTOS.has(k) && !k.endsWith('_id') && v !== null && v !== '' && typeof v !== 'object')
+    // Un total en 0 al crear es provisional: la base lo recalcula al agregar los conceptos
+    .filter(([k, v]) => !(CALCULADOS.has(k) && Number(v) === 0))
     .slice(0, max)
-    .map(([k, v]) => ({ campo: nombreCampo(k), valor: valorLegible(v as Json) }))
+    .map(([k, v]) => ({ campo: nombreCampo(k), valor: valorCampo(tabla, k, v as Json) }))
 }

@@ -4,6 +4,7 @@ import { ahoraISO, busquedaDe, diferencias, fechaLocal, nombrePerfil, registrarB
 import { espera, esAdmin, exigir, puede, puedeVerClientes, usuario } from '@/data/demo/sesion'
 import type { ClienteBreve } from '@/data/tipos'
 import { normalizar } from '@/lib/utils'
+import { busquedaTelefono, telefonoGuardado } from './telefono'
 import type { Actividad, ApiClientes, Cliente, ClienteLista, DatosCliente, DatosContacto, HistorialCliente, ResumenCliente } from './contrato'
 
 const limpio = (v: string | null | undefined) => (v?.trim() ? v.trim() : null)
@@ -16,6 +17,7 @@ function aplicar(c: ClienteFila, d: Partial<DatosCliente>) {
   for (const k of ['telefono', 'whatsapp', 'direccion', 'ciudad', 'notas', 'origen', 'razon_social', 'regimen_fiscal', 'codigo_postal_fiscal', 'uso_cfdi', 'email_facturacion'] as const) {
     if (d[k] !== undefined) c[k] = limpio(d[k])
   }
+  for (const k of ['telefono', 'whatsapp'] as const) if (d[k] !== undefined) c[k] = telefonoGuardado(d[k])
   if (d.email !== undefined) c.email = limpio(d.email)?.toLowerCase() ?? null
   if (d.rfc !== undefined) c.rfc = limpio(d.rfc)?.toUpperCase() ?? null
   if (d.tipo !== undefined) c.tipo = d.tipo
@@ -65,7 +67,7 @@ export const clientesDemo: ApiClientes = {
       await espera(120)
       // Igual que la regla "clientes: ver" de la base: sin permiso de clientes no hay renglones
       if (!puedeVerClientes()) return []
-      const q = normalizar(texto)
+      const q = normalizar(busquedaTelefono(texto))
       return a.clientes
         .filter((c) => c.activo && (!q || (c.busqueda ?? '').includes(q)))
         .sort(porNombre)
@@ -116,7 +118,7 @@ export const clientesDemo: ApiClientes = {
       usuario()
       await espera(200)
       if (!puedeVerClientes()) return []
-      const q = normalizar(filtros.texto ?? '')
+      const q = normalizar(busquedaTelefono(filtros.texto ?? ''))
       return a.clientes
         .filter((c) => filtros.incluirInactivos || c.activo)
         .filter((c) => !q || (c.busqueda ?? '').includes(q))
@@ -332,8 +334,8 @@ export const clientesDemo: ApiClientes = {
         cliente_id: clienteId,
         nombre: datos.nombre.trim(),
         puesto: limpio(datos.puesto),
-        telefono: limpio(datos.telefono),
-        whatsapp: limpio(datos.whatsapp),
+        telefono: telefonoGuardado(datos.telefono),
+        whatsapp: telefonoGuardado(datos.whatsapp),
         email: limpio(datos.email)?.toLowerCase() ?? null,
         principal: datos.principal ?? false,
         notas: limpio(datos.notas),
@@ -352,6 +354,7 @@ export const clientesDemo: ApiClientes = {
       if (cambios.principal) a.contactos.filter((c) => c.cliente_id === x.cliente_id && c.id !== id).forEach((c) => (c.principal = false))
       if (cambios.nombre !== undefined) x.nombre = cambios.nombre.trim()
       for (const k of ['puesto', 'telefono', 'whatsapp', 'notas'] as const) if (cambios[k] !== undefined) x[k] = limpio(cambios[k])
+      for (const k of ['telefono', 'whatsapp'] as const) if (cambios[k] !== undefined) x[k] = telefonoGuardado(cambios[k])
       if (cambios.email !== undefined) x.email = limpio(cambios.email)?.toLowerCase() ?? null
       if (cambios.principal !== undefined) x.principal = cambios.principal
       x.updated_at = ahoraISO()
